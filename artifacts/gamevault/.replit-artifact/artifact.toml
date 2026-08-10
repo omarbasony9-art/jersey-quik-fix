@@ -1,0 +1,28 @@
+kind = "web"
+previewPath = "/"
+title = "GameVault"
+description = "A gaming ecommerce storefront with warm, social 'game night with your crew' energy. Features product browsing with search & category filtering, add-to-cart, a trade-in value estimator, membership section, and promo banners. Built from mock data — no backend needed."
+version = "1.0.0"
+id = "artifacts/gamevault"
+router = "path"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 26243
+
+[services.development]
+run = "pnpm --filter @workspace/gamevault run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/gamevault", "run", "build" ]
+serve = "static"
+publicDir = "artifacts/gamevault/dist/public"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "26243"
+BASE_PATH = "/"
