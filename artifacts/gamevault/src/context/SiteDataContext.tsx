@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, ReactNode } from 'react';
 
-const SITE_DATA_KEY = 'jqf_site_content_v1';
+const SITE_DATA_KEY = 'jqf_site_content_v2';
 
 // ---- Full data type ----
 export type RepairDevice = { id: string; title: string; desc: string; image: string };
@@ -65,8 +65,8 @@ const DEFAULT: SiteContent = {
     heroHeadline: 'Broken tech?', heroAccent: 'We can fix that.',
     heroSubtitle: 'Fast, professional repairs for the devices you rely on every day—from cracked phone screens to game console HDMI ports.',
     primaryBtn: 'Start a Repair', secondaryBtn: 'Find a Store',
-    heroBgImage: 'https://images.unsplash.com/photo-1518770660439-4636190af475?auto=format&fit=crop&w=1600&q=80',
-    heroSideImage: '',
+    heroBgImage: 'https://images.unsplash.com/photo-1563986768494-4dee2763ff3f?auto=format&fit=crop&w=1600&q=80',
+    heroSideImage: 'https://images.unsplash.com/photo-1601972599720-36938d4ecd31?auto=format&fit=crop&w=600&q=80',
     heroCardTitle: 'Ready Today', heroCardDesc: 'Bring it in by 2 PM, get it back by dinner.',
     checklistItems: ['Free diagnostics', 'Same-day options', '1-year warranty'],
     whyUsHeadline: 'Why choose', whyUsAccent: 'Jersey Quik Fix?',

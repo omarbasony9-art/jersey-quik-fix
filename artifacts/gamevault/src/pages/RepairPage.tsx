@@ -471,7 +471,7 @@ export default function RepairPage() {
               Find a <span className="text-primary">Store</span>
             </h2>
             <p className="text-lg text-muted-foreground font-medium mb-10">
-              Enter your ZIP code to find the nearest GameVault repair center.
+              Enter your ZIP code to find the nearest Jersey Quik Fix location.
             </p>
             
             <div className="flex gap-2 max-w-md mx-auto mb-12">

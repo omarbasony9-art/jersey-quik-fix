@@ -2,7 +2,7 @@ import React from 'react';
 import { Router as WouterRouter, Route, Switch, Link, useLocation } from 'wouter';
 import { QueryClientProvider, QueryClient } from '@tanstack/react-query';
 import { TooltipProvider } from '@/components/ui/tooltip';
-import { Gamepad2, Wrench } from 'lucide-react';
+import { Wrench } from 'lucide-react';
 import ShopPage from './pages/ShopPage';
 import RepairPage from './pages/RepairPage';
 import CommunityPage from './pages/CommunityPage';
@@ -87,10 +87,10 @@ export default function App() {
               <Route path="/admin" component={AdminPage} />
               <Route>
                 <div className="flex flex-col items-center justify-center min-h-[50vh] text-center">
-                  <Gamepad2 size={48} className="text-muted-foreground mb-4 opacity-50" />
-                  <h1 className="text-3xl font-black uppercase italic">404 - Level Not Found</h1>
+                  <Wrench size={48} className="text-muted-foreground mb-4 opacity-50" />
+                  <h1 className="text-3xl font-black uppercase italic">404 — Page Not Found</h1>
                   <p className="text-muted-foreground mt-2">The page you're looking for doesn't exist.</p>
-                  <Link href="/" className="mt-6 text-primary hover:underline font-bold uppercase">Return to Base</Link>
+                  <Link href="/" className="mt-6 text-primary hover:underline font-bold uppercase">Back to Home</Link>
                 </div>
               </Route>
             </Switch>
