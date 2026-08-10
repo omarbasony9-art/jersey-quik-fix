@@ -168,23 +168,6 @@ export default function RepairPage() {
               </div>
             </motion.div>
 
-            <motion.div 
-              initial={{ opacity: 0, scale: 0.9 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ duration: 0.8, delay: 0.2 }}
-              className="hidden md:flex justify-center md:justify-end relative"
-            >
-              <div className="relative">
-                <div className="absolute -top-4 -left-4 z-20 bg-primary text-primary-foreground text-xs font-bold uppercase tracking-widest px-4 py-2 rounded-full shadow-xl">
-                  Est. in your community
-                </div>
-                <img 
-                  src={repair.heroSideImage || phoneRepairImg}
-                  alt="Phone repair technician" 
-                  className="rounded-3xl border-l-4 border-primary shadow-2xl object-cover w-[400px] h-[500px]"
-                />
-              </div>
-            </motion.div>
           </div>
         </section>
 
