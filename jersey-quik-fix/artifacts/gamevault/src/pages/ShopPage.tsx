@@ -10,6 +10,8 @@ import { useUser } from '@clerk/react';
 import { useSiteData, type Product } from '../context/SiteDataContext';
 import Footer from '../components/Footer';
 
+const API_BASE = import.meta.env.VITE_API_BASE_URL || '/api';
+
 const DEVICE_TYPES = ['Phone', 'Tablet', 'Laptop', 'Game Console', 'Controller', 'Other Electronics'];
 const CONDITIONS = [
   { label: 'Excellent', sub: 'Like new, fully functional, minimal wear' },
@@ -57,7 +59,7 @@ export default function ShopPage() {
     if (params.get('checkout') !== 'success') return;
     const sessionId = params.get('session_id');
     if (!sessionId) return;
-    fetch('/api/membership/activate', {
+    fetch(`${API_BASE}/membership/activate`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ sessionId }),
@@ -76,7 +78,7 @@ export default function ShopPage() {
     if (!trimmed) return;
     setPromoStatus('checking');
     try {
-      const res = await fetch('/api/membership/validate', {
+      const res = await fetch(`${API_BASE}/membership/validate`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ code: trimmed }),
@@ -155,7 +157,7 @@ export default function ShopPage() {
     if (cartLoaded.current) return;
     cartLoaded.current = true;
 
-    fetch('/api/cart', { credentials: 'include' })
+    fetch(`${API_BASE}/cart`, { credentials: 'include' })
       .then(r => r.ok ? r.json() : null)
       .then(data => {
         if (!data?.items?.length) return;
@@ -183,7 +185,7 @@ export default function ShopPage() {
     if (!user) return;
     if (cartSyncTimer.current) clearTimeout(cartSyncTimer.current);
     cartSyncTimer.current = setTimeout(() => {
-      fetch('/api/cart/sync', {
+      fetch(`${API_BASE}/cart/sync`, {
         method: 'POST',
         credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
@@ -205,7 +207,7 @@ export default function ShopPage() {
     setCheckoutLoading(true);
     try {
       const customerEmail = user?.emailAddresses?.[0]?.emailAddress || undefined;
-      const res = await fetch('/api/stripe/checkout', {
+      const res = await fetch(`${API_BASE}/stripe/checkout`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -239,7 +241,7 @@ export default function ShopPage() {
     setTradeSubmitting(true);
     setTradeError('');
     try {
-      const res = await fetch('/api/trade-inquiries', {
+      const res = await fetch(`${API_BASE}/trade-inquiries`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(tradeForm),
@@ -416,7 +418,7 @@ export default function ShopPage() {
       {/* Header */}
       <header className="sticky top-0 z-40 bg-card border-b-2 border-primary/30 shadow-md">
         <div className="max-w-7xl mx-auto px-4 md:px-6 h-20 flex items-center justify-between gap-4">
-          
+
           <div className="flex items-center gap-4">
             <button className="md:hidden p-2 text-foreground" onClick={() => setMenuOpen(!menuOpen)}>
               {menuOpen ? <X size={24} /> : <Menu size={24} />}
@@ -488,7 +490,7 @@ export default function ShopPage() {
                         <X size={20} />
                       </button>
                     </div>
-                    
+
                     <div className="max-h-80 overflow-y-auto p-4 flex flex-col gap-4">
                       {cart.length === 0 ? (
                         <div className="text-center text-muted-foreground py-8">
@@ -683,7 +685,7 @@ export default function ShopPage() {
             <div className="absolute inset-0 bg-gradient-to-r from-background via-background/70 to-background/30" />
             <div className="absolute inset-0 bg-gradient-to-t from-background via-transparent to-transparent" />
           </div>
-          
+
           <div className="relative z-10 max-w-7xl mx-auto w-full px-6">
             <motion.div 
               initial={{ opacity: 0, y: 30 }}
@@ -767,7 +769,7 @@ export default function ShopPage() {
                 ))}
               </div>
             </div>
-            
+
             <div className="text-muted-foreground font-bold">
               {filteredProducts.length} items found
             </div>
@@ -812,7 +814,7 @@ export default function ShopPage() {
                     <h3 className="font-black text-lg tracking-tight leading-tight mb-2 flex-1 group-hover:text-primary transition-colors line-clamp-2">
                       {product.name}
                     </h3>
-                    
+
                     <div className="flex items-center gap-1 mb-3 text-yellow-400">
                       <Star size={14} fill="currentColor" />
                       <span className="text-xs font-bold text-foreground">{product.rating}</span>
@@ -836,7 +838,7 @@ export default function ShopPage() {
                 </motion.div>
               ))}
             </AnimatePresence>
-            
+
             {filteredProducts.length === 0 && (
               <div className="col-span-full py-20 text-center text-muted-foreground flex flex-col items-center justify-center bg-card rounded-2xl border border-dashed border-border">
                 <Search size={48} className="mb-4 opacity-20" />
@@ -1020,7 +1022,7 @@ export default function ShopPage() {
         <section className="py-20 px-6">
           <div className="max-w-7xl mx-auto rounded-3xl bg-gradient-to-br from-secondary via-background to-black border border-secondary/30 p-8 md:p-16 flex flex-col md:flex-row items-center justify-between gap-12 overflow-hidden relative shadow-2xl">
             <div className="absolute -right-20 -top-20 w-96 h-96 bg-primary/20 blur-[100px] rounded-full pointer-events-none" />
-            
+
             <div className="relative z-10 max-w-xl">
               {(() => {
                 const m = content.shop.membership;
