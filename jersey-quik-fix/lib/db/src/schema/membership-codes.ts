@@ -9,6 +9,7 @@ export const membershipCodesTable = pgTable("membership_codes", {
   discountPercent: integer("discount_percent").notNull().default(10),
   isActive: boolean("is_active").notNull().default(true),
   createdAt: timestamp("created_at").defaultNow().notNull(),
+  expiresAt: timestamp("expires_at").notNull(),
 });
 
 export type MembershipCode = typeof membershipCodesTable.$inferSelect;
