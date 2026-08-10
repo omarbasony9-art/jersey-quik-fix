@@ -3,11 +3,13 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Gamepad2, Settings, Home, Megaphone, Calendar, 
   Flame, BarChart, LogOut, Download, Upload, 
-  Plus, Edit2, Trash2, X, RefreshCcw, Save, LayoutDashboard, Wrench
+  Plus, Edit2, Trash2, X, RefreshCcw, Save, LayoutDashboard, Wrench,
+  ShoppingBag, Users, ClipboardList, Package, Receipt, UserCheck, RefreshCcw as RefreshCcw2, Briefcase, Image as ImageIcon
 } from 'lucide-react';
+import { useSiteData, DEFAULT_CONTENT, type SiteContent, type Product, type InventoryItem, type Order, type Customer, type TradeIn, type Employee } from '../context/SiteDataContext';
+import jerseyLogo from '../assets/jersey-quik-fix-logo.png';
 
 const ADMIN_PASSWORD = "gv-admin-2026";
-const STORAGE_KEY = "gv_community_data_v1";
 const REPAIRS_KEY = "gv_repairs_v1";
 
 type RepairTicket = {
@@ -25,99 +27,14 @@ type RepairTicket = {
   createdAt: string;
 };
 
-type Announcement = {
-  id: string;
-  title: string;
-  category: string;
-  date: string;
-  summary: string;
-  featured: boolean;
-};
-
-type Event = {
-  id: string;
-  title: string;
-  date: string;
-  time: string;
-  endTime: string;
-  location: string;
-  description: string;
-  featured: boolean;
-};
-
-type Action = {
-  id: string;
-  title: string;
-  status: string;
-  icon: string;
-  description: string;
-  progress: number;
-  participants: number;
-};
-
-type DataState = {
-  homepage: {
-    heroEyebrow: string;
-    heroHeadline: string;
-    heroDescription: string;
-    heroPrimaryButton: string;
-    heroSecondaryButton: string;
-    nextEventLabel: string;
-    communityName: string;
-  };
-  announcements: Announcement[];
-  events: Event[];
-  actions: Action[];
-  stats: {
-    membersConnected: number;
-    announcementStatLabel: string;
-    eventStatLabel: string;
-    actionStatLabel: string;
-    memberStatLabel: string;
-  };
-  settings: {
-    contactEmail: string;
-    rsvpDeadlineText: string;
-    footerMessage: string;
-    signupEnabled: boolean;
-    siteVisibility: string;
-  };
-};
-
-const defaultData: DataState = {
-  homepage: {
-    heroEyebrow: 'COMMUNITY HUB',
-    heroHeadline: 'Stay connected to the moments that matter.',
-    heroDescription: 'One place for family events, major announcements, important plans, celebrations, group decisions, and community updates.',
-    heroPrimaryButton: 'Upcoming Events',
-    heroSecondaryButton: 'Latest Announcements',
-    nextEventLabel: 'Next big event',
-    communityName: 'Family & Friends'
-  },
-  announcements: [
-    { id: '1', title: 'Family Weekend details are officially confirmed', category: 'Major Update', date: '2026-08-09', summary: 'The date, location, food plan, and main activities are locked in. RSVP before September 5 so final arrangements can be made.', featured: true },
-    { id: '2', title: 'New shared photo archive is live', category: 'Community', date: '2026-08-06', summary: 'We now have one central place for family photos, videos, old memories, and event albums.', featured: false }
-  ],
-  events: [
-    { id: '1', title: 'Annual Family Weekend', date: '2026-09-19', time: '14:00', endTime: '20:00', location: 'Riverside Park Pavilion', description: 'Food, games, photos, family updates, and a full afternoon together.', featured: true },
-    { id: '2', title: 'Family Dinner Night', date: '2026-10-10', time: '18:30', endTime: '', location: 'Downtown', description: 'Monthly dinner night for everyone who can make it.', featured: false }
-  ],
-  actions: [
-    { id: '1', title: 'Help with the family move', status: 'In Progress', icon: '🏡', description: 'Coordinating vehicles, boxes, pickup times, and volunteers for moving day.', progress: 68, participants: 17 },
-    { id: '2', title: 'Group birthday surprise', status: 'Organizing', icon: '🎁', description: 'Collecting contributions, planning the surprise, and coordinating arrival times.', progress: 42, participants: 11 }
-  ],
-  stats: { membersConnected: 26, announcementStatLabel: 'Active Announcements', eventStatLabel: 'Upcoming Events', actionStatLabel: 'Community Actions', memberStatLabel: 'Members Connected' },
-  settings: { contactEmail: 'family@example.com', rsvpDeadlineText: 'RSVP before September 5', footerMessage: 'Events, announcements, and important moments in one place.', signupEnabled: true, siteVisibility: 'private' }
-};
-
 export default function AdminPage() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [password, setPassword] = useState('');
   const [error, setError] = useState(false);
-  const [activePanel, setActivePanel] = useState('Overview');
+  const [activePanel, setActivePanel] = useState('Dashboard');
   
-  const [data, setData] = useState<DataState>(defaultData);
-  const [draftData, setDraftData] = useState<DataState>(defaultData);
+  const { content, saveContent } = useSiteData();
+  const [draft, setDraft] = useState<SiteContent>(content);
   const [repairs, setRepairs] = useState<RepairTicket[]>([]);
   
   const [toastMsg, setToastMsg] = useState<string | null>(null);
@@ -142,20 +59,9 @@ export default function AdminPage() {
     if (session === "true") {
       setIsAuthenticated(true);
     }
-    
-    const stored = localStorage.getItem(STORAGE_KEY);
-    if (stored) {
-      try {
-        const parsed = JSON.parse(stored);
-        setData(parsed);
-        setDraftData(parsed);
-      } catch (e) {
-        console.error("Failed to parse stored data", e);
-      }
-    }
-
+    setDraft(content);
     loadRepairs();
-  }, []);
+  }, [content]);
 
   useEffect(() => {
     if (toastMsg) {
@@ -183,30 +89,24 @@ export default function AdminPage() {
     setIsAuthenticated(false);
   };
 
-  const saveData = (newData: DataState) => {
-    setData(newData);
-    setDraftData(newData);
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(newData));
-    showToast("Changes saved.");
-  };
-
   const handleSaveChanges = () => {
-    saveData(draftData);
+    saveContent(draft);
+    showToast("Live site updated.");
   };
 
   const handleResetDemo = () => {
     if (window.confirm("Are you sure you want to restore demo content? This will overwrite all changes.")) {
-      saveData(defaultData);
+      saveContent(DEFAULT_CONTENT);
       showToast("Demo content restored.");
     }
   };
 
   const handleExport = () => {
-    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+    const blob = new Blob([JSON.stringify(draft, null, 2)], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = 'community-data.json';
+    a.download = 'jqf-site-data.json';
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
@@ -221,7 +121,7 @@ export default function AdminPage() {
     reader.onload = (event) => {
       try {
         const importedData = JSON.parse(event.target?.result as string);
-        saveData(importedData);
+        saveContent(importedData);
         showToast("Data imported successfully.");
       } catch (err) {
         showToast("Failed to parse JSON file.");
@@ -231,45 +131,53 @@ export default function AdminPage() {
     if (fileInputRef.current) fileInputRef.current.value = '';
   };
 
-  const handleDeleteItem = (type: 'announcements' | 'events' | 'actions', id: string) => {
-    if (window.confirm("Are you sure you want to delete this item?")) {
-      const newData = {
-        ...data,
-        [type]: data[type].filter((item: any) => item.id !== id)
+  const panels = [
+    { name: 'Dashboard', icon: <LayoutDashboard size={18} /> },
+    { name: 'Repair Page', icon: <Wrench size={18} /> },
+    { name: 'Shop Page', icon: <ShoppingBag size={18} /> },
+    { name: 'Community', icon: <Users size={18} /> },
+    { name: 'Repair Requests', icon: <ClipboardList size={18} /> },
+    { name: 'Inventory', icon: <Package size={18} /> },
+    { name: 'Orders', icon: <Receipt size={18} /> },
+    { name: 'Customers', icon: <UserCheck size={18} /> },
+    { name: 'Trade-Ins', icon: <RefreshCcw2 size={18} /> },
+    { name: 'Employees', icon: <Briefcase size={18} /> },
+    { name: 'Photos', icon: <ImageIcon size={18} /> },
+    { name: 'Settings', icon: <Settings size={18} /> }
+  ];
+
+  const updateDraftText = (section: keyof SiteContent, field: string, value: any) => {
+    setDraft(prev => ({
+      ...prev,
+      [section]: {
+        ...(prev[section] as any),
+        [field]: value
+      }
+    }));
+  };
+
+  const updateDraftArray = <K extends keyof SiteContent>(
+    section: K, 
+    id: string, 
+    updater: (item: any) => any
+  ) => {
+    setDraft(prev => {
+      const arr = prev[section] as any[];
+      return {
+        ...prev,
+        [section]: arr.map(item => item.id === id ? updater(item) : item)
       };
-      saveData(newData);
+    });
+  };
+
+  const addDraftArrayItem = <K extends keyof SiteContent>(section: K, newItem: any) => {
+    setDraft(prev => ({ ...prev, [section]: [...(prev[section] as any[]), { ...newItem, id: crypto.randomUUID() }] }));
+  };
+
+  const deleteDraftArrayItem = <K extends keyof SiteContent>(section: K, id: string) => {
+    if (window.confirm("Are you sure you want to delete this item?")) {
+      setDraft(prev => ({ ...prev, [section]: (prev[section] as any[]).filter(item => item.id !== id) }));
     }
-  };
-
-  const openModal = (type: 'ANNOUNCEMENT' | 'EVENT' | 'ACTION', mode: 'ADD' | 'EDIT', item: any = null) => {
-    setModalType(type);
-    setModalMode(mode);
-    setModalItem(item || getEmptyItem(type));
-    setModalOpen(true);
-  };
-
-  const getEmptyItem = (type: string) => {
-    if (type === 'ANNOUNCEMENT') return { title: '', category: '', date: '', summary: '', featured: false };
-    if (type === 'EVENT') return { title: '', date: '', time: '', endTime: '', location: '', description: '', featured: false };
-    if (type === 'ACTION') return { title: '', status: '', icon: '🌟', description: '', progress: 0, participants: 0 };
-    return {};
-  };
-
-  const handleModalSave = (e: React.FormEvent) => {
-    e.preventDefault();
-    const targetKey = modalType === 'ANNOUNCEMENT' ? 'announcements' : modalType === 'EVENT' ? 'events' : 'actions';
-    
-    let newList;
-    if (modalMode === 'ADD') {
-      const newItem = { ...modalItem, id: crypto.randomUUID() };
-      newList = [...data[targetKey], newItem];
-    } else {
-      newList = data[targetKey].map((i: any) => i.id === modalItem.id ? modalItem : i);
-    }
-    
-    const newData = { ...data, [targetKey]: newList };
-    saveData(newData);
-    setModalOpen(false);
   };
 
   if (!isAuthenticated) {
@@ -282,11 +190,11 @@ export default function AdminPage() {
         >
           <div className="absolute top-0 inset-x-0 h-1 bg-primary" />
           <div className="flex flex-col items-center text-center mb-8">
-            <div className="bg-primary/20 text-primary p-3 rounded-2xl mb-4">
-              <Gamepad2 size={32} strokeWidth={2.5} />
+            <div className="p-3 mb-4 flex items-center justify-center">
+              <img src={jerseyLogo} alt="Logo" className="w-16 h-16 object-contain" />
             </div>
-            <h1 className="text-3xl font-black uppercase italic tracking-tight text-foreground">GameVault</h1>
-            <p className="text-primary font-bold text-sm tracking-widest uppercase mt-1">Admin Access</p>
+            <h1 className="text-3xl font-black uppercase italic tracking-tight text-foreground">Admin Portal</h1>
+            <p className="text-primary font-bold text-sm tracking-widest uppercase mt-1">Jersey Quik Fix</p>
           </div>
 
           <form onSubmit={handleLogin} className="space-y-6">
@@ -307,7 +215,7 @@ export default function AdminPage() {
               type="submit"
               className="w-full bg-primary text-primary-foreground py-4 rounded-xl font-black uppercase tracking-wider hover:brightness-110 active:scale-[0.98] transition-all"
             >
-              Enter Admin Panel
+              Enter Control Center
             </button>
             <p className="text-xs text-muted-foreground font-bold uppercase tracking-widest text-center">
               Authorized staff only
@@ -318,38 +226,15 @@ export default function AdminPage() {
     );
   }
 
-  const panels = [
-    { name: 'Overview', icon: <LayoutDashboard size={18} /> },
-    { name: 'Repair Requests', icon: <Wrench size={18} /> },
-    { name: 'Homepage', icon: <Home size={18} /> },
-    { name: 'Announcements', icon: <Megaphone size={18} /> },
-    { name: 'Events', icon: <Calendar size={18} /> },
-    { name: 'Big Actions', icon: <Flame size={18} /> },
-    { name: 'Stats', icon: <BarChart size={18} /> },
-    { name: 'Settings', icon: <Settings size={18} /> }
-  ];
-
-  const updateDraft = (section: keyof DataState, field: string, value: any) => {
-    setDraftData(prev => ({
-      ...prev,
-      [section]: {
-        ...(prev[section] as any),
-        [field]: value
-      }
-    }));
-  };
-
   return (
     <div className="min-h-[100dvh] bg-background text-foreground flex font-sans selection:bg-primary selection:text-primary-foreground">
       {/* Sidebar */}
       <aside className="w-64 bg-secondary flex-shrink-0 border-r border-border flex flex-col hidden md:flex">
         <div className="h-16 flex items-center px-6 border-b border-border">
           <div className="flex items-center gap-2">
-            <div className="bg-primary text-primary-foreground p-1.5 rounded-lg">
-              <Gamepad2 size={20} strokeWidth={2.5} />
-            </div>
+            <img src={jerseyLogo} alt="JQF" className="h-8 w-8 object-contain bg-primary text-primary-foreground p-1 rounded-lg" />
             <span className="text-xl font-black tracking-tight uppercase italic text-secondary-foreground">
-              GameVault
+              JQF Admin
             </span>
           </div>
         </div>

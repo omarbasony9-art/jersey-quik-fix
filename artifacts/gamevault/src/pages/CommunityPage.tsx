@@ -1,83 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ArrowRight, Clock, X, Plus, Check } from 'lucide-react';
-
-const initialEvents = [
-  {
-    id: 1,
-    date: 'SEP 19',
-    badge: 'Featured/urgent',
-    time: '2:00 PM–8:00 PM',
-    title: 'Annual Family Weekend',
-    location: 'Riverside Park Pavilion',
-    desc: 'Food, games, photos, family updates, and a full afternoon together.'
-  },
-  {
-    id: 2,
-    date: 'OCT 10',
-    badge: 'Dinner',
-    time: '6:30 PM',
-    title: 'Family Dinner Night',
-    location: 'Downtown',
-    desc: 'Monthly dinner night for everyone who can make it.'
-  },
-  {
-    id: 3,
-    date: 'NOV 26',
-    badge: 'Holiday',
-    time: '3:00 PM',
-    title: 'Thanksgiving Gathering',
-    location: 'Family Home',
-    desc: 'Dinner, dessert, family photos, and holiday planning.'
-  }
-];
-
-const announcements = [
-  {
-    badge: 'Major Update',
-    date: 'August 9',
-    title: 'Family Weekend details are officially confirmed',
-    desc: 'The date, location, food plan, and main activities are locked in. RSVP before September 5 so final arrangements can be made.',
-    image: 'https://images.unsplash.com/photo-1529156069898-49953e39b3ac?auto=format&fit=crop&w=900&q=80',
-    featured: true
-  },
-  {
-    badge: 'Community',
-    date: 'August 6',
-    title: 'New shared photo archive is live',
-    desc: 'We now have one central place for family photos, videos, old memories, and event albums.',
-    image: 'https://images.unsplash.com/photo-1501281668745-f7f57925c3b4?auto=format&fit=crop&w=900&q=80'
-  },
-  {
-    badge: 'Planning',
-    date: 'August 3',
-    title: 'Holiday planning group is now open',
-    desc: 'Anyone who wants to help coordinate travel, food, gifts, or activities can join the holiday planning group.',
-    image: 'https://images.unsplash.com/photo-1492684223066-81342ee5ff30?auto=format&fit=crop&w=900&q=80'
-  }
-];
-
-const actions = [
-  {
-    icon: '🏡',
-    badge: 'In Progress',
-    title: 'Help with the family move',
-    desc: 'Join the action to assist with packing, moving boxes, and getting the new place set up.',
-    progress: 68,
-    volunteers: 17
-  },
-  {
-    icon: '🎁',
-    badge: 'Organizing',
-    title: 'Group birthday surprise',
-    desc: 'Pitch in for a big shared gift and help coordinate the surprise dinner next month.',
-    progress: 42,
-    volunteers: 11
-  }
-];
+import { useSiteData } from '../context/SiteDataContext';
 
 export default function CommunityPage() {
-  const [events, setEvents] = useState(initialEvents);
+  const { content } = useSiteData();
+  const { community } = content;
+
+  const [events, setEvents] = useState(community.events);
   const [toastMsg, setToastMsg] = useState<string | null>(null);
   
   const [addEventOpen, setAddEventOpen] = useState(false);
@@ -143,10 +73,11 @@ export default function CommunityPage() {
     if (!newEventName || !newEventDate) return;
 
     setEvents(prev => [...prev, {
-      id: Date.now(),
+      id: crypto.randomUUID(),
       date: formatDate(newEventDate),
       badge: 'Community',
       time: formatTime(newEventTime),
+      endTime: '',
       title: newEventName,
       location: newEventLocation || 'TBD',
       desc: 'Community added event.'
@@ -164,7 +95,7 @@ export default function CommunityPage() {
     <div className="min-h-[100dvh] flex flex-col font-sans overflow-x-hidden selection:bg-primary selection:text-primary-foreground bg-background text-foreground">
       {/* Promo Bar */}
       <div className="bg-secondary text-secondary-foreground text-xs font-bold py-3 px-4 text-center tracking-wider">
-        PRIVATE COMMUNITY • FAMILY &amp; FRIENDS HUB
+        {community.promoBanner}
       </div>
 
       <main className="flex-1 flex flex-col">
@@ -191,10 +122,10 @@ export default function CommunityPage() {
                 COMMUNITY HUB
               </div>
               <h1 className="text-5xl md:text-7xl font-black uppercase leading-[0.9] italic tracking-tight mb-6 text-foreground drop-shadow-2xl">
-                Stay connected to the moments that matter.
+                {community.heroHeadline}
               </h1>
               <p className="text-lg md:text-xl text-foreground/80 font-medium mb-10 max-w-lg leading-relaxed">
-                One place for family events, major announcements, important plans, celebrations, group decisions, and community updates.
+                {community.heroSubtitle}
               </p>
               
               <div className="flex flex-col sm:flex-row gap-4">
@@ -235,8 +166,8 @@ export default function CommunityPage() {
                   Next big event
                 </h3>
                 <div className="mb-6">
-                  <h4 className="text-2xl font-black uppercase italic tracking-tight mb-2">Annual Family Weekend</h4>
-                  <p className="text-foreground/80 font-medium">Saturday, September 19 • 2:00 PM</p>
+                  <h4 className="text-2xl font-black uppercase italic tracking-tight mb-2">{events[0]?.title || 'TBA'}</h4>
+                  <p className="text-foreground/80 font-medium">{events[0] ? `${events[0].date} • ${events[0].time}` : 'Check back soon'}</p>
                 </div>
                 
                 <div className="grid grid-cols-2 gap-4">
@@ -289,11 +220,11 @@ export default function CommunityPage() {
             </div>
             
             <div className="grid lg:grid-cols-3 gap-6">
-              {announcements.map((ann, i) => {
+              {community.announcements.map((ann, i) => {
                 const isFeatured = !!ann.featured;
                 return (
                   <motion.div
-                    key={i}
+                    key={ann.id}
                     initial={{ opacity: 0, y: 20 }}
                     whileInView={{ opacity: 1, y: 0 }}
                     viewport={{ once: true }}
@@ -431,9 +362,9 @@ export default function CommunityPage() {
             </div>
             
             <div className="grid md:grid-cols-2 gap-6">
-              {actions.map((act, i) => (
+              {community.actions.map((act, i) => (
                 <motion.div
-                  key={i}
+                  key={act.id}
                   initial={{ opacity: 0, scale: 0.95 }}
                   whileInView={{ opacity: 1, scale: 1 }}
                   viewport={{ once: true }}
@@ -539,13 +470,13 @@ export default function CommunityPage() {
       <footer className="bg-black border-t border-border pt-16 pb-8 px-6 mt-auto">
         <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-6 text-center md:text-left">
           <div className="text-xl font-black tracking-tight uppercase italic text-foreground">
-            Family &amp; Friends
+            {content.site.name} Community
           </div>
           <p className="text-muted-foreground font-medium text-sm">
-            Events, announcements, and important moments in one place.
+            {content.settings.footer}
           </p>
           <div className="text-xs font-bold text-muted-foreground uppercase tracking-widest">
-            Private community demo
+            {content.settings.visibility}
           </div>
         </div>
       </footer>

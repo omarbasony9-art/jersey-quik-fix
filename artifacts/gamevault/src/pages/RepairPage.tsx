@@ -2,8 +2,10 @@ import React, { useState, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Phone, Laptop, Tablet, Gamepad2, Search, Clock, Shield, DollarSign, 
-  MapPin, Star, ChevronRight, X, Plus, Minus, ArrowRight, Check, ClipboardList
+  MapPin, Star, ChevronRight, X, Plus, Minus, ArrowRight, Check, ClipboardList, Wrench
 } from 'lucide-react';
+import { useSiteData } from '../context/SiteDataContext';
+import Footer from '../components/Footer';
 
 const REPAIRS_KEY = 'gv_repairs_v1';
 
@@ -32,16 +34,12 @@ const emptyForm = {
   email: '',
   date: '',
 };
-import Footer from '../components/Footer';
 
-const devices = [
-  { id: 'phone', title: 'Phone', desc: 'Screen, battery, camera & more', icon: Phone, image: 'https://images.unsplash.com/photo-1512941937669-90a1b58e7e9c?auto=format&fit=crop&w=900&q=80' },
-  { id: 'computer', title: 'Computer', desc: 'Laptop & desktop repairs', icon: Laptop, image: 'https://images.unsplash.com/photo-1496181133206-80ce9b88a853?auto=format&fit=crop&w=900&q=80' },
-  { id: 'tablet', title: 'Tablet', desc: 'Screens, charging & batteries', icon: Tablet, image: 'https://images.unsplash.com/photo-1544244015-0df4b3ffc6b0?auto=format&fit=crop&w=900&q=80' },
-  { id: 'console', title: 'Game console', desc: 'HDMI, power & overheating', icon: Gamepad2, image: 'https://images.unsplash.com/photo-1493711662062-fa541adb3fc8?auto=format&fit=crop&w=900&q=80' },
-] as const;
+type DeviceId = string;
 
-type DeviceId = typeof devices[number]['id'];
+const deviceIconMap: Record<string, React.ElementType> = {
+  phone: Phone, computer: Laptop, tablet: Tablet, console: Gamepad2
+};
 
 const repairOptions: Record<DeviceId, string[]> = {
   phone: ['Cracked screen', 'Battery replacement', 'Charging issue', 'Camera problem', 'Water damage'],
@@ -50,26 +48,10 @@ const repairOptions: Record<DeviceId, string[]> = {
   console: ['HDMI port repair', 'Overheating', 'Disc drive issue', 'Power problem', 'Controller issue'],
 };
 
-const locations = [
-  { city: 'Downtown', address: '125 Market Street', distance: '1.2 mi', open: 'Open until 7 PM' },
-  { city: 'Northside', address: '4800 North Avenue', distance: '4.8 mi', open: 'Open until 8 PM' },
-  { city: 'West End', address: '892 West Plaza Drive', distance: '7.1 mi', open: 'Open until 7 PM' },
-];
-
-const reviews = [
-  { name: 'Alex M.', device: 'Phone screen repair', text: 'Booked in the morning and had my phone back before lunch. Fast, clear, and easy.', avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=100&q=80' },
-  { name: 'Jordan R.', device: 'Laptop repair', text: 'They explained the issue before doing any work and the final price matched the quote.', avatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=100&q=80' },
-  { name: 'Taylor K.', device: 'Game console repair', text: 'My console stopped displaying through HDMI. They fixed the port and tested everything with me.', avatar: 'https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?auto=format&fit=crop&w=100&q=80' },
-];
-
-const faqs = [
-  { q: 'How long does a repair take?', a: 'Most common repairs like screen and battery replacements take under 2 hours. More complex repairs may take 24-48 hours depending on parts.' },
-  { q: 'Do you charge to diagnose?', a: 'No, diagnostics are completely free. We will let you know exactly what is wrong and how much it will cost before we start any work.' },
-  { q: 'What devices do you repair?', a: 'We repair all major brands of phones, tablets, laptops, desktops, and game consoles.' },
-  { q: 'Do repairs come with a warranty?', a: 'Yes, all repairs are backed by our 1-year warranty against defects in parts and workmanship.' }
-];
-
 export default function RepairPage() {
+  const { content } = useSiteData();
+  const { repair } = content;
+
   const [modalOpen, setModalOpen] = useState(false);
   const [step, setStep] = useState(1);
   const [selectedDevice, setSelectedDevice] = useState<DeviceId | null>(null);
@@ -123,7 +105,7 @@ export default function RepairPage() {
     <div className="min-h-[100dvh] flex flex-col font-sans overflow-x-hidden selection:bg-primary selection:text-primary-foreground">
       {/* Promo Bar */}
       <div className="bg-secondary text-secondary-foreground text-xs font-bold py-3 px-4 text-center tracking-wider flex items-center justify-center gap-2 flex-wrap">
-        <span>SAME-DAY APPOINTMENTS AVAILABLE AT SELECT LOCATIONS.</span>
+        <span>{repair.promoBanner}</span>
         <button onClick={() => handleOpenModal()} className="underline underline-offset-4 hover:text-primary transition-colors">START A REPAIR</button>
       </div>
 
@@ -146,22 +128,22 @@ export default function RepairPage() {
               transition={{ duration: 0.8 }}
             >
               <div className="text-xs font-bold uppercase tracking-widest text-primary mb-4">
-                LOCAL TECH REPAIR, MADE SIMPLE
+                {repair.heroEyebrow}
               </div>
               <h1 className="text-5xl md:text-7xl font-black uppercase leading-[0.9] italic tracking-tight mb-6 text-foreground drop-shadow-2xl">
-                Broken tech?<br />
-                <span className="text-primary">We can fix that.</span>
+                {repair.heroHeadline}<br />
+                <span className="text-primary">{repair.heroAccent}</span>
               </h1>
               <p className="text-lg md:text-xl text-foreground/80 font-medium mb-10 max-w-lg leading-relaxed">
-                Fast, professional repairs for the devices you rely on every day—from cracked phone screens to game console HDMI ports.
+                {repair.heroSubtitle}
               </p>
               
               <div className="flex flex-col sm:flex-row gap-4 mb-10">
                 <button onClick={() => handleOpenModal()} className="bg-primary text-primary-foreground px-8 py-4 rounded-xl font-black uppercase tracking-wider hover:brightness-110 active:scale-[0.98] transition-all flex items-center justify-center gap-2 group shadow-[0_0_20px_rgba(245,158,11,0.4)]">
-                  Start a repair <ArrowRight className="group-hover:translate-x-1 transition-transform" size={20} />
+                  {repair.primaryBtn} <ArrowRight className="group-hover:translate-x-1 transition-transform" size={20} />
                 </button>
                 <button onClick={() => document.getElementById('locations')?.scrollIntoView({ behavior: 'smooth' })} className="border-2 border-border text-foreground px-8 py-4 rounded-xl font-black uppercase tracking-wider hover:bg-card active:scale-[0.98] transition-all flex items-center justify-center gap-2">
-                  Find a store
+                  {repair.secondaryBtn}
                 </button>
               </div>
 
@@ -187,8 +169,8 @@ export default function RepairPage() {
                 <div className="w-16 h-16 bg-primary/20 rounded-2xl flex items-center justify-center mb-6">
                   <Check size={32} className="text-primary" />
                 </div>
-                <h3 className="text-2xl font-black uppercase italic tracking-tight mb-2">Ready today</h3>
-                <p className="text-muted-foreground font-medium">Bring it in by 2 PM, get it back by dinner. Let's get your tech working again.</p>
+                <h3 className="text-2xl font-black uppercase italic tracking-tight mb-2">{repair.heroCardTitle}</h3>
+                <p className="text-muted-foreground font-medium">{repair.heroCardDesc}</p>
               </motion.div>
             </motion.div>
           </div>
@@ -204,28 +186,31 @@ export default function RepairPage() {
             </div>
             
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 auto-rows-[320px]">
-              {devices.map((device, i) => (
-                <motion.button
-                  key={device.id}
-                  initial={{ opacity: 0, y: 20 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  viewport={{ once: true }}
-                  transition={{ delay: i * 0.1 }}
-                  onClick={() => handleOpenModal(device.id)}
-                  className={`${i === 0 ? 'lg:col-span-2 lg:row-span-2' : ''} relative overflow-hidden rounded-2xl group cursor-pointer text-left w-full h-full bg-card min-h-[320px]`}
-                >
-                  <img src={device.image} alt={device.title} loading={i > 0 ? "lazy" : "eager"} className="absolute inset-0 w-full h-full object-cover object-center transition-transform duration-700 group-hover:scale-105 group-hover:brightness-110" />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/40 to-transparent group-hover:from-black/90 transition-all" />
-                  <div className="absolute inset-0 flex flex-col justify-end p-6 md:p-8">
-                    <div className="w-12 h-12 bg-black/40 backdrop-blur-md rounded-xl flex items-center justify-center mb-auto text-white group-hover:text-primary transition-colors group-hover:scale-110 duration-300 border border-white/10">
-                      <device.icon size={24} />
+              {repair.devices.map((device, i) => {
+                const Icon = deviceIconMap[device.id] ?? Wrench;
+                return (
+                  <motion.button
+                    key={device.id}
+                    initial={{ opacity: 0, y: 20 }}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    viewport={{ once: true }}
+                    transition={{ delay: i * 0.1 }}
+                    onClick={() => handleOpenModal(device.id)}
+                    className={`${i === 0 ? 'lg:col-span-2 lg:row-span-2' : ''} relative overflow-hidden rounded-2xl group cursor-pointer text-left w-full h-full bg-card min-h-[320px]`}
+                  >
+                    <img src={device.image} alt={device.title} loading={i > 0 ? "lazy" : "eager"} className="absolute inset-0 w-full h-full object-cover object-center transition-transform duration-700 group-hover:scale-105 group-hover:brightness-110" />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/40 to-transparent group-hover:from-black/90 transition-all" />
+                    <div className="absolute inset-0 flex flex-col justify-end p-6 md:p-8">
+                      <div className="w-12 h-12 bg-black/40 backdrop-blur-md rounded-xl flex items-center justify-center mb-auto text-white group-hover:text-primary transition-colors group-hover:scale-110 duration-300 border border-white/10">
+                        <Icon size={24} />
+                      </div>
+                      <h3 className={`${i === 0 ? 'text-4xl md:text-5xl' : 'text-3xl'} font-black uppercase italic tracking-tight text-white mb-2`}>{device.title}</h3>
+                      <p className="text-white/70 font-medium mb-4 text-sm md:text-base">{device.desc}</p>
+                      <span className="self-start bg-primary text-primary-foreground px-4 py-2 rounded-full text-xs font-black uppercase tracking-wider">Start repair →</span>
                     </div>
-                    <h3 className={`${i === 0 ? 'text-4xl md:text-5xl' : 'text-3xl'} font-black uppercase italic tracking-tight text-white mb-2`}>{device.title}</h3>
-                    <p className="text-white/70 font-medium mb-4 text-sm md:text-base">{device.desc}</p>
-                    <span className="self-start bg-primary text-primary-foreground px-4 py-2 rounded-full text-xs font-black uppercase tracking-wider">Start repair →</span>
-                  </div>
-                </motion.button>
-              ))}
+                  </motion.button>
+                );
+              })}
             </div>
           </div>
         </section>
@@ -242,9 +227,9 @@ export default function RepairPage() {
               <div className="text-center mb-12">
                 <div className="text-xs font-bold uppercase tracking-widest text-primary mb-3">START A REPAIR</div>
                 <h2 className="text-4xl md:text-5xl font-black uppercase italic tracking-tight mb-4">
-                  Tell us what <span className="text-primary">happened.</span>
+                  {repair.formHeadline.replace('.', '')}<span className="text-primary">.</span>
                 </h2>
-                <p className="text-muted-foreground font-medium">Fill out the form and we'll generate a repair ticket instantly.</p>
+                <p className="text-muted-foreground font-medium">{repair.formSubtitle}</p>
               </div>
 
               <AnimatePresence mode="wait">
@@ -394,10 +379,10 @@ export default function RepairPage() {
             <div className="grid lg:grid-cols-3 gap-12">
               <div className="lg:col-span-1">
                 <h2 className="text-4xl md:text-5xl font-black uppercase italic tracking-tight mb-6">
-                  Why choose <br /><span className="text-accent">GameVault Repair?</span>
+                  {repair.whyUsHeadline} <br /><span className="text-accent">{repair.whyUsAccent}</span>
                 </h2>
                 <p className="text-lg text-muted-foreground font-medium mb-8">
-                  We treat your devices like our own. Transparent pricing, expert technicians, and a guarantee you can trust.
+                  {repair.whyUsSubtitle}
                 </p>
               </div>
               <div className="lg:col-span-2 grid sm:grid-cols-2 gap-6">
@@ -432,9 +417,9 @@ export default function RepairPage() {
               <h2 className="text-3xl md:text-5xl font-black uppercase italic tracking-tight">Trusted by <span className="text-primary">Locals</span></h2>
             </div>
             <div className="grid md:grid-cols-3 gap-6">
-              {reviews.map((review, i) => (
+              {repair.reviews.map((review, i) => (
                 <motion.div 
-                  key={i}
+                  key={review.id}
                   initial={{ opacity: 0, scale: 0.95 }}
                   whileInView={{ opacity: 1, scale: 1 }}
                   viewport={{ once: true }}
@@ -486,10 +471,10 @@ export default function RepairPage() {
             </div>
 
             <div className="space-y-4 text-left">
-              {locations.map((loc, i) => (
-                <div key={loc.city} className="bg-card border border-border p-6 rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-4 hover:border-primary/50 transition-colors">
+              {repair.locations.map((loc, i) => (
+                <div key={loc.id} className="bg-card border border-border p-6 rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-4 hover:border-primary/50 transition-colors">
                   <div>
-                    <h4 className="font-black text-xl tracking-tight mb-1">GameVault {loc.city}</h4>
+                    <h4 className="font-black text-xl tracking-tight mb-1">{content.site.name} {loc.city}</h4>
                     <p className="text-muted-foreground font-medium">{loc.address}</p>
                     <p className="text-sm text-primary font-bold mt-2">{loc.open}</p>
                   </div>
@@ -574,8 +559,8 @@ export default function RepairPage() {
               Frequent <span className="text-accent">Questions</span>
             </h2>
             <div className="space-y-4">
-              {faqs.map((faq, i) => (
-                <div key={i} className="bg-background border border-border rounded-2xl overflow-hidden">
+              {repair.faqs.map((faq, i) => (
+                <div key={faq.id} className="bg-background border border-border rounded-2xl overflow-hidden">
                   <button 
                     onClick={() => setOpenFaq(openFaq === i ? null : i)}
                     className="w-full p-6 text-left flex items-center justify-between gap-4"
@@ -663,16 +648,19 @@ export default function RepairPage() {
               <div className="p-6 overflow-y-auto flex-1 bg-card">
                 {step === 1 && (
                   <div className="grid grid-cols-2 gap-4">
-                    {devices.map(device => (
-                      <button
-                        key={device.id}
-                        onClick={() => { setSelectedDevice(device.id); setStep(2); }}
-                        className="bg-background border border-border hover:border-primary p-6 rounded-2xl flex flex-col items-center justify-center text-center gap-3 transition-colors group"
-                      >
-                        <device.icon size={32} className="text-muted-foreground group-hover:text-primary transition-colors" />
-                        <span className="font-bold">{device.title}</span>
-                      </button>
-                    ))}
+                    {repair.devices.map(device => {
+                      const Icon = deviceIconMap[device.id] ?? Wrench;
+                      return (
+                        <button
+                          key={device.id}
+                          onClick={() => { setSelectedDevice(device.id); setStep(2); }}
+                          className="bg-background border border-border hover:border-primary p-6 rounded-2xl flex flex-col items-center justify-center text-center gap-3 transition-colors group"
+                        >
+                          <Icon size={32} className="text-muted-foreground group-hover:text-primary transition-colors" />
+                          <span className="font-bold">{device.title}</span>
+                        </button>
+                      );
+                    })}
                   </div>
                 )}
 
@@ -705,9 +693,9 @@ export default function RepairPage() {
                     </div>
                     
                     <div className="space-y-3 mb-6">
-                      {locations.slice(0, 2).map((loc, i) => (
+                      {repair.locations.slice(0, 2).map((loc, i) => (
                         <button
-                          key={loc.city}
+                          key={loc.id}
                           onClick={() => setSelectedLocation(i)}
                           className={`w-full text-left p-4 rounded-xl border transition-colors flex justify-between items-center ${selectedLocation === i ? 'border-primary bg-primary/10' : 'border-border bg-background hover:border-primary/50'}`}
                         >

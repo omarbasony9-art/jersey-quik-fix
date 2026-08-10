@@ -5,20 +5,8 @@ import {
   Star, Menu, X, Gamepad2, RefreshCcw, BadgeDollarSign,
   Plus, Minus, Trash2
 } from 'lucide-react';
+import { useSiteData, type Product } from '../context/SiteDataContext';
 import Footer from '../components/Footer';
-
-const products = [
-  { id:1, name:'PlayBox 5 Console', category:'Consoles', price:499.99, oldPrice:549.99, rating:4.9, badge:'Best Seller', image:'https://images.unsplash.com/photo-1606144042614-b2417e99c4e3?auto=format&fit=crop&w=900&q=80' },
-  { id:2, name:'Nebula Pro Wireless Controller', category:'Accessories', price:69.99, rating:4.7, image:'https://images.unsplash.com/photo-1593118247619-e2d6f056869e?auto=format&fit=crop&w=900&q=80' },
-  { id:3, name:'Monster Quest: Eclipse', category:'Games', price:69.99, rating:4.8, badge:'New Release', image:'https://images.unsplash.com/photo-1550745165-9bc0b252726f?auto=format&fit=crop&w=900&q=80' },
-  { id:4, name:'Elite Gaming Headset', category:'Accessories', price:119.99, rating:4.6, image:'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?auto=format&fit=crop&w=900&q=80' },
-  { id:5, name:'Mystic Monsters Booster Box', category:'Trading Cards', price:134.99, rating:4.9, badge:'Hot', image:'https://images.unsplash.com/photo-1610890716171-6b1bb98ffd09?auto=format&fit=crop&w=900&q=80' },
-  { id:6, name:'Retro Handheld Console', category:'Retro', price:149.99, rating:4.5, image:'https://images.unsplash.com/photo-1478416272538-5f7e51dc5400?auto=format&fit=crop&w=900&q=80' },
-  { id:7, name:"Collector Figure - Titan", category:'Collectibles', price:39.99, rating:4.7, image:'https://images.unsplash.com/photo-1608889476561-6242cfdbf622?auto=format&fit=crop&w=900&q=80' },
-  { id:8, name:'Velocity Racing 26', category:'Games', price:59.99, rating:4.4, image:'https://images.unsplash.com/photo-1542751371-adc38448a05e?auto=format&fit=crop&w=900&q=80' }
-];
-
-const categories = ['All', 'Games', 'Consoles', 'Accessories', 'Trading Cards', 'Collectibles', 'Retro'];
 
 const tradeValues: Record<string, number> = {
   'Console': 220,
@@ -33,9 +21,14 @@ const conditionMultipliers: Record<string, number> = {
   'Fair': 0.72
 };
 
-type CartItem = typeof products[0] & { quantity: number };
+type CartItem = Product & { quantity: number };
 
 export default function ShopPage() {
+  const { content } = useSiteData();
+  const { shop } = content;
+  const products = shop.products.filter(p => p.active);
+  const categories = ['All', ...Array.from(new Set(products.map(p => p.category)))];
+
   const [query, setQuery] = useState('');
   const [activeCategory, setActiveCategory] = useState('All');
   const [cart, setCart] = useState<CartItem[]>([]);
@@ -66,11 +59,11 @@ export default function ShopPage() {
     setCartOpen(true);
   };
 
-  const removeFromCart = (id: number) => {
+  const removeFromCart = (id: string) => {
     setCart(prev => prev.filter(item => item.id !== id));
   };
 
-  const updateQuantity = (id: number, delta: number) => {
+  const updateQuantity = (id: string, delta: number) => {
     setCart(prev => prev.map(item => {
       if (item.id === id) {
         const newQ = Math.max(1, item.quantity + delta);
@@ -107,7 +100,7 @@ export default function ShopPage() {
                 <Gamepad2 size={24} strokeWidth={2.5} />
               </div>
               <span className="text-2xl font-black tracking-tight uppercase italic text-foreground">
-                GameVault
+                {content.site.name}
               </span>
             </a>
           </div>
@@ -296,7 +289,7 @@ export default function ShopPage() {
         <section className="relative h-[60vh] min-h-[500px] flex items-center">
           <div className="absolute inset-0 z-0">
             <img 
-              src="https://images.unsplash.com/photo-1538481199705-c710c4e965fc?auto=format&fit=crop&w=1600&q=80" 
+              src={shop.heroImage} 
               alt="Gaming Setup" 
               className="w-full h-full object-cover object-center"
             />
@@ -316,11 +309,11 @@ export default function ShopPage() {
                 Next-Gen Has Arrived
               </div>
               <h1 className="text-5xl md:text-7xl font-black uppercase leading-[0.9] italic tracking-tight mb-6 text-white drop-shadow-2xl">
-                Level Up <br />
-                <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary to-accent">Your Setup</span>
+                {shop.heroHeadline} <br />
+                <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary to-accent">{shop.heroAccent}</span>
               </h1>
               <p className="text-lg md:text-xl text-foreground/80 font-medium mb-10 max-w-lg leading-relaxed">
-                Score the hottest new releases, upgrade your battlestation, or trade in your old gear for serious credit.
+                {shop.heroSubtitle}
               </p>
               <div className="flex flex-col sm:flex-row gap-4">
                 <button onClick={() => document.getElementById('products')?.scrollIntoView({ behavior: 'smooth' })} className="bg-primary text-primary-foreground px-8 py-4 rounded-xl font-black uppercase tracking-wider hover:brightness-110 active:scale-[0.98] transition-all flex items-center justify-center gap-2 group shadow-[0_0_20px_rgba(245,158,11,0.4)]">
@@ -340,7 +333,7 @@ export default function ShopPage() {
             {[
               { title: 'Shop Gaming', subtitle: 'Consoles & Titles', icon: Gamepad2, image: 'https://images.unsplash.com/photo-1550745165-9bc0b252726f?auto=format&fit=crop&w=600&q=80' },
               { title: 'Trade It In', subtitle: 'Get Instant Credit', icon: RefreshCcw, image: 'https://images.unsplash.com/photo-1606144042614-b2417e99c4e3?auto=format&fit=crop&w=600&q=80' },
-              { title: 'Member Rewards', subtitle: 'Join GameVault+', icon: Star, image: 'https://images.unsplash.com/photo-1585771724684-38269d6639fd?auto=format&fit=crop&w=600&q=80' }
+              { title: 'Member Rewards', subtitle: 'Join JQF+', icon: Star, image: 'https://images.unsplash.com/photo-1585771724684-38269d6639fd?auto=format&fit=crop&w=600&q=80' }
             ].map((tile, i) => (
               <motion.div 
                 key={tile.title}
@@ -577,7 +570,7 @@ export default function ShopPage() {
             <div className="relative z-10 max-w-xl">
               <div className="flex items-center gap-3 mb-6">
                 <Star className="text-primary" size={32} fill="currentColor" />
-                <h3 className="text-3xl md:text-4xl font-black uppercase italic tracking-tight">GameVault<span className="text-primary">+</span></h3>
+                <h3 className="text-3xl md:text-4xl font-black uppercase italic tracking-tight">JQF<span className="text-primary">+</span></h3>
               </div>
               <h4 className="text-2xl font-bold mb-4">The ultimate cheat code for gamers.</h4>
               <ul className="space-y-3 mb-8 text-foreground/80 font-medium">
@@ -595,7 +588,7 @@ export default function ShopPage() {
               <div className="w-full h-56 rounded-2xl bg-gradient-to-tr from-card via-secondary to-primary/80 p-6 flex flex-col justify-between border border-white/20 shadow-2xl backdrop-blur-xl relative overflow-hidden">
                 <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full blur-2xl translate-x-10 -translate-y-10" />
                 <div className="flex justify-between items-start">
-                  <div className="font-black italic text-2xl">GV<span className="text-white">+</span></div>
+                  <div className="font-black italic text-2xl">JQF<span className="text-white">+</span></div>
                   <Gamepad2 size={28} className="text-white/80" />
                 </div>
                 <div className="font-mono text-lg tracking-widest text-white/90">0000 1111 2222 3333</div>
