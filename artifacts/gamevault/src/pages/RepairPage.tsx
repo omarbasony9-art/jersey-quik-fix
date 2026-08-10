@@ -491,34 +491,6 @@ export default function RepairPage() {
           </div>
         </section>
 
-        {/* Tech Guides */}
-        <section className="py-20 bg-background border-t border-border">
-          <div className="max-w-7xl mx-auto px-6">
-            <h2 className="text-3xl md:text-5xl font-black uppercase italic tracking-tight mb-12 text-center">
-              Tech <span className="text-primary">Guides</span>
-            </h2>
-            <div className="grid md:grid-cols-3 gap-8">
-              {[
-                { label: 'Phones', title: 'What to do when your phone screen cracks', grad: 'from-secondary to-accent' },
-                { label: 'Consoles', title: 'Is it your HDMI port or your TV?', grad: 'from-primary to-orange-600' },
-                { label: 'Laptops', title: 'How to prevent laptop overheating', grad: 'from-blue-600 to-cyan-400' }
-              ].map((guide, i) => (
-                <div key={i} className="group cursor-pointer flex flex-col bg-card rounded-3xl overflow-hidden border border-border hover:border-primary/50 transition-colors">
-                  <div className={`h-48 bg-gradient-to-br ${guide.grad} relative overflow-hidden`}>
-                    <div className="absolute inset-0 bg-black/20 group-hover:bg-black/0 transition-colors" />
-                  </div>
-                  <div className="p-6 flex-1 flex flex-col">
-                    <span className="text-xs font-bold uppercase tracking-widest text-primary mb-2">{guide.label}</span>
-                    <h4 className="text-xl font-black italic tracking-tight mb-4 group-hover:text-primary transition-colors">{guide.title}</h4>
-                    <span className="text-sm font-bold text-muted-foreground uppercase tracking-wider mt-auto flex items-center gap-1 group-hover:text-foreground transition-colors">
-                      Read guide <ArrowRight size={14} />
-                    </span>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </section>
 
         {/* FAQs */}
         <section className="py-20 bg-card border-t border-border">
