@@ -108,7 +108,7 @@ export default function ShopPage() {
           <div className="hidden md:flex flex-1 max-w-xl mx-8 relative">
             <input 
               type="text" 
-              placeholder="Search games, consoles, gear..." 
+              placeholder="Search products, accessories, cables..." 
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               className="w-full bg-card border-2 border-transparent focus:border-primary text-foreground rounded-full py-3 px-5 pl-12 outline-none transition-all placeholder:text-muted-foreground font-medium"
@@ -331,9 +331,9 @@ export default function ShopPage() {
         <section className="max-w-7xl mx-auto px-6 -mt-12 relative z-20 w-full mb-16">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {[
-              { title: 'Shop Gaming', subtitle: 'Consoles & Titles', icon: Gamepad2, image: 'https://images.unsplash.com/photo-1550745165-9bc0b252726f?auto=format&fit=crop&w=600&q=80' },
-              { title: 'Trade It In', subtitle: 'Get Instant Credit', icon: RefreshCcw, image: 'https://images.unsplash.com/photo-1606144042614-b2417e99c4e3?auto=format&fit=crop&w=600&q=80' },
-              { title: 'Member Rewards', subtitle: 'Join JQF+', icon: Star, image: 'https://images.unsplash.com/photo-1585771724684-38269d6639fd?auto=format&fit=crop&w=600&q=80' }
+              { title: 'Shop Accessories', subtitle: 'Cases & Protectors', icon: Gamepad2, image: 'https://images.unsplash.com/photo-1601784551446-20c9e07cdbdb?auto=format&fit=crop&w=600&q=80' },
+              { title: 'Trade It In', subtitle: 'Get Store Credit', icon: RefreshCcw, image: 'https://images.unsplash.com/photo-1583863788434-e58a36330cf0?auto=format&fit=crop&w=600&q=80' },
+              { title: 'Member Rewards', subtitle: 'Earn on Every Visit', icon: Star, image: 'https://images.unsplash.com/photo-1585771724684-38269d6639fd?auto=format&fit=crop&w=600&q=80' }
             ].map((tile, i) => (
               <motion.div 
                 key={tile.title}
@@ -363,7 +363,7 @@ export default function ShopPage() {
           <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-12">
             <div>
               <h2 className="text-3xl md:text-5xl font-black uppercase italic tracking-tight mb-4">
-                The <span className="text-primary">Vault</span>
+                The <span className="text-primary">Store</span>
               </h2>
               <div className="flex flex-wrap gap-2">
                 {categories.map(cat => (
@@ -462,29 +462,23 @@ export default function ShopPage() {
         </section>
 
         {/* Promo Grid */}
-        <section id="deals" className="max-w-7xl mx-auto w-full px-6 py-12">
-          <div className="grid md:grid-cols-2 gap-6">
-            <div className="relative rounded-3xl overflow-hidden aspect-[16/9] md:aspect-auto md:h-80 group">
-              <img src="https://images.unsplash.com/photo-1486401899868-0e435ed85128?auto=format&fit=crop&w=1000&q=80" alt="Pre-Owned Games" className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" />
-              <div className="absolute inset-0 bg-gradient-to-r from-background/90 to-background/20" />
-              <div className="absolute inset-0 p-8 md:p-12 flex flex-col justify-center">
-                <span className="text-primary font-black uppercase tracking-widest mb-2 text-sm">Massive Selection</span>
-                <h3 className="text-3xl md:text-4xl font-black uppercase italic leading-tight mb-4 max-w-[200px]">Pre-Owned Classics</h3>
-                <button className="self-start bg-white text-black px-6 py-2 rounded-full font-bold uppercase hover:bg-primary transition-colors mt-auto">Shop Now</button>
-              </div>
+        {shop.promoCards && shop.promoCards.length > 0 && (
+          <section id="deals" className="max-w-7xl mx-auto w-full px-6 py-12">
+            <div className="grid md:grid-cols-2 gap-6">
+              {shop.promoCards.map((card, idx) => (
+                <div key={card.id} className="relative rounded-3xl overflow-hidden aspect-[16/9] md:aspect-auto md:h-80 group">
+                  {card.image && <img src={card.image} alt={card.headline} className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" />}
+                  <div className={`absolute inset-0 ${idx % 2 === 0 ? 'bg-gradient-to-r from-background/90 to-background/20' : 'bg-gradient-to-r from-secondary/90 to-background/20'}`} />
+                  <div className="absolute inset-0 p-8 md:p-12 flex flex-col justify-center">
+                    <span className={`${idx % 2 === 0 ? 'text-primary' : 'text-accent'} font-black uppercase tracking-widest mb-2 text-sm`}>{card.eyebrow}</span>
+                    <h3 className="text-3xl md:text-4xl font-black uppercase italic leading-tight mb-4 max-w-[220px]">{card.headline}</h3>
+                    <button className={`self-start ${idx % 2 === 0 ? 'bg-white text-black hover:bg-primary' : 'bg-accent text-accent-foreground hover:brightness-110'} px-6 py-2 rounded-full font-bold uppercase transition-colors mt-auto`}>{card.buttonText}</button>
+                  </div>
+                </div>
+              ))}
             </div>
-            
-            <div className="relative rounded-3xl overflow-hidden aspect-[16/9] md:aspect-auto md:h-80 group">
-              <img src="https://images.unsplash.com/photo-1606167668584-78701c57f13d?auto=format&fit=crop&w=1000&q=80" alt="Trading Cards" className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" />
-              <div className="absolute inset-0 bg-gradient-to-r from-secondary/90 to-background/20" />
-              <div className="absolute inset-0 p-8 md:p-12 flex flex-col justify-center">
-                <span className="text-accent font-black uppercase tracking-widest mb-2 text-sm">New Drops</span>
-                <h3 className="text-3xl md:text-4xl font-black uppercase italic leading-tight mb-4 max-w-[200px]">TCG Booster Boxes</h3>
-                <button className="self-start bg-accent text-accent-foreground px-6 py-2 rounded-full font-bold uppercase hover:brightness-110 transition-colors mt-auto">Shop Cards</button>
-              </div>
-            </div>
-          </div>
-        </section>
+          </section>
+        )}
 
         {/* Trade-In Estimator */}
         <section id="trade" className="py-24 bg-card border-y border-border relative overflow-hidden">
