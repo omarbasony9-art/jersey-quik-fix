@@ -29,7 +29,13 @@ const queryClient = new QueryClient();
 
 const base = (import.meta.env.BASE_URL || '/').replace(/\/$/, '');
 
-const clerkPubKey = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY;
+cd ~/workspace/jersey-quik-fix/artifacts/gamevault
+pnpm run build
+
+cd ~/workspace
+git add jersey-quik-fix/artifacts/gamevault/src/App.tsx
+git commit -m "Add Clerk publishable key fallback"
+git push
 
 function stripBase(path: string): string {
   return base && path.startsWith(base)
