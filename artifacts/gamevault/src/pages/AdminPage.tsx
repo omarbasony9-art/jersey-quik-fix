@@ -9,7 +9,7 @@ import {
 import { useSiteData, DEFAULT_CONTENT, type SiteContent, type Product, type InventoryItem, type Order, type Customer, type TradeIn, type Employee } from '../context/SiteDataContext';
 import jerseyLogo from '../assets/jersey-quik-fix-logo.png';
 
-const ADMIN_PASSWORD = "gv-admin-2026";
+const ADMIN_PASSWORD = "1964";
 const REPAIRS_KEY = "gv_repairs_v1";
 
 type RepairTicket = {

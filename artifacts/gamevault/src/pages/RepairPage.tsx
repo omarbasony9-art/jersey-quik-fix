@@ -6,6 +6,7 @@ import {
 } from 'lucide-react';
 import { useSiteData } from '../context/SiteDataContext';
 import Footer from '../components/Footer';
+import phoneRepairImg from '../assets/repair-banner.png';
 
 const REPAIRS_KEY = 'gv_repairs_v1';
 
@@ -165,8 +166,8 @@ export default function RepairPage() {
                   Est. in your community
                 </div>
                 <img 
-                  src="https://images.unsplash.com/photo-1621905251189-08b45d6a269e?auto=format&fit=crop&w=600&q=80" 
-                  alt="Technician working" 
+                  src={phoneRepairImg}
+                  alt="Phone repair technician" 
                   className="rounded-3xl border-l-4 border-primary shadow-2xl object-cover w-[400px] h-[500px]"
                 />
               </div>

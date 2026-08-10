@@ -45,9 +45,9 @@
   --popover: 220 52% 13%;
   --popover-foreground: 44 60% 92%;
 
-  /* Warm orange — adventurous, energetic CTAs */
-  --primary: 24 95% 53%;
-  --primary-foreground: 220 58% 9%;
+  /* Electric blue — matches the logo's ribbon/shield blue */
+  --primary: 207 90% 54%;
+  --primary-foreground: 0 0% 100%;
 
   /* Royal blue — matches the logo's blue ribbons */
   --secondary: 217 91% 40%;
@@ -63,7 +63,7 @@
 
   --border: 220 35% 18%;
   --input: 220 35% 18%;
-  --ring: 24 95% 53%;
+  --ring: 207 90% 54%;
 
   --radius: 1rem;
 }
