@@ -191,7 +191,7 @@ export default function RepairPage() {
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 auto-rows-[320px]">
               {repair.devices.map((device, i) => {
                 const Icon = deviceIconMap[device.id] ?? Wrench;
-                const imgSrc = device.image || deviceImageFallbacks[device.id] || '';
+                const imgSrc = deviceImageFallbacks[device.id] || device.image;
 
                 return (
                   <motion.button

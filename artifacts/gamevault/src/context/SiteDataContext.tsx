@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 
-const SITE_DATA_KEY = 'jqf_site_content_v7';
+const SITE_DATA_KEY = 'jqf_site_content_v8';
 
 const API_BASE = '/api';
 export type RepairDevice = { id: string; title: string; desc: string; image: string };
