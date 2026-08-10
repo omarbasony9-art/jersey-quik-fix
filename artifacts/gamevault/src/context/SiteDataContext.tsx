@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 
-const SITE_DATA_KEY = 'jqf_site_content_v8';
+const SITE_DATA_KEY = 'jqf_site_content_v9';
 
 const API_BASE = '/api';
 export type RepairDevice = { id: string; title: string; desc: string; image: string };
@@ -14,6 +14,7 @@ export type Customer = { id: string; name: string; phone: string; email: string;
 export type TradeIn = { id: string; customer: string; device: string; condition: string; offer: string; status: string };
 export type Employee = { id: string; name: string; email: string; role: string; status: string };
 export type Photo = { id: string; album: string; featured: string; url: string; count: number };
+export type PromoCard = { id: string; eyebrow: string; headline: string; buttonText: string; image: string };
 
 export type SiteContent = {
   site: { name: string; tagline: string };
@@ -38,6 +39,7 @@ export type SiteContent = {
     promoBanner: string;
     heroHeadline: string; heroAccent: string; heroSubtitle: string; heroImage: string;
     products: Product[];
+    promoCards: PromoCard[];
   };
   community: {
     promoBanner: string;
@@ -104,19 +106,23 @@ const DEFAULT: SiteContent = {
     locationsBgImage: 'https://images.unsplash.com/photo-1477959858617-67f85cf4f1df?auto=format&fit=crop&w=1600&q=80',
   },
   shop: {
-    promoBanner: 'FREE SHIPPING ON ORDERS $79+ • MEMBERS EARN MORE',
-    heroHeadline: 'Level Up', heroAccent: 'Your Setup',
-    heroSubtitle: 'Score the hottest new releases, upgrade your battlestation, or trade in your old gear for serious credit.',
-    heroImage: 'https://images.unsplash.com/photo-1538481199705-c710c4e965fc?auto=format&fit=crop&w=1600&q=80',
+    promoBanner: 'FREE SHIPPING ON ORDERS $49+ • SAME-DAY PICKUP AVAILABLE',
+    heroHeadline: 'Gear Up', heroAccent: 'Your Device',
+    heroSubtitle: 'Premium screen protectors, cases, chargers, and cables for every device we fix.',
+    heroImage: 'https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?auto=format&fit=crop&w=1600&q=80',
     products: [
-      { id: '1', name: 'Elden Ring', category: 'Games', price: 39.99, rating: 4.9, badge: 'Hot', image: 'https://images.unsplash.com/photo-1550745165-9bc0b252726f?auto=format&fit=crop&w=900&q=80', stock: 12, sku: 'GM-ER-001', active: true },
-      { id: '2', name: 'PlayStation 5', category: 'Consoles', price: 499, rating: 4.8, badge: 'In Stock', image: 'https://images.unsplash.com/photo-1606144042614-b2417e99c4e3?auto=format&fit=crop&w=900&q=80', stock: 3, sku: 'CS-PS5-001', active: true },
-      { id: '3', name: 'Nintendo Switch OLED', category: 'Consoles', price: 349, rating: 4.7, image: 'https://images.unsplash.com/photo-1531525645387-7f14be1bdbbd?auto=format&fit=crop&w=900&q=80', stock: 7, sku: 'CS-NSW-001', active: true },
-      { id: '4', name: 'Xbox Series X', category: 'Consoles', price: 499, rating: 4.7, image: 'https://images.unsplash.com/photo-1622297845775-5ff3fef71d13?auto=format&fit=crop&w=900&q=80', stock: 5, sku: 'CS-XSX-001', active: true },
-      { id: '5', name: 'Gaming Headset Pro', category: 'Accessories', price: 79.99, oldPrice: 99.99, rating: 4.6, badge: 'Sale', image: 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?auto=format&fit=crop&w=900&q=80', stock: 15, sku: 'AC-HS-001', active: true },
-      { id: '6', name: 'Pro Controller', category: 'Accessories', price: 69.99, rating: 4.5, image: 'https://images.unsplash.com/photo-1593118247619-e2d6f056869e?auto=format&fit=crop&w=900&q=80', stock: 20, sku: 'AC-CT-001', active: true },
-      { id: '7', name: 'Pokémon Card Pack', category: 'Trading Cards', price: 14.99, rating: 4.8, badge: 'New', image: 'https://images.unsplash.com/photo-1610890716171-6b1bb98ffd09?auto=format&fit=crop&w=900&q=80', stock: 50, sku: 'TC-PK-001', active: true },
-      { id: '8', name: 'Retro NES Collection', category: 'Retro', price: 89.99, rating: 4.9, image: 'https://images.unsplash.com/photo-1478416272538-5f7e51dc5400?auto=format&fit=crop&w=900&q=80', stock: 4, sku: 'RT-NS-001', active: true },
+      { id: '1', name: 'Screen Protector — iPhone 15 Pro', category: 'Protection', price: 14.99, rating: 4.8, badge: 'Best Seller', image: 'https://images.unsplash.com/photo-1601784551446-20c9e07cdbdb?auto=format&fit=crop&w=900&q=80', stock: 40, sku: 'PR-SP-001', active: true },
+      { id: '2', name: 'Tempered Glass Pack (3-Pack)', category: 'Protection', price: 9.99, oldPrice: 14.99, rating: 4.7, badge: 'Sale', image: 'https://images.unsplash.com/photo-1556742049-0cfed4f6a45d?auto=format&fit=crop&w=900&q=80', stock: 60, sku: 'PR-TG-001', active: true },
+      { id: '3', name: 'MagSafe Phone Case', category: 'Cases', price: 24.99, rating: 4.6, badge: 'New', image: 'https://images.unsplash.com/photo-1523206489230-c012c64b2b48?auto=format&fit=crop&w=900&q=80', stock: 25, sku: 'CS-MS-001', active: true },
+      { id: '4', name: 'Rugged Drop-Proof Case', category: 'Cases', price: 29.99, rating: 4.9, image: 'https://images.unsplash.com/photo-1574944985070-8f3ebc6b79d2?auto=format&fit=crop&w=900&q=80', stock: 18, sku: 'CS-RG-001', active: true },
+      { id: '5', name: 'USB-C Fast Charger 65W', category: 'Chargers', price: 29.99, oldPrice: 39.99, rating: 4.8, badge: 'Sale', image: 'https://images.unsplash.com/photo-1583863788434-e58a36330cf0?auto=format&fit=crop&w=900&q=80', stock: 30, sku: 'CH-UC-001', active: true },
+      { id: '6', name: 'Wireless Charging Pad', category: 'Chargers', price: 34.99, rating: 4.5, image: 'https://images.unsplash.com/photo-1615526675159-e248b0f261f5?auto=format&fit=crop&w=900&q=80', stock: 22, sku: 'CH-WL-001', active: true },
+      { id: '7', name: 'Bluetooth Earbuds Pro', category: 'Audio', price: 49.99, rating: 4.7, badge: 'Hot', image: 'https://images.unsplash.com/photo-1590658268037-6bf12165a8df?auto=format&fit=crop&w=900&q=80', stock: 14, sku: 'AU-EP-001', active: true },
+      { id: '8', name: 'Lightning Cable 3-Pack', category: 'Cables', price: 19.99, rating: 4.6, image: 'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?auto=format&fit=crop&w=900&q=80', stock: 50, sku: 'CB-LT-001', active: true },
+    ],
+    promoCards: [
+      { id: '1', eyebrow: 'Parts & Accessories', headline: 'Screen Protectors & Cases', buttonText: 'Shop Now', image: 'https://images.unsplash.com/photo-1601784551446-20c9e07cdbdb?auto=format&fit=crop&w=1000&q=80' },
+      { id: '2', eyebrow: 'New Arrivals', headline: 'Premium Chargers & Cables', buttonText: 'Shop Now', image: 'https://images.unsplash.com/photo-1583863788434-e58a36330cf0?auto=format&fit=crop&w=1000&q=80' },
     ],
   },
   community: {
