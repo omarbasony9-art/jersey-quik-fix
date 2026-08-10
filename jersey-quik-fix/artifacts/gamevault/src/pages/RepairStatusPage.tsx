@@ -4,6 +4,8 @@ import { Search, CheckCircle, Clock, AlertCircle, Phone, ChevronRight } from 'lu
 import { Link } from 'wouter';
 import Footer from '../components/Footer';
 
+const API_BASE = import.meta.env.VITE_API_BASE_URL || '/api';
+
 type TicketResult = {
   ticket: string;
   category: string;
@@ -102,7 +104,7 @@ export default function RepairStatusPage() {
     setError('');
     setResult(null);
     try {
-      const res = await fetch(`/api/repairs/lookup/${encodeURIComponent(trimmed)}`);
+      const res = await fetch(`${API_BASE}/repairs/lookup/${encodeURIComponent(trimmed)}`);
       const data = await res.json();
       if (res.ok) {
         setResult(data);
