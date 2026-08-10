@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 
-const SITE_DATA_KEY = 'jqf_site_content_v9';
+const SITE_DATA_KEY = 'jqf_site_content_v10';
 
 const API_BASE = '/api';
 export type RepairDevice = { id: string; title: string; desc: string; image: string };
@@ -116,7 +116,7 @@ const DEFAULT: SiteContent = {
       { id: '3', name: 'MagSafe Phone Case', category: 'Cases', price: 24.99, rating: 4.6, badge: 'New', image: 'https://images.unsplash.com/photo-1523206489230-c012c64b2b48?auto=format&fit=crop&w=900&q=80', stock: 25, sku: 'CS-MS-001', active: true },
       { id: '4', name: 'Rugged Drop-Proof Case', category: 'Cases', price: 29.99, rating: 4.9, image: 'https://images.unsplash.com/photo-1574944985070-8f3ebc6b79d2?auto=format&fit=crop&w=900&q=80', stock: 18, sku: 'CS-RG-001', active: true },
       { id: '5', name: 'USB-C Fast Charger 65W', category: 'Chargers', price: 29.99, oldPrice: 39.99, rating: 4.8, badge: 'Sale', image: 'https://images.unsplash.com/photo-1583863788434-e58a36330cf0?auto=format&fit=crop&w=900&q=80', stock: 30, sku: 'CH-UC-001', active: true },
-      { id: '6', name: 'Wireless Charging Pad', category: 'Chargers', price: 34.99, rating: 4.5, image: 'https://images.unsplash.com/photo-1615526675159-e248b0f261f5?auto=format&fit=crop&w=900&q=80', stock: 22, sku: 'CH-WL-001', active: true },
+      { id: '6', name: 'Wireless Charging Pad', category: 'Chargers', price: 34.99, rating: 4.5, image: 'https://images.unsplash.com/photo-1585771724684-38269d6639fd?auto=format&fit=crop&w=900&q=80', stock: 22, sku: 'CH-WL-001', active: true },
       { id: '7', name: 'Bluetooth Earbuds Pro', category: 'Audio', price: 49.99, rating: 4.7, badge: 'Hot', image: 'https://images.unsplash.com/photo-1590658268037-6bf12165a8df?auto=format&fit=crop&w=900&q=80', stock: 14, sku: 'AU-EP-001', active: true },
       { id: '8', name: 'Lightning Cable 3-Pack', category: 'Cables', price: 19.99, rating: 4.6, image: 'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?auto=format&fit=crop&w=900&q=80', stock: 50, sku: 'CB-LT-001', active: true },
     ],
