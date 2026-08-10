@@ -35,10 +35,10 @@ const emptyForm = {
 import Footer from '../components/Footer';
 
 const devices = [
-  { id: 'phone', title: 'Phone', desc: 'Screen, battery, camera & more', icon: Phone },
-  { id: 'computer', title: 'Computer', desc: 'Laptop & desktop repairs', icon: Laptop },
-  { id: 'tablet', title: 'Tablet', desc: 'Screens, charging & batteries', icon: Tablet },
-  { id: 'console', title: 'Game console', desc: 'HDMI, power & overheating', icon: Gamepad2 },
+  { id: 'phone', title: 'Phone', desc: 'Screen, battery, camera & more', icon: Phone, image: 'https://images.unsplash.com/photo-1512941937669-90a1b58e7e9c?auto=format&fit=crop&w=900&q=80' },
+  { id: 'computer', title: 'Computer', desc: 'Laptop & desktop repairs', icon: Laptop, image: 'https://images.unsplash.com/photo-1496181133206-80ce9b88a853?auto=format&fit=crop&w=900&q=80' },
+  { id: 'tablet', title: 'Tablet', desc: 'Screens, charging & batteries', icon: Tablet, image: 'https://images.unsplash.com/photo-1544244015-0df4b3ffc6b0?auto=format&fit=crop&w=900&q=80' },
+  { id: 'console', title: 'Game console', desc: 'HDMI, power & overheating', icon: Gamepad2, image: 'https://images.unsplash.com/photo-1493711662062-fa541adb3fc8?auto=format&fit=crop&w=900&q=80' },
 ] as const;
 
 type DeviceId = typeof devices[number]['id'];
@@ -57,9 +57,9 @@ const locations = [
 ];
 
 const reviews = [
-  { name: 'Alex M.', device: 'Phone screen repair', text: 'Booked in the morning and had my phone back before lunch. Fast, clear, and easy.' },
-  { name: 'Jordan R.', device: 'Laptop repair', text: 'They explained the issue before doing any work and the final price matched the quote.' },
-  { name: 'Taylor K.', device: 'Game console repair', text: 'My console stopped displaying through HDMI. They fixed the port and tested everything with me.' },
+  { name: 'Alex M.', device: 'Phone screen repair', text: 'Booked in the morning and had my phone back before lunch. Fast, clear, and easy.', avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=100&q=80' },
+  { name: 'Jordan R.', device: 'Laptop repair', text: 'They explained the issue before doing any work and the final price matched the quote.', avatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=100&q=80' },
+  { name: 'Taylor K.', device: 'Game console repair', text: 'My console stopped displaying through HDMI. They fixed the port and tested everything with me.', avatar: 'https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?auto=format&fit=crop&w=100&q=80' },
 ];
 
 const faqs = [
@@ -130,10 +130,13 @@ export default function RepairPage() {
       <main className="flex-1 flex flex-col">
         {/* Hero Section */}
         <section className="relative min-h-[600px] flex items-center overflow-hidden py-20">
-          {/* Abstract Violet/Amber Blob Background */}
-          <div className="absolute inset-0 z-0 bg-background overflow-hidden flex items-center justify-center">
-            <div className="absolute top-1/4 -right-1/4 w-[800px] h-[800px] bg-accent/20 rounded-full blur-[120px] pointer-events-none" />
-            <div className="absolute -bottom-1/4 right-1/4 w-[600px] h-[600px] bg-primary/10 rounded-full blur-[100px] pointer-events-none" />
+          <div className="absolute inset-0 z-0">
+            <img 
+              src="https://images.unsplash.com/photo-1518770660439-4636190af475?auto=format&fit=crop&w=1600&q=80" 
+              alt="" 
+              className="w-full h-full object-cover object-center opacity-15"
+            />
+            <div className="absolute inset-0 bg-gradient-to-r from-background via-background/95 to-background/70" />
           </div>
 
           <div className="relative z-10 max-w-7xl mx-auto w-full px-6 grid md:grid-cols-2 gap-12 items-center">
@@ -200,7 +203,7 @@ export default function RepairPage() {
               </h2>
             </div>
             
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 auto-rows-[320px]">
               {devices.map((device, i) => (
                 <motion.button
                   key={device.id}
@@ -209,16 +212,17 @@ export default function RepairPage() {
                   viewport={{ once: true }}
                   transition={{ delay: i * 0.1 }}
                   onClick={() => handleOpenModal(device.id)}
-                  className="bg-background border border-border hover:border-primary p-8 rounded-3xl text-left group transition-all duration-300 relative overflow-hidden shadow-xl hover:-translate-y-2 hover:shadow-[0_0_30px_rgba(124,58,237,0.3)]"
+                  className={`${i === 0 ? 'lg:col-span-2 lg:row-span-2' : ''} relative overflow-hidden rounded-2xl group cursor-pointer text-left w-full h-full bg-card min-h-[320px]`}
                 >
-                  <div className="absolute inset-0 bg-secondary/0 group-hover:bg-secondary/10 transition-colors pointer-events-none" />
-                  <div className="w-14 h-14 bg-card rounded-2xl flex items-center justify-center mb-6 text-foreground group-hover:text-primary transition-colors group-hover:scale-110 duration-300">
-                    <device.icon size={28} />
-                  </div>
-                  <h3 className="text-2xl font-black uppercase tracking-tight mb-2">{device.title}</h3>
-                  <p className="text-muted-foreground font-medium mb-6">{device.desc}</p>
-                  <div className="flex items-center text-sm font-bold uppercase tracking-wider text-primary group-hover:translate-x-2 transition-transform">
-                    Start repair <ChevronRight size={16} />
+                  <img src={device.image} alt={device.title} loading={i > 0 ? "lazy" : "eager"} className="absolute inset-0 w-full h-full object-cover object-center transition-transform duration-700 group-hover:scale-105 group-hover:brightness-110" />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/40 to-transparent group-hover:from-black/90 transition-all" />
+                  <div className="absolute inset-0 flex flex-col justify-end p-6 md:p-8">
+                    <div className="w-12 h-12 bg-black/40 backdrop-blur-md rounded-xl flex items-center justify-center mb-auto text-white group-hover:text-primary transition-colors group-hover:scale-110 duration-300 border border-white/10">
+                      <device.icon size={24} />
+                    </div>
+                    <h3 className={`${i === 0 ? 'text-4xl md:text-5xl' : 'text-3xl'} font-black uppercase italic tracking-tight text-white mb-2`}>{device.title}</h3>
+                    <p className="text-white/70 font-medium mb-4 text-sm md:text-base">{device.desc}</p>
+                    <span className="self-start bg-primary text-primary-foreground px-4 py-2 rounded-full text-xs font-black uppercase tracking-wider">Start repair →</span>
                   </div>
                 </motion.button>
               ))}
@@ -382,8 +386,9 @@ export default function RepairPage() {
 
         {/* Why Us (Dark Section) */}
         <section className="py-24 bg-background relative overflow-hidden">
-          <div className="absolute inset-0 z-0">
-            <div className="absolute top-0 right-0 w-1/2 h-full bg-secondary/10 blur-[100px] rounded-full pointer-events-none" />
+          <div className="absolute inset-0 z-0 bg-card">
+            <img src="https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?auto=format&fit=crop&w=1600&q=80" alt="" loading="lazy" className="w-full h-full object-cover opacity-10" />
+            <div className="absolute inset-0 bg-background/90" />
           </div>
           <div className="max-w-7xl mx-auto px-6 relative z-10">
             <div className="grid lg:grid-cols-3 gap-12">
@@ -441,9 +446,7 @@ export default function RepairPage() {
                   </div>
                   <p className="text-lg font-medium mb-8">"{review.text}"</p>
                   <div className="flex items-center gap-4 mt-auto">
-                    <div className="w-12 h-12 bg-secondary text-secondary-foreground rounded-full flex items-center justify-center font-black text-xl">
-                      {review.name.charAt(0)}
-                    </div>
+                    <img src={review.avatar} loading="lazy" alt={review.name} className="w-12 h-12 rounded-full object-cover border border-border" />
                     <div>
                       <h4 className="font-bold">{review.name}</h4>
                       <div className="text-xs text-muted-foreground font-bold uppercase tracking-wider">{review.device}</div>

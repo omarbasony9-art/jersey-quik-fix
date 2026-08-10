@@ -8,13 +8,13 @@ import {
 import Footer from '../components/Footer';
 
 const products = [
-  { id:1, name:'PlayBox 5 Console', category:'Consoles', price:499.99, oldPrice:549.99, rating:4.9, badge:'Best Seller', image:'https://images.unsplash.com/photo-1606813907291-d86efa9b94db?auto=format&fit=crop&w=900&q=80' },
-  { id:2, name:'Nebula Pro Wireless Controller', category:'Accessories', price:69.99, rating:4.7, image:'https://images.unsplash.com/photo-1592840496694-26d035b52b48?auto=format&fit=crop&w=900&q=80' },
-  { id:3, name:'Monster Quest: Eclipse', category:'Games', price:69.99, rating:4.8, badge:'New Release', image:'https://images.unsplash.com/photo-1552820728-8b83bb6b773f?auto=format&fit=crop&w=900&q=80' },
-  { id:4, name:'Elite Gaming Headset', category:'Accessories', price:119.99, rating:4.6, image:'https://images.unsplash.com/photo-1599669454699-248893623440?auto=format&fit=crop&w=900&q=80' },
-  { id:5, name:'Mystic Monsters Booster Box', category:'Trading Cards', price:134.99, rating:4.9, badge:'Hot', image:'https://images.unsplash.com/photo-1613771404784-3a5686aa2be3?auto=format&fit=crop&w=900&q=80' },
-  { id:6, name:'Retro Handheld Console', category:'Retro', price:149.99, rating:4.5, image:'https://images.unsplash.com/photo-1531525645387-7f14be1bdbbd?auto=format&fit=crop&w=900&q=80' },
-  { id:7, name:"Collector Figure - Titan", category:'Collectibles', price:39.99, rating:4.7, image:'https://images.unsplash.com/photo-1608889825205-eebdb9fc5806?auto=format&fit=crop&w=900&q=80' },
+  { id:1, name:'PlayBox 5 Console', category:'Consoles', price:499.99, oldPrice:549.99, rating:4.9, badge:'Best Seller', image:'https://images.unsplash.com/photo-1606144042614-b2417e99c4e3?auto=format&fit=crop&w=900&q=80' },
+  { id:2, name:'Nebula Pro Wireless Controller', category:'Accessories', price:69.99, rating:4.7, image:'https://images.unsplash.com/photo-1593118247619-e2d6f056869e?auto=format&fit=crop&w=900&q=80' },
+  { id:3, name:'Monster Quest: Eclipse', category:'Games', price:69.99, rating:4.8, badge:'New Release', image:'https://images.unsplash.com/photo-1550745165-9bc0b252726f?auto=format&fit=crop&w=900&q=80' },
+  { id:4, name:'Elite Gaming Headset', category:'Accessories', price:119.99, rating:4.6, image:'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?auto=format&fit=crop&w=900&q=80' },
+  { id:5, name:'Mystic Monsters Booster Box', category:'Trading Cards', price:134.99, rating:4.9, badge:'Hot', image:'https://images.unsplash.com/photo-1610890716171-6b1bb98ffd09?auto=format&fit=crop&w=900&q=80' },
+  { id:6, name:'Retro Handheld Console', category:'Retro', price:149.99, rating:4.5, image:'https://images.unsplash.com/photo-1478416272538-5f7e51dc5400?auto=format&fit=crop&w=900&q=80' },
+  { id:7, name:"Collector Figure - Titan", category:'Collectibles', price:39.99, rating:4.7, image:'https://images.unsplash.com/photo-1608889476561-6242cfdbf622?auto=format&fit=crop&w=900&q=80' },
   { id:8, name:'Velocity Racing 26', category:'Games', price:59.99, rating:4.4, image:'https://images.unsplash.com/photo-1542751371-adc38448a05e?auto=format&fit=crop&w=900&q=80' }
 ];
 
@@ -296,12 +296,12 @@ export default function ShopPage() {
         <section className="relative h-[60vh] min-h-[500px] flex items-center">
           <div className="absolute inset-0 z-0">
             <img 
-              src="https://images.unsplash.com/photo-1511512578047-dfb367046420?auto=format&fit=crop&w=1800&q=85" 
+              src="https://images.unsplash.com/photo-1538481199705-c710c4e965fc?auto=format&fit=crop&w=1600&q=80" 
               alt="Gaming Setup" 
               className="w-full h-full object-cover object-center"
             />
             {/* Cinematic Gradient Overlay */}
-            <div className="absolute inset-0 bg-gradient-to-r from-background via-background/80 to-transparent" />
+            <div className="absolute inset-0 bg-gradient-to-r from-background via-background/95 to-transparent" />
             <div className="absolute inset-0 bg-gradient-to-t from-background via-transparent to-transparent" />
           </div>
           
@@ -338,23 +338,27 @@ export default function ShopPage() {
         <section className="max-w-7xl mx-auto px-6 -mt-12 relative z-20 w-full mb-16">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {[
-              { title: 'Shop Gaming', subtitle: 'Consoles & Titles', icon: Gamepad2, color: 'bg-card', hover: 'hover:border-primary' },
-              { title: 'Trade It In', subtitle: 'Get Instant Credit', icon: RefreshCcw, color: 'bg-secondary', hover: 'hover:brightness-110' },
-              { title: 'Member Rewards', subtitle: 'Join GameVault+', icon: Star, color: 'bg-accent text-accent-foreground', hover: 'hover:brightness-110' }
+              { title: 'Shop Gaming', subtitle: 'Consoles & Titles', icon: Gamepad2, image: 'https://images.unsplash.com/photo-1550745165-9bc0b252726f?auto=format&fit=crop&w=600&q=80' },
+              { title: 'Trade It In', subtitle: 'Get Instant Credit', icon: RefreshCcw, image: 'https://images.unsplash.com/photo-1606144042614-b2417e99c4e3?auto=format&fit=crop&w=600&q=80' },
+              { title: 'Member Rewards', subtitle: 'Join GameVault+', icon: Star, image: 'https://images.unsplash.com/photo-1585771724684-38269d6639fd?auto=format&fit=crop&w=600&q=80' }
             ].map((tile, i) => (
               <motion.div 
                 key={tile.title}
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.4 + (i * 0.1) }}
-                className={`${tile.color} ${tile.hover} border border-border p-6 rounded-2xl flex items-center gap-5 cursor-pointer shadow-xl transition-all duration-300 hover:-translate-y-2 group`}
+                className="relative overflow-hidden border border-border rounded-2xl cursor-pointer shadow-xl transition-all duration-300 hover:-translate-y-2 group min-h-[160px] bg-card flex flex-col justify-end p-6"
               >
-                <div className="p-4 bg-black/20 rounded-xl group-hover:scale-110 transition-transform">
-                  <tile.icon size={32} />
-                </div>
-                <div>
-                  <h3 className="font-black text-xl uppercase tracking-tight">{tile.title}</h3>
-                  <p className="text-sm font-medium opacity-80">{tile.subtitle}</p>
+                <img src={tile.image} alt="" className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-black/10 group-hover:from-black/90 transition-all" />
+                <div className="relative z-10 flex items-center gap-4 text-white">
+                  <div className="p-3 bg-white/10 backdrop-blur-md border border-white/20 rounded-xl group-hover:scale-110 transition-transform group-hover:text-primary">
+                    <tile.icon size={28} />
+                  </div>
+                  <div>
+                    <h3 className="font-black text-xl uppercase tracking-tight">{tile.title}</h3>
+                    <p className="text-sm font-medium text-white/80">{tile.subtitle}</p>
+                  </div>
                 </div>
               </motion.div>
             ))}
@@ -400,18 +404,19 @@ export default function ShopPage() {
                   exit={{ opacity: 0, scale: 0.9 }}
                   transition={{ duration: 0.2, delay: idx * 0.05 }}
                   key={product.id} 
-                  className="bg-card rounded-2xl overflow-hidden border border-border hover:border-primary/50 transition-all duration-300 group flex flex-col"
+                  className="bg-card rounded-2xl overflow-hidden border border-border hover:border-primary/50 transition-all duration-300 group flex flex-col hover:shadow-[0_0_30px_rgba(245,158,11,0.2)]"
                 >
-                  <div className="relative aspect-square overflow-hidden bg-black/50">
+                  <div className="relative min-h-[220px] md:min-h-[260px] overflow-hidden bg-black/50">
                     {product.badge && (
-                      <div className="absolute top-3 left-3 z-10 bg-accent text-accent-foreground text-xs font-black px-2 py-1 rounded uppercase tracking-wider shadow-lg">
+                      <div className="absolute top-3 right-3 z-10 bg-primary text-primary-foreground text-xs font-black px-3 py-1.5 rounded-full uppercase tracking-wider shadow-lg">
                         {product.badge}
                       </div>
                     )}
                     <img 
                       src={product.image} 
-                      alt={product.name} 
-                      className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110 group-hover:rotate-1"
+                      alt={product.name}
+                      loading="lazy"
+                      className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
                     />
                     {/* Add to cart overlay button on desktop */}
                     <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity hidden md:flex items-center justify-center backdrop-blur-[2px]">
@@ -424,8 +429,8 @@ export default function ShopPage() {
                     </div>
                   </div>
                   <div className="p-4 flex flex-col flex-1">
-                    <div className="text-xs font-bold text-primary uppercase tracking-wider mb-1">{product.category}</div>
-                    <h3 className="font-bold text-lg leading-tight mb-2 flex-1 group-hover:text-primary transition-colors line-clamp-2">
+                    <div className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-1">{product.category}</div>
+                    <h3 className="font-black text-lg tracking-tight leading-tight mb-2 flex-1 group-hover:text-primary transition-colors line-clamp-2">
                       {product.name}
                     </h3>
                     
@@ -439,7 +444,7 @@ export default function ShopPage() {
                         {product.oldPrice && (
                           <div className="text-xs text-muted-foreground line-through font-bold">${product.oldPrice}</div>
                         )}
-                        <div className="font-black text-xl">${product.price}</div>
+                        <div className="font-black text-xl text-primary">${product.price}</div>
                       </div>
                       <button 
                         onClick={() => addToCart(product)}

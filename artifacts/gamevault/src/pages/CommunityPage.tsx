@@ -37,19 +37,23 @@ const announcements = [
     badge: 'Major Update',
     date: 'August 9',
     title: 'Family Weekend details are officially confirmed',
-    desc: 'The date, location, food plan, and main activities are locked in. RSVP before September 5 so final arrangements can be made.'
+    desc: 'The date, location, food plan, and main activities are locked in. RSVP before September 5 so final arrangements can be made.',
+    image: 'https://images.unsplash.com/photo-1529156069898-49953e39b3ac?auto=format&fit=crop&w=900&q=80',
+    featured: true
   },
   {
     badge: 'Community',
     date: 'August 6',
     title: 'New shared photo archive is live',
-    desc: 'We now have one central place for family photos, videos, old memories, and event albums.'
+    desc: 'We now have one central place for family photos, videos, old memories, and event albums.',
+    image: 'https://images.unsplash.com/photo-1501281668745-f7f57925c3b4?auto=format&fit=crop&w=900&q=80'
   },
   {
     badge: 'Planning',
     date: 'August 3',
     title: 'Holiday planning group is now open',
-    desc: 'Anyone who wants to help coordinate travel, food, gifts, or activities can join the holiday planning group.'
+    desc: 'Anyone who wants to help coordinate travel, food, gifts, or activities can join the holiday planning group.',
+    image: 'https://images.unsplash.com/photo-1492684223066-81342ee5ff30?auto=format&fit=crop&w=900&q=80'
   }
 ];
 
@@ -167,8 +171,14 @@ export default function CommunityPage() {
         {/* Hero Section */}
         <section className="relative min-h-[600px] flex items-center overflow-hidden py-20">
           <div className="absolute inset-0 z-0 bg-background overflow-hidden flex items-center justify-center">
-            <div className="absolute top-1/4 -right-1/4 w-[800px] h-[800px] bg-secondary/20 rounded-full blur-[120px] pointer-events-none" />
-            <div className="absolute -bottom-1/4 right-1/4 w-[600px] h-[600px] bg-primary/10 rounded-full blur-[100px] pointer-events-none" />
+            <img 
+              src="https://images.unsplash.com/photo-1529156069898-49953e39b3ac?auto=format&fit=crop&w=1600&q=80" 
+              alt="" 
+              className="absolute inset-0 w-full h-full object-cover opacity-10 z-0"
+            />
+            <div className="absolute inset-0 bg-gradient-to-r from-background via-background/80 to-background/40 z-0" />
+            <div className="absolute top-1/4 -right-1/4 w-[800px] h-[800px] bg-secondary/20 rounded-full blur-[120px] pointer-events-none z-0" />
+            <div className="absolute -bottom-1/4 right-1/4 w-[600px] h-[600px] bg-primary/10 rounded-full blur-[100px] pointer-events-none z-0" />
           </div>
 
           <div className="relative z-10 max-w-7xl mx-auto w-full px-6 grid md:grid-cols-2 gap-12 items-center">
@@ -280,7 +290,7 @@ export default function CommunityPage() {
             
             <div className="grid lg:grid-cols-3 gap-6">
               {announcements.map((ann, i) => {
-                const isFeatured = i === 0;
+                const isFeatured = !!ann.featured;
                 return (
                   <motion.div
                     key={i}
@@ -288,36 +298,50 @@ export default function CommunityPage() {
                     whileInView={{ opacity: 1, y: 0 }}
                     viewport={{ once: true }}
                     transition={{ delay: i * 0.1 }}
-                    className={`border p-8 rounded-3xl flex flex-col ${
+                    className={`border p-8 rounded-3xl flex flex-col relative overflow-hidden ${
                       isFeatured 
                       ? 'bg-secondary border-secondary shadow-xl lg:col-span-1 text-secondary-foreground' 
-                      : 'bg-background border-border text-foreground hover:border-primary/50 transition-colors'
+                      : 'bg-card border-border text-foreground hover:border-primary/50 transition-colors'
                     }`}
                   >
-                    <div className="flex items-center justify-between mb-6">
-                      <span className={`text-xs font-bold uppercase tracking-widest px-3 py-1 rounded-full ${
-                        isFeatured ? 'bg-background/20 text-white' : 'bg-secondary/20 text-secondary'
-                      }`}>
-                        {ann.badge}
-                      </span>
-                      <span className={`text-sm font-bold ${isFeatured ? 'text-white/70' : 'text-muted-foreground'}`}>
-                        Posted {ann.date}
-                      </span>
+                    {isFeatured && ann.image && (
+                      <div className="absolute inset-0 z-0 opacity-20 pointer-events-none">
+                        <img src={ann.image} alt="" className="w-full h-full object-cover" />
+                        <div className="absolute inset-0 bg-gradient-to-t from-secondary/80 to-transparent" />
+                      </div>
+                    )}
+                    
+                    <div className="relative z-10 flex flex-col h-full">
+                      {!isFeatured && ann.image && (
+                        <div className="h-36 overflow-hidden rounded-xl mb-6 -mx-2 -mt-2">
+                          <img src={ann.image} alt={ann.title} loading="lazy" className="w-full h-full object-cover" />
+                        </div>
+                      )}
+                      <div className="flex items-center justify-between mb-6">
+                        <span className={`text-xs font-bold uppercase tracking-widest px-3 py-1 rounded-full ${
+                          isFeatured ? 'bg-background/20 text-white border border-white/20' : 'bg-secondary/10 text-secondary border border-secondary/20'
+                        }`}>
+                          {ann.badge}
+                        </span>
+                        <span className={`text-sm font-bold ${isFeatured ? 'text-white/70' : 'text-muted-foreground'}`}>
+                          {ann.date}
+                        </span>
+                      </div>
+                      <h3 className={`text-2xl font-black uppercase italic tracking-tight mb-4 ${isFeatured ? 'text-white' : ''}`}>
+                        {ann.title}
+                      </h3>
+                      <p className={`font-medium mb-8 flex-1 ${isFeatured ? 'text-white/80' : 'text-muted-foreground'}`}>
+                        {ann.desc}
+                      </p>
+                      <button 
+                        onClick={() => setDetailOpen({ title: ann.title, desc: ann.desc })}
+                        className={`text-sm font-bold uppercase tracking-wider flex items-center gap-2 group w-max ${
+                          isFeatured ? 'text-white hover:text-white/80' : 'text-primary hover:text-primary/80'
+                        }`}
+                      >
+                        Read announcement <ArrowRight size={16} className="group-hover:translate-x-1 transition-transform" />
+                      </button>
                     </div>
-                    <h3 className={`text-2xl font-black uppercase italic tracking-tight mb-4 ${isFeatured ? 'text-white' : ''}`}>
-                      {ann.title}
-                    </h3>
-                    <p className={`font-medium mb-8 flex-1 ${isFeatured ? 'text-white/80' : 'text-muted-foreground'}`}>
-                      {ann.desc}
-                    </p>
-                    <button 
-                      onClick={() => setDetailOpen({ title: ann.title, desc: ann.desc })}
-                      className={`text-sm font-bold uppercase tracking-wider flex items-center gap-2 group w-max ${
-                        isFeatured ? 'text-white hover:text-white/80' : 'text-primary hover:text-primary/80'
-                      }`}
-                    >
-                      Read announcement <ArrowRight size={16} className="group-hover:translate-x-1 transition-transform" />
-                    </button>
                   </motion.div>
                 );
               })}
@@ -414,11 +438,23 @@ export default function CommunityPage() {
                   whileInView={{ opacity: 1, scale: 1 }}
                   viewport={{ once: true }}
                   transition={{ delay: i * 0.1 }}
-                  className="bg-background border border-border p-8 rounded-3xl"
+                  className="bg-background border border-border p-8 rounded-3xl overflow-hidden flex flex-col"
                 >
+                  <div className="h-40 overflow-hidden rounded-2xl mb-6 -mt-2 -mx-2 bg-card shrink-0">
+                    <img 
+                      src={i === 0 
+                        ? 'https://images.unsplash.com/photo-1469571486292-0ba58a3f068b?auto=format&fit=crop&w=900&q=80'
+                        : 'https://images.unsplash.com/photo-1513885535751-8b9238bd345a?auto=format&fit=crop&w=900&q=80'} 
+                      alt={act.title}
+                      loading="lazy"
+                      className="w-full h-full object-cover transition-transform duration-500 hover:scale-105"
+                    />
+                  </div>
                   <div className="flex items-center justify-between mb-6">
-                    <div className="text-4xl">{act.icon}</div>
-                    <span className="text-xs font-bold uppercase tracking-widest text-muted-foreground border border-border px-3 py-1 rounded-full">
+                    <div className="w-12 h-12 bg-background border border-border rounded-xl flex items-center justify-center text-2xl shadow-sm -mt-12 relative z-10 shrink-0">
+                      {act.icon}
+                    </div>
+                    <span className="text-xs font-bold uppercase tracking-widest text-primary border border-primary/20 bg-primary/5 px-3 py-1 rounded-full">
                       {act.badge}
                     </span>
                   </div>

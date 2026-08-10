@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Jersey Quik Fix Admin</title>
+  <link rel="stylesheet" href="admin.css" />
+</head>
+<body>
+  <aside class="sidebar">
+    <div class="brand">JQ <span>Admin</span></div>
+    <nav id="adminNav">
+      <button class="active" data-tab="dashboard">Dashboard</button>
+      <button data-tab="website">Website Pages</button>
+      <button data-tab="homepage">Homepage</button>
+      <button data-tab="repairs">Repairs</button>
+      <button data-tab="products">Products</button>
+      <button data-tab="inventory">Inventory</button>
+      <button data-tab="orders">Orders</button>
+      <button data-tab="customers">Customers</button>
+      <button data-tab="tradeins">Trade-Ins</button>
+      <button data-tab="events">Events</button>
+      <button data-tab="announcements">Announcements</button>
+      <button data-tab="actions">Big Actions</button>
+      <button data-tab="members">Community Members</button>
+      <button data-tab="photos">Photos</button>
+      <button data-tab="employees">Employees</button>
+      <button data-tab="demo">Demo Requests</button>
+      <button data-tab="settings">Settings</button>
+    </nav>
+  </aside>
+
+  <main class="main">
+    <header class="topbar">
+      <div>
+        <p class="eyebrow">JERSEY QUIK FIX</p>
+        <h1 id="pageTitle">Dashboard</h1>
+      </div>
+      <div class="top-actions">
+        <input id="globalSearch" placeholder="Search admin..." />
+        <button class="primary" id="saveAll">Save Changes</button>
+      </div>
+    </header>
+
+    <section class="tab active" id="dashboard">
+      <div class="stats" id="stats"></div>
+      <div class="card">
+        <h2>Admin control center</h2>
+        <p>Use this panel to manage public website content, repairs, inventory, products, community content, members, and more.</p>
+      </div>
+    </section>
+
+    <section class="tab" id="website">
+      <div class="section-head"><div><h2>Website Pages</h2><p>Edit page-level content without touching HTML.</p></div><button class="primary" onclick="addWebsiteSection()">+ Add Section</button></div>
+      <div id="websiteEditor"></div>
+    </section>
+
+    <section class="tab" id="homepage">
+      <div class="card form-grid">
+        <label>Hero Eyebrow<input data-root="homepage" data-field="eyebrow"></label>
+        <label>Hero Headline<input data-root="homepage" data-field="headline"></label>
+        <label class="wide">Hero Description<textarea data-root="homepage" data-field="description"></textarea></label>
+        <label>Primary Button<input data-root="homepage" data-field="primaryButton"></label>
+        <label>Secondary Button<input data-root="homepage" data-field="secondaryButton"></label>
+        <label>Open Repairs<input type="number" data-root="homepage" data-field="openRepairs"></label>
+        <label>Today's Sales<input data-root="homepage" data-field="todaySales"></label>
+        <label>Low Stock<input type="number" data-root="homepage" data-field="lowStock"></label>
+        <label>Weekly Revenue<input data-root="homepage" data-field="weeklyRevenue"></label>
+      </div>
+    </section>
+
+    <section class="tab" id="repairs">
+      <div class="section-head"><h2>Repairs</h2><button class="primary" onclick="addRepair()">+ New Repair</button></div>
+      <div id="repairsList"></div>
+    </section>
+
+    <section class="tab" id="products">
+      <div class="section-head"><h2>Products</h2><button class="primary" onclick="addProduct()">+ Add Product</button></div>
+      <div id="productsList"></div>
+    </section>
+
+    <section class="tab" id="inventory">
+      <div class="section-head"><h2>Inventory</h2><button class="primary" onclick="addInventory()">+ Add Inventory Item</button></div>
+      <div id="inventoryList"></div>
+    </section>
+
+    <section class="tab" id="orders">
+      <div class="section-head"><h2>Orders</h2><button class="primary" onclick="addOrder()">+ Add Order</button></div>
+      <div id="ordersList"></div>
+    </section>
+
+    <section class="tab" id="customers">
+      <div class="section-head"><h2>Customers</h2><button class="primary" onclick="addCustomer()">+ Add Customer</button></div>
+      <div id="customersList"></div>
+    </section>
+
+    <section class="tab" id="tradeins">
+      <div class="section-head"><h2>Trade-Ins</h2><button class="primary" onclick="addTradeIn()">+ Add Trade-In</button></div>
+      <div id="tradeinsList"></div>
+    </section>
+
+    <section class="tab" id="events">
+      <div class="section-head"><h2>Events</h2><button class="primary" onclick="addEvent()">+ Add Event</button></div>
+      <div id="eventsList"></div>
+    </section>
+
+    <section class="tab" id="announcements">
+      <div class="section-head"><h2>Announcements</h2><button class="primary" onclick="addAnnouncement()">+ Add Announcement</button></div>
+      <div id="announcementsList"></div>
+    </section>
+
+    <section class="tab" id="actions">
+      <div class="section-head"><h2>Big Actions</h2><button class="primary" onclick="addAction()">+ Add Action</button></div>
+      <div id="actionsList"></div>
+    </section>
+
+    <section class="tab" id="members">
+      <div class="section-head"><h2>Community Members</h2><button class="primary" onclick="addMember()">+ Add Member</button></div>
+      <div id="membersList"></div>
+    </section>
+
+    <section class="tab" id="photos">
+      <div class="section-head"><h2>Photo Albums</h2><button class="primary" onclick="addAlbum()">+ Add Album</button></div>
+      <div id="photosList"></div>
+    </section>
+
+    <section class="tab" id="employees">
+      <div class="section-head"><h2>Employees</h2><button class="primary" onclick="addEmployee()">+ Add Employee</button></div>
+      <div id="employeesList"></div>
+    </section>
+
+    <section class="tab" id="demo">
+      <div class="section-head"><h2>Demo Requests</h2><button class="primary" onclick="addDemo()">+ Add Request</button></div>
+      <div id="demoList"></div>
+    </section>
+
+    <section class="tab" id="settings">
+      <div class="card form-grid">
+        <label>Store Name<input data-root="settings" data-field="storeName"></label>
+        <label>Contact Email<input data-root="settings" data-field="contactEmail"></label>
+        <label>Phone<input data-root="settings" data-field="phone"></label>
+        <label>Site Visibility<select data-root="settings" data-field="visibility"><option>Private</option><option>Public</option></select></label>
+        <label class="wide">Footer Text<textarea data-root="settings" data-field="footer"></textarea></label>
+      </div>
+    </section>
+  </main>
+
+  <div id="toast" class="toast"></div>
+  <script src="admin-data.js"></script>
+  <script src="admin.js"></script>
+</body>
+</html>
