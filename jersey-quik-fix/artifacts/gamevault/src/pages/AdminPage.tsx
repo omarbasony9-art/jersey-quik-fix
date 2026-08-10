@@ -11,7 +11,7 @@ import {
 import { useSiteData, DEFAULT_CONTENT, type SiteContent } from '../context/SiteDataContext';
 import jerseyLogo from '../assets/jersey-quik-fix-logo.png';
 
-const API_BASE = "/api";
+const API_BASE = import.meta.env.VITE_API_BASE_URL || "/api";
 const SESSION_KEY = "gv_admin_token";
 
 type RepairTicket = {
