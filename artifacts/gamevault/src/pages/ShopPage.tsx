@@ -34,6 +34,13 @@ export default function ShopPage() {
   const [cart, setCart] = useState<CartItem[]>([]);
   const [menuOpen, setMenuOpen] = useState(false);
   const [cartOpen, setCartOpen] = useState(false);
+  const [checkoutLoading, setCheckoutLoading] = useState(false);
+  const [checkoutBanner, setCheckoutBanner] = useState<{ type: 'success' | 'error'; text: string } | null>(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('checkout') === 'success') return { type: 'success', text: '🎉 Order placed! Check your email for confirmation.' };
+    if (params.get('checkout') === 'cancelled') return { type: 'error', text: 'Checkout cancelled — your cart is saved.' };
+    return null;
+  });
   
   const [tradeType, setTradeType] = useState<string>('Console');
   const [tradeCondition, setTradeCondition] = useState<string>('Good');
@@ -76,12 +83,50 @@ export default function ShopPage() {
   const cartItemCount = cart.reduce((sum, item) => sum + item.quantity, 0);
   const cartTotal = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
 
+  const handleCheckout = async () => {
+    if (cart.length === 0) return;
+    setCheckoutLoading(true);
+    try {
+      const res = await fetch('/api/stripe/checkout', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          items: cart.map(item => ({
+            name: item.name,
+            price: item.price,
+            quantity: item.quantity,
+            image: item.image || undefined,
+            category: item.category || undefined,
+          })),
+        }),
+      });
+      const data = await res.json();
+      if (data.url) {
+        window.location.href = data.url;
+      } else {
+        setCheckoutBanner({ type: 'error', text: data.error || 'Checkout failed — please try again.' });
+      }
+    } catch {
+      setCheckoutBanner({ type: 'error', text: 'Network error — please try again.' });
+    } finally {
+      setCheckoutLoading(false);
+    }
+  };
+
   // Trade Estimator calculation
   const estimatedValue = Math.round(tradeValues[tradeType] * conditionMultipliers[tradeCondition]);
 
   return (
     <div className="min-h-[100dvh] flex flex-col font-sans overflow-x-hidden selection:bg-primary selection:text-primary-foreground">
       
+      {/* Checkout Banner */}
+      {checkoutBanner && (
+        <div className={`flex items-center justify-between px-6 py-3 text-sm font-bold ${checkoutBanner.type === 'success' ? 'bg-green-600 text-white' : 'bg-destructive text-destructive-foreground'}`}>
+          <span>{checkoutBanner.text}</span>
+          <button onClick={() => setCheckoutBanner(null)} className="ml-4 opacity-70 hover:opacity-100">✕</button>
+        </div>
+      )}
+
       {/* Topbar */}
       <div className="bg-primary text-primary-foreground text-xs font-bold py-2 px-4 text-center tracking-wider">
         {shop.promoBanner}
@@ -189,11 +234,16 @@ export default function ShopPage() {
                           <span>Subtotal</span>
                           <span>${cartTotal.toFixed(2)}</span>
                         </div>
-                        <button 
-                          onClick={() => alert('Checkout flow triggered! (Mock)')}
-                          className="w-full bg-primary text-primary-foreground py-3 rounded-xl font-bold hover:brightness-110 active:scale-[0.98] transition-all"
+                        <button
+                          onClick={handleCheckout}
+                          disabled={checkoutLoading}
+                          className="w-full bg-primary text-primary-foreground py-3 rounded-xl font-bold hover:brightness-110 active:scale-[0.98] transition-all disabled:opacity-60 disabled:cursor-wait flex items-center justify-center gap-2"
                         >
-                          Secure Checkout
+                          {checkoutLoading ? (
+                            <><span className="inline-block w-4 h-4 border-2 border-primary-foreground/40 border-t-primary-foreground rounded-full animate-spin" /> Processing…</>
+                          ) : (
+                            '🔒 Checkout with Stripe'
+                          )}
                         </button>
                       </div>
                     )}
@@ -573,9 +623,44 @@ export default function ShopPage() {
                 <li className="flex items-center gap-3"><ChevronRight className="text-primary" size={20} /> Exclusive early access to restocks</li>
                 <li className="flex items-center gap-3"><ChevronRight className="text-primary" size={20} /> Free expedited shipping</li>
               </ul>
-              <button className="bg-primary text-primary-foreground px-8 py-4 rounded-xl font-black uppercase tracking-wider hover:brightness-110 transition-all w-full sm:w-auto shadow-[0_0_20px_rgba(245,158,11,0.3)]">
-                Join for $14.99/yr
-              </button>
+              {(() => {
+                const jqfInCart = cart.some(i => i.id === 'jqf-plus-membership');
+                return (
+                  <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
+                    <button
+                      onClick={() => {
+                        if (!jqfInCart) addToCart({
+                          id: 'jqf-plus-membership',
+                          name: 'JQF+ Membership (1 Year)',
+                          category: 'Membership',
+                          price: 14.99,
+                          rating: 5,
+                          badge: 'BEST VALUE',
+                          image: '',
+                          stock: 999,
+                          sku: 'JQF-PLUS-YR',
+                          active: true,
+                        });
+                      }}
+                      className={`px-8 py-4 rounded-xl font-black uppercase tracking-wider transition-all w-full sm:w-auto shadow-[0_0_20px_rgba(245,158,11,0.3)] ${
+                        jqfInCart
+                          ? 'bg-green-600 text-white cursor-default'
+                          : 'bg-primary text-primary-foreground hover:brightness-110'
+                      }`}
+                    >
+                      {jqfInCart ? '✓ Added to Cart' : 'Join for $14.99/yr'}
+                    </button>
+                    {jqfInCart && (
+                      <button
+                        onClick={() => setCartOpen(true)}
+                        className="text-primary font-bold underline underline-offset-4 hover:brightness-110 transition-all text-sm"
+                      >
+                        View cart →
+                      </button>
+                    )}
+                  </div>
+                );
+              })()}
             </div>
 
             <div className="relative z-10 w-full max-w-md aspect-card rotate-[-5deg] hover:rotate-0 transition-transform duration-500">
