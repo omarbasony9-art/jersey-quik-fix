@@ -1,9 +1,37 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Phone, Laptop, Tablet, Gamepad2, Search, Clock, Shield, DollarSign, 
-  MapPin, Star, ChevronRight, X, Plus, Minus, ArrowRight, Check
+  MapPin, Star, ChevronRight, X, Plus, Minus, ArrowRight, Check, ClipboardList
 } from 'lucide-react';
+
+const REPAIRS_KEY = 'gv_repairs_v1';
+
+type RepairTicket = {
+  id: string;
+  ticket: string;
+  category: string;
+  brand: string;
+  model: string;
+  issue: string;
+  name: string;
+  phone: string;
+  email: string;
+  date: string;
+  status: string;
+  createdAt: string;
+};
+
+const emptyForm = {
+  category: 'Phone',
+  brand: 'Apple',
+  model: '',
+  issue: 'Cracked screen',
+  name: '',
+  phone: '',
+  email: '',
+  date: '',
+};
 import Footer from '../components/Footer';
 
 const devices = [
@@ -49,7 +77,32 @@ export default function RepairPage() {
   const [zipCode, setZipCode] = useState('');
   const [selectedLocation, setSelectedLocation] = useState<number | null>(null);
   const [openFaq, setOpenFaq] = useState<number | null>(null);
-  
+
+  // Repair intake form
+  const [form, setForm] = useState(emptyForm);
+  const [submitted, setSubmitted] = useState(false);
+  const [ticketNumber, setTicketNumber] = useState('');
+  const formSectionRef = useRef<HTMLElement>(null);
+
+  const handleFormSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    const ticket = 'JQ-' + Math.floor(100000 + Math.random() * 900000);
+    const entry: RepairTicket = {
+      id: crypto.randomUUID(),
+      ticket,
+      ...form,
+      status: 'Checked In',
+      createdAt: new Date().toISOString(),
+    };
+    const existing: RepairTicket[] = (() => {
+      try { return JSON.parse(localStorage.getItem(REPAIRS_KEY) || '[]'); } catch { return []; }
+    })();
+    localStorage.setItem(REPAIRS_KEY, JSON.stringify([...existing, entry]));
+    setTicketNumber(ticket);
+    setSubmitted(true);
+    setForm(emptyForm);
+  };
+
   const handleOpenModal = (device?: DeviceId) => {
     if (device) setSelectedDevice(device);
     setStep(device ? 2 : 1);
@@ -170,6 +223,160 @@ export default function RepairPage() {
                 </motion.button>
               ))}
             </div>
+          </div>
+        </section>
+
+        {/* Repair Intake Form */}
+        <section ref={formSectionRef} id="repair-form" className="py-24 bg-background">
+          <div className="max-w-3xl mx-auto px-6">
+            <motion.div
+              initial={{ opacity: 0, y: 30 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.6 }}
+            >
+              <div className="text-center mb-12">
+                <div className="text-xs font-bold uppercase tracking-widest text-primary mb-3">START A REPAIR</div>
+                <h2 className="text-4xl md:text-5xl font-black uppercase italic tracking-tight mb-4">
+                  Tell us what <span className="text-primary">happened.</span>
+                </h2>
+                <p className="text-muted-foreground font-medium">Fill out the form and we'll generate a repair ticket instantly.</p>
+              </div>
+
+              <AnimatePresence mode="wait">
+                {submitted ? (
+                  <motion.div
+                    key="success"
+                    initial={{ opacity: 0, scale: 0.95 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    exit={{ opacity: 0, scale: 0.95 }}
+                    className="bg-card border border-primary/40 rounded-3xl p-10 text-center shadow-[0_0_40px_rgba(245,158,11,0.15)]"
+                  >
+                    <div className="w-20 h-20 bg-primary/20 rounded-full flex items-center justify-center mx-auto mb-6">
+                      <Check size={36} className="text-primary" />
+                    </div>
+                    <div className="text-xs font-bold uppercase tracking-widest text-primary mb-2">Repair Request Created</div>
+                    <h3 className="text-3xl font-black uppercase italic tracking-tight mb-3">You're all set!</h3>
+                    <div className="bg-background border border-border rounded-2xl px-8 py-4 inline-block mb-6">
+                      <div className="text-xs font-bold uppercase tracking-widest text-muted-foreground mb-1">Your Ticket Number</div>
+                      <div className="text-3xl font-black text-primary tracking-wider">{ticketNumber}</div>
+                    </div>
+                    <p className="text-muted-foreground font-medium mb-8">Bring this ticket number when you drop off your device. We'll have your info ready.</p>
+                    <button
+                      onClick={() => setSubmitted(false)}
+                      className="bg-primary text-primary-foreground px-8 py-3 rounded-xl font-black uppercase tracking-wider hover:brightness-110 transition-all"
+                    >
+                      Submit Another
+                    </button>
+                  </motion.div>
+                ) : (
+                  <motion.form
+                    key="form"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    onSubmit={handleFormSubmit}
+                    className="bg-card border border-border rounded-3xl p-8 md:p-10 space-y-6"
+                  >
+                    <div className="grid sm:grid-cols-2 gap-5">
+                      <label className="flex flex-col gap-2">
+                        <span className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Device Category</span>
+                        <select
+                          value={form.category}
+                          onChange={e => setForm(f => ({ ...f, category: e.target.value }))}
+                          className="bg-background border border-border focus:border-primary text-foreground rounded-xl px-4 py-3 outline-none font-bold transition-colors"
+                        >
+                          {['Phone', 'Tablet', 'Computer', 'Gaming Console'].map(c => <option key={c}>{c}</option>)}
+                        </select>
+                      </label>
+                      <label className="flex flex-col gap-2">
+                        <span className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Manufacturer</span>
+                        <select
+                          value={form.brand}
+                          onChange={e => setForm(f => ({ ...f, brand: e.target.value }))}
+                          className="bg-background border border-border focus:border-primary text-foreground rounded-xl px-4 py-3 outline-none font-bold transition-colors"
+                        >
+                          {['Apple', 'Samsung', 'Google', 'Sony', 'Microsoft', 'Nintendo', 'Other'].map(b => <option key={b}>{b}</option>)}
+                        </select>
+                      </label>
+                      <label className="flex flex-col gap-2">
+                        <span className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Model</span>
+                        <input
+                          required
+                          placeholder="e.g. iPhone 15 Pro"
+                          value={form.model}
+                          onChange={e => setForm(f => ({ ...f, model: e.target.value }))}
+                          className="bg-background border border-border focus:border-primary text-foreground rounded-xl px-4 py-3 outline-none font-bold placeholder:text-muted-foreground/50 transition-colors"
+                        />
+                      </label>
+                      <label className="flex flex-col gap-2">
+                        <span className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Issue</span>
+                        <select
+                          value={form.issue}
+                          onChange={e => setForm(f => ({ ...f, issue: e.target.value }))}
+                          className="bg-background border border-border focus:border-primary text-foreground rounded-xl px-4 py-3 outline-none font-bold transition-colors"
+                        >
+                          {['Cracked screen', 'Battery replacement', 'Charging port', 'Water damage', 'HDMI port', 'Overheating', 'Diagnostics', 'Other'].map(i => <option key={i}>{i}</option>)}
+                        </select>
+                      </label>
+                    </div>
+
+                    <div className="border-t border-border pt-6">
+                      <div className="text-xs font-bold uppercase tracking-widest text-muted-foreground mb-4">Your Info</div>
+                      <div className="grid sm:grid-cols-2 gap-5">
+                        <label className="flex flex-col gap-2">
+                          <span className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Full Name</span>
+                          <input
+                            required
+                            placeholder="Your name"
+                            value={form.name}
+                            onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
+                            className="bg-background border border-border focus:border-primary text-foreground rounded-xl px-4 py-3 outline-none font-bold placeholder:text-muted-foreground/50 transition-colors"
+                          />
+                        </label>
+                        <label className="flex flex-col gap-2">
+                          <span className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Phone Number</span>
+                          <input
+                            required
+                            type="tel"
+                            placeholder="(555) 000-0000"
+                            value={form.phone}
+                            onChange={e => setForm(f => ({ ...f, phone: e.target.value }))}
+                            className="bg-background border border-border focus:border-primary text-foreground rounded-xl px-4 py-3 outline-none font-bold placeholder:text-muted-foreground/50 transition-colors"
+                          />
+                        </label>
+                        <label className="flex flex-col gap-2">
+                          <span className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Email <span className="text-muted-foreground/50 normal-case font-medium text-[11px]">(optional)</span></span>
+                          <input
+                            type="email"
+                            placeholder="you@example.com"
+                            value={form.email}
+                            onChange={e => setForm(f => ({ ...f, email: e.target.value }))}
+                            className="bg-background border border-border focus:border-primary text-foreground rounded-xl px-4 py-3 outline-none font-bold placeholder:text-muted-foreground/50 transition-colors"
+                          />
+                        </label>
+                        <label className="flex flex-col gap-2">
+                          <span className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Preferred Drop-off Date</span>
+                          <input
+                            type="date"
+                            value={form.date}
+                            onChange={e => setForm(f => ({ ...f, date: e.target.value }))}
+                            className="bg-background border border-border focus:border-primary text-foreground rounded-xl px-4 py-3 outline-none font-bold transition-colors"
+                          />
+                        </label>
+                      </div>
+                    </div>
+
+                    <button
+                      type="submit"
+                      className="w-full bg-primary text-primary-foreground py-4 rounded-xl font-black uppercase tracking-wider hover:brightness-110 active:scale-[0.98] transition-all flex items-center justify-center gap-3 text-lg shadow-[0_0_20px_rgba(245,158,11,0.3)]"
+                    >
+                      <ClipboardList size={22} /> Create Repair Request
+                    </button>
+                  </motion.form>
+                )}
+              </AnimatePresence>
+            </motion.div>
           </div>
         </section>
 

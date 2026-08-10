@@ -3,11 +3,27 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Gamepad2, Settings, Home, Megaphone, Calendar, 
   Flame, BarChart, LogOut, Download, Upload, 
-  Plus, Edit2, Trash2, X, RefreshCcw, Save, LayoutDashboard
+  Plus, Edit2, Trash2, X, RefreshCcw, Save, LayoutDashboard, Wrench
 } from 'lucide-react';
 
 const ADMIN_PASSWORD = "gv-admin-2026";
 const STORAGE_KEY = "gv_community_data_v1";
+const REPAIRS_KEY = "gv_repairs_v1";
+
+type RepairTicket = {
+  id: string;
+  ticket: string;
+  category: string;
+  brand: string;
+  model: string;
+  issue: string;
+  name: string;
+  phone: string;
+  email: string;
+  date: string;
+  status: string;
+  createdAt: string;
+};
 
 type Announcement = {
   id: string;
@@ -102,6 +118,7 @@ export default function AdminPage() {
   
   const [data, setData] = useState<DataState>(defaultData);
   const [draftData, setDraftData] = useState<DataState>(defaultData);
+  const [repairs, setRepairs] = useState<RepairTicket[]>([]);
   
   const [toastMsg, setToastMsg] = useState<string | null>(null);
   
@@ -112,6 +129,13 @@ export default function AdminPage() {
   const [modalItem, setModalItem] = useState<any>(null);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const loadRepairs = () => {
+    try {
+      const r = JSON.parse(localStorage.getItem(REPAIRS_KEY) || '[]');
+      setRepairs(Array.isArray(r) ? r : []);
+    } catch { setRepairs([]); }
+  };
 
   useEffect(() => {
     const session = localStorage.getItem("gv_admin_session");
@@ -129,6 +153,8 @@ export default function AdminPage() {
         console.error("Failed to parse stored data", e);
       }
     }
+
+    loadRepairs();
   }, []);
 
   useEffect(() => {
@@ -294,6 +320,7 @@ export default function AdminPage() {
 
   const panels = [
     { name: 'Overview', icon: <LayoutDashboard size={18} /> },
+    { name: 'Repair Requests', icon: <Wrench size={18} /> },
     { name: 'Homepage', icon: <Home size={18} /> },
     { name: 'Announcements', icon: <Megaphone size={18} /> },
     { name: 'Events', icon: <Calendar size={18} /> },
@@ -416,7 +443,11 @@ export default function AdminPage() {
                 {/* OVERVIEW PANEL */}
                 {activePanel === 'Overview' && (
                   <div className="space-y-6">
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+                      <div className="bg-card border border-primary/40 rounded-2xl p-6 col-span-2 md:col-span-1 cursor-pointer hover:border-primary transition-colors" onClick={() => setActivePanel('Repair Requests')}>
+                        <div className="text-3xl font-black text-primary mb-1">{repairs.length}</div>
+                        <div className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Repair Requests</div>
+                      </div>
                       <div className="bg-card border border-border rounded-2xl p-6">
                         <div className="text-3xl font-black text-primary mb-1">{data.announcements.length}</div>
                         <div className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Announcements</div>
@@ -465,6 +496,78 @@ export default function AdminPage() {
                         Everything is editable here — saves to localStorage. Export JSON anytime.
                       </p>
                     </div>
+                  </div>
+                )}
+
+                {/* REPAIR REQUESTS PANEL */}
+                {activePanel === 'Repair Requests' && (
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between mb-2">
+                      <div>
+                        <div className="text-xs font-bold uppercase tracking-widest text-primary mb-1">Incoming</div>
+                        <h3 className="text-2xl font-black uppercase italic tracking-tight">{repairs.length} Repair {repairs.length === 1 ? 'Request' : 'Requests'}</h3>
+                      </div>
+                      <button
+                        onClick={() => { loadRepairs(); showToast('Refreshed.'); }}
+                        className="flex items-center gap-2 px-4 py-2 bg-card border border-border text-foreground rounded-xl font-bold text-xs uppercase tracking-wider hover:bg-card/80 transition-colors"
+                      >
+                        <RefreshCcw size={14} /> Refresh
+                      </button>
+                    </div>
+
+                    {repairs.length === 0 ? (
+                      <div className="bg-card border border-border rounded-3xl p-16 text-center">
+                        <div className="w-16 h-16 bg-primary/10 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                          <Wrench size={28} className="text-primary" />
+                        </div>
+                        <h4 className="text-xl font-black uppercase italic tracking-tight mb-2">No requests yet</h4>
+                        <p className="text-muted-foreground font-medium text-sm">Repair requests submitted on the Repair page will appear here.</p>
+                      </div>
+                    ) : (
+                      <div className="space-y-3">
+                        {[...repairs].reverse().map((r) => (
+                          <div key={r.id} className="bg-card border border-border rounded-2xl p-5 flex flex-col md:flex-row md:items-center gap-4">
+                            <div className="flex-shrink-0">
+                              <div className="bg-primary/10 text-primary font-black text-xs tracking-wider px-3 py-1.5 rounded-lg inline-block">{r.ticket}</div>
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <div className="flex flex-wrap items-center gap-2 mb-1">
+                                <span className="font-black text-foreground">{r.name}</span>
+                                <span className="text-muted-foreground text-sm">·</span>
+                                <span className="text-muted-foreground text-sm font-medium">{r.phone}</span>
+                                {r.email && <>
+                                  <span className="text-muted-foreground text-sm">·</span>
+                                  <span className="text-muted-foreground text-sm font-medium">{r.email}</span>
+                                </>}
+                              </div>
+                              <div className="flex flex-wrap gap-2 text-xs font-bold uppercase tracking-wider">
+                                <span className="bg-background border border-border px-2 py-1 rounded-lg">{r.category}</span>
+                                <span className="bg-background border border-border px-2 py-1 rounded-lg">{r.brand} {r.model}</span>
+                                <span className="bg-background border border-border px-2 py-1 rounded-lg">{r.issue}</span>
+                                {r.date && <span className="bg-background border border-border px-2 py-1 rounded-lg">{r.date}</span>}
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-3 flex-shrink-0">
+                              <span className="text-xs font-bold uppercase tracking-widest text-primary bg-primary/10 px-3 py-1.5 rounded-lg whitespace-nowrap">{r.status}</span>
+                              <button
+                                onClick={() => {
+                                  if (window.confirm(`Delete ticket ${r.ticket}?`)) {
+                                    const updated = repairs.filter(x => x.id !== r.id);
+                                    localStorage.setItem(REPAIRS_KEY, JSON.stringify(updated));
+                                    setRepairs(updated);
+                                    showToast('Ticket deleted.');
+                                  }
+                                }}
+                                className="text-destructive hover:bg-destructive/10 p-2 rounded-lg transition-colors"
+                                title="Delete"
+                              >
+                                <Trash2 size={16} />
+                              </button>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
                   </div>
                 )}
 
