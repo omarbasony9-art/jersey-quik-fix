@@ -1,0 +1,9 @@
+uploads = []
+generated = []
+
+[[outputs]]
+id = "spC9DP4Q1lb22UoP1lYR4"
+uri = "file://jersey-quik-fix.zip"
+type = "unspecified"
+title = "Jersey Quik Fix — Full Project"
+description = "Complete project source (node_modules and dist excluded)"
