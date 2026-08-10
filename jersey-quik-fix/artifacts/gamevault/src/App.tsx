@@ -11,7 +11,7 @@ import { QueryClientProvider, QueryClient } from '@tanstack/react-query';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import { Wrench } from 'lucide-react';
 
-import { ClerkProvider, SignIn, SignUp, Show, useClerk, useUser } from '@clerk/react';
+import { ClerkProvider, useClerk, useUser } from '@clerk/react';
 import { publishableKeyFromHost } from '@clerk/react/internal';
 import { shadcn } from '@clerk/themes';
 
@@ -121,11 +121,11 @@ function SharedNav() {
         </Link>
 
         <div className="flex gap-1 rounded-full border border-border bg-card p-1 sm:gap-2">
-          {[['/', 'Repair'], ['/shop', 'Shop'], ['/community', 'Community']].map(([href, label]) => (
+          {[['/', 'Repair'], ['/shop', 'Shop'], ['/community', 'Community'], ['/repair-status', 'Track Repair']].map(([href, label]) => (
             <Link key={href} href={href}
-              className={`rounded-full px-3 py-2 text-xs font-bold uppercase tracking-wider transition-all sm:px-6 sm:text-sm ${
+              className={`rounded-full px-3 py-2 text-xs font-bold uppercase tracking-wider transition-all sm:px-4 sm:text-sm ${
                 location === href ? 'bg-primary text-primary-foreground shadow-[0_0_15px_rgba(41,165,238,0.4)]' : 'text-muted-foreground hover:text-foreground'
-              }`}
+              } ${href === '/repair-status' ? 'hidden sm:block' : ''}`}
             >{label}</Link>
           ))}
         </div>
