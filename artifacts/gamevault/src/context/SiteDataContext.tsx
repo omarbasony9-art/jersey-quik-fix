@@ -1,8 +1,8 @@
-import React, { createContext, useContext, useState, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 
 const SITE_DATA_KEY = 'jqf_site_content_v2';
 
-// ---- Full data type ----
+const API_BASE = '/api';
 export type RepairDevice = { id: string; title: string; desc: string; image: string };
 export type Product = { id: string; name: string; category: string; price: number; oldPrice?: number; rating: number; badge?: string; image: string; stock: number; sku: string; active: boolean };
 export type Announcement = { id: string; badge: string; date: string; title: string; desc: string; featured: boolean; image: string };
@@ -149,42 +149,79 @@ const DEFAULT: SiteContent = {
   settings: { storeName: 'Jersey Quik Fix', contactEmail: 'info@jerseyquikfix.com', phone: '', footer: '© 2026 Jersey Quik Fix. Phone Repairs • Sales and Accessories.', visibility: 'Public' },
 };
 
+function mergeWithDefaults(parsed: any): SiteContent {
+  return {
+    ...DEFAULT,
+    ...parsed,
+    repair: { ...DEFAULT.repair, ...(parsed.repair ?? {}) },
+    shop: { ...DEFAULT.shop, ...(parsed.shop ?? {}) },
+    community: { ...DEFAULT.community, ...(parsed.community ?? {}) },
+    settings: { ...DEFAULT.settings, ...(parsed.settings ?? {}) },
+  };
+}
 type SiteDataContextType = {
   content: SiteContent;
-  updateContent: (updater: (prev: SiteContent) => SiteContent) => void;
-  saveContent: (data: SiteContent) => void;
+  updateContent: (updater: (prev: SiteContent) => SiteContent, adminToken?: string) => void;
+  saveContent: (data: SiteContent, adminToken?: string) => void;
 };
 
 const SiteDataContext = createContext<SiteDataContextType | null>(null);
 
 export function SiteDataProvider({ children }: { children: ReactNode }) {
   const [content, setContent] = useState<SiteContent>(() => {
+    // Start with localStorage as fast initial state while API loads
     try {
       const stored = localStorage.getItem(SITE_DATA_KEY);
-      if (stored) {
-        const parsed = JSON.parse(stored);
-        return {
-          ...DEFAULT,
-          ...parsed,
-          repair: { ...DEFAULT.repair, ...(parsed.repair ?? {}) },
-          shop: { ...DEFAULT.shop, ...(parsed.shop ?? {}) },
-          community: { ...DEFAULT.community, ...(parsed.community ?? {}) },
-          settings: { ...DEFAULT.settings, ...(parsed.settings ?? {}) },
-        };
-      }
+      if (stored) return mergeWithDefaults(JSON.parse(stored));
     } catch {}
     return DEFAULT;
   });
 
-  const saveContent = (data: SiteContent) => {
+  // On mount, try to load from the API (authoritative source)
+  useEffect(() => {
+    fetch(`${API_BASE}/site-content`)
+      .then(r => r.ok ? r.json() : null)
+      .then(data => {
+        if (data && typeof data === 'object') {
+          const merged = mergeWithDefaults(data);
+          setContent(merged);
+          // Keep localStorage in sync as a fast-load cache
+          localStorage.setItem(SITE_DATA_KEY, JSON.stringify(merged));
+        }
+      })
+      .catch(() => {
+        // API unavailable — fall back to localStorage (already loaded in useState)
+      });
+  }, []);
+
+  const saveContent = (data: SiteContent, adminToken?: string) => {
     setContent(data);
+    // Write to both localStorage (fast cache) and API (persistent)
     localStorage.setItem(SITE_DATA_KEY, JSON.stringify(data));
+    if (adminToken) {
+      fetch(`${API_BASE}/site-content`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${adminToken}` },
+        body: JSON.stringify(data),
+      }).catch(() => {
+        console.error('Failed to persist site content to API');
+      });
+    }
   };
 
-  const updateContent = (updater: (prev: SiteContent) => SiteContent) => {
+  const updateContent = (updater: (prev: SiteContent) => SiteContent, adminToken?: string) => {
     setContent(prev => {
       const next = updater(prev);
       localStorage.setItem(SITE_DATA_KEY, JSON.stringify(next));
+      if (adminToken) {
+        fetch(`${API_BASE}/site-content`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${adminToken}` },
+          body: JSON.stringify(next),
+        }).catch(() => {
+          console.error('Failed to persist site content to API');
+        });
+      }
       return next;
     });
   };

@@ -11,8 +11,8 @@ import {
 import { useSiteData, DEFAULT_CONTENT, type SiteContent } from '../context/SiteDataContext';
 import jerseyLogo from '../assets/jersey-quik-fix-logo.png';
 
-const ADMIN_PASSWORD = "1964";
-const REPAIRS_KEY = "gv_repairs_v1";
+const API_BASE = "/api";
+const SESSION_KEY = "gv_admin_token";
 
 type RepairTicket = {
   id: string; ticket: string; category: string; brand: string; model: string;
@@ -48,50 +48,81 @@ export default function AdminPage() {
   const [draft, setDraft] = useState<SiteContent>(content);
   const [repairs, setRepairs] = useState<RepairTicket[]>([]);
   
+  const [adminToken, setAdminToken] = useState<string | null>(null);
   const [toastMsg, setToastMsg] = useState<string | null>(null);
 
+  // Restore session from sessionStorage on mount
   useEffect(() => {
-    const session = localStorage.getItem("gv_admin_session");
-    if (session === "true") setIsAuthenticated(true);
+    const token = sessionStorage.getItem(SESSION_KEY);
+    if (token) {
+      setAdminToken(token);
+      setIsAuthenticated(true);
+    }
+  }, []);
+
+  // Sync draft with content changes
+  useEffect(() => {
     setDraft(content);
-    loadRepairs();
   }, [content]);
+
+  // Load repairs when token is available
+  useEffect(() => {
+    if (adminToken) loadRepairs();
+  }, [adminToken]);
 
   useEffect(() => {
     if (toastMsg) {
       const timer = setTimeout(() => setToastMsg(null), 2200);
       return () => clearTimeout(timer);
     }
+    return undefined;
   }, [toastMsg]);
 
   const showToast = (msg: string) => setToastMsg(msg);
 
   const loadRepairs = () => {
-    try {
-      const r = JSON.parse(localStorage.getItem(REPAIRS_KEY) || '[]');
-      setRepairs(Array.isArray(r) ? r : []);
-    } catch { setRepairs([]); }
+    const token = sessionStorage.getItem(SESSION_KEY);
+    if (!token) return;
+    fetch(`${API_BASE}/repairs`, {
+      headers: { 'Authorization': `Bearer ${token}` },
+    })
+      .then(r => r.ok ? r.json() : [])
+      .then(data => setRepairs(Array.isArray(data) ? data : []))
+      .catch(() => setRepairs([]));
   };
 
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (password === ADMIN_PASSWORD) {
-      localStorage.setItem("gv_admin_session", "true");
-      setIsAuthenticated(true);
-      setError(false);
-    } else {
+    try {
+      const res = await fetch(`${API_BASE}/admin/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ password }),
+      });
+      if (res.ok) {
+        const { token } = await res.json() as { token: string };
+        sessionStorage.setItem(SESSION_KEY, token);
+        setAdminToken(token);
+        setIsAuthenticated(true);
+        setError(false);
+      } else {
+        setError(true);
+        setPassword('');
+      }
+    } catch {
       setError(true);
       setPassword('');
     }
   };
 
   const handleLogout = () => {
-    localStorage.removeItem("gv_admin_session");
+    sessionStorage.removeItem(SESSION_KEY);
+    setAdminToken(null);
     setIsAuthenticated(false);
   };
 
   const handleSaveChanges = () => {
-    saveContent(draft);
+    saveContent(draft, adminToken ?? undefined);
     showToast("Live site updated.");
   };
 
@@ -688,16 +719,33 @@ export default function AdminPage() {
                             <div className="flex items-center gap-3">
                               <span className="text-xs font-bold uppercase text-primary bg-primary/10 px-3 py-1.5 rounded-lg">{r.status}</span>
                               <button onClick={() => {
-                                const updated = repairs.map(x => x.id === r.id ? { ...x, status: 'Ready for Pickup' } : x);
-                                localStorage.setItem(REPAIRS_KEY, JSON.stringify(updated));
-                                setRepairs(updated);
-                                showToast('Marked ready.');
+                                if (!adminToken) return;
+                                fetch(`${API_BASE}/repairs/${r.id}/status`, {
+                                  method: 'PATCH',
+                                  headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${adminToken}` },
+                                  body: JSON.stringify({ status: 'Ready for Pickup' }),
+                                }).then(res => {
+                                  if (res.ok) {
+                                    setRepairs(prev => prev.map(x => x.id === r.id ? { ...x, status: 'Ready for Pickup' } : x));
+                                    showToast('Marked ready.');
+                                  } else {
+                                    showToast('Failed to update ticket.');
+                                  }
+                                }).catch(() => showToast('Failed to update ticket.'));
                               }} className="text-xs font-bold uppercase px-3 py-1.5 bg-accent/10 text-accent rounded-lg hover:bg-accent/20">Mark Ready</button>
                               <button onClick={() => {
+                                if (!adminToken) return;
                                 if (window.confirm(`Delete ticket ${r.ticket}?`)) {
-                                  const updated = repairs.filter(x => x.id !== r.id);
-                                  localStorage.setItem(REPAIRS_KEY, JSON.stringify(updated));
-                                  setRepairs(updated);
+                                  fetch(`${API_BASE}/repairs/${r.id}`, {
+                                    method: 'DELETE',
+                                    headers: { 'Authorization': `Bearer ${adminToken}` },
+                                  }).then(res => {
+                                    if (res.ok) {
+                                      setRepairs(prev => prev.filter(x => x.id !== r.id));
+                                    } else {
+                                      showToast('Failed to delete ticket.');
+                                    }
+                                  }).catch(() => showToast('Failed to delete ticket.'));
                                 }
                               }} className={deleteBtnCls}><Trash2 size={16} /></button>
                             </div>

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ArrowRight, Clock, X, Plus, Check } from 'lucide-react';
+import { ArrowRight, Clock, X, Check } from 'lucide-react';
 import { useSiteData } from '../context/SiteDataContext';
 
 export default function CommunityPage() {
@@ -10,14 +10,8 @@ export default function CommunityPage() {
   const [events, setEvents] = useState(community.events);
   const [toastMsg, setToastMsg] = useState<string | null>(null);
   
-  const [addEventOpen, setAddEventOpen] = useState(false);
   const [detailOpen, setDetailOpen] = useState<{title: string, desc: string} | null>(null);
-  const [rsvps, setRsvps] = useState<Record<number, boolean>>({});
-
-  const [newEventName, setNewEventName] = useState('');
-  const [newEventDate, setNewEventDate] = useState('');
-  const [newEventTime, setNewEventTime] = useState('');
-  const [newEventLocation, setNewEventLocation] = useState('');
+  const [rsvps, setRsvps] = useState<Record<string, boolean>>({});
 
   const targetDate = new Date(community.countdownTarget).getTime();
   const [timeLeft, setTimeLeft] = useState({ days: 0, hours: 0 });
@@ -37,16 +31,22 @@ export default function CommunityPage() {
     return () => clearInterval(timerId);
   }, [targetDate]);
 
+  // Sync local events state when the authoritative context updates from the API
+  useEffect(() => {
+    setEvents(community.events);
+  }, [community.events]);
+
   useEffect(() => {
     if (toastMsg) {
       const timer = setTimeout(() => setToastMsg(null), 2600);
       return () => clearTimeout(timer);
     }
+    return undefined;
   }, [toastMsg]);
 
   const showToast = (msg: string) => setToastMsg(msg);
 
-  const handleRsvp = (id: number) => {
+  const handleRsvp = (id: string) => {
     const isGoing = !rsvps[id];
     setRsvps(prev => ({ ...prev, [id]: isGoing }));
     showToast(isGoing ? "You're going!" : "RSVP cancelled.");
@@ -68,28 +68,6 @@ export default function CommunityPage() {
     return `${monthStrs[parseInt(m, 10) - 1]} ${parseInt(d, 10)}`;
   };
 
-  const handleAddEvent = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!newEventName || !newEventDate) return;
-
-    setEvents(prev => [...prev, {
-      id: crypto.randomUUID(),
-      date: formatDate(newEventDate),
-      badge: 'Community',
-      time: formatTime(newEventTime),
-      endTime: '',
-      title: newEventName,
-      location: newEventLocation || 'TBD',
-      desc: 'Community added event.'
-    }]);
-
-    setAddEventOpen(false);
-    setNewEventName('');
-    setNewEventDate('');
-    setNewEventTime('');
-    setNewEventLocation('');
-    showToast("Event added.");
-  };
 
   return (
     <div className="min-h-[100dvh] flex flex-col font-sans overflow-x-hidden selection:bg-primary selection:text-primary-foreground bg-background text-foreground">
@@ -286,17 +264,9 @@ export default function CommunityPage() {
         {/* Events */}
         <section id="events" className="py-24 bg-card border-t-4 border-secondary/40 border-b border-border">
           <div className="max-w-7xl mx-auto px-6">
-            <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-6 mb-12">
-              <div>
-                <div className="text-xs font-bold uppercase tracking-widest text-primary mb-4">WHAT'S COMING UP</div>
-                <h2 className="text-4xl md:text-5xl font-black uppercase italic tracking-tight">Community Events</h2>
-              </div>
-              <button 
-                onClick={() => setAddEventOpen(true)}
-                className="bg-primary text-primary-foreground px-6 py-3 rounded-xl font-black uppercase tracking-wider hover:brightness-110 transition-colors flex items-center gap-2"
-              >
-                <Plus size={18} /> Add Event
-              </button>
+            <div className="mb-12">
+              <div className="text-xs font-bold uppercase tracking-widest text-primary mb-4">WHAT'S COMING UP</div>
+              <h2 className="text-4xl md:text-5xl font-black uppercase italic tracking-tight">Community Events</h2>
             </div>
 
             <div className="space-y-6">
@@ -513,89 +483,6 @@ export default function CommunityPage() {
           </div>
         )}
 
-        {addEventOpen && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-            <motion.div 
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              onClick={() => setAddEventOpen(false)}
-              className="absolute inset-0 bg-black/80 backdrop-blur-sm"
-            />
-            <motion.div 
-              initial={{ opacity: 0, scale: 0.95, y: 20 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.95, y: 20 }}
-              className="relative w-full max-w-md bg-card border border-border rounded-3xl shadow-2xl z-10 overflow-hidden"
-            >
-              <div className="p-6 border-b border-border flex justify-between items-center bg-background/50">
-                <h3 className="font-black text-2xl uppercase tracking-tight italic">
-                  Add Event
-                </h3>
-                <button 
-                  onClick={() => setAddEventOpen(false)}
-                  className="text-muted-foreground hover:text-foreground bg-card p-2 rounded-full border border-transparent hover:border-border transition-colors"
-                >
-                  <X size={20} />
-                </button>
-              </div>
-              
-              <form onSubmit={handleAddEvent} className="p-6 space-y-4">
-                <div>
-                  <label className="block text-xs font-bold uppercase tracking-widest text-muted-foreground mb-2">Event Name</label>
-                  <input 
-                    required
-                    value={newEventName}
-                    onChange={e => setNewEventName(e.target.value)}
-                    type="text" 
-                    placeholder="E.g., Family BBQ"
-                    className="w-full bg-background border-2 border-border focus:border-primary text-foreground rounded-xl py-3 px-4 outline-none transition-all font-bold"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-bold uppercase tracking-widest text-muted-foreground mb-2">Date</label>
-                  <input 
-                    required
-                    value={newEventDate}
-                    onChange={e => setNewEventDate(e.target.value)}
-                    type="date" 
-                    className="w-full bg-background border-2 border-border focus:border-primary text-foreground rounded-xl py-3 px-4 outline-none transition-all font-bold"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-bold uppercase tracking-widest text-muted-foreground mb-2">Time</label>
-                  <input 
-                    required
-                    value={newEventTime}
-                    onChange={e => setNewEventTime(e.target.value)}
-                    type="time" 
-                    className="w-full bg-background border-2 border-border focus:border-primary text-foreground rounded-xl py-3 px-4 outline-none transition-all font-bold"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-bold uppercase tracking-widest text-muted-foreground mb-2">Location</label>
-                  <input 
-                    required
-                    value={newEventLocation}
-                    onChange={e => setNewEventLocation(e.target.value)}
-                    type="text" 
-                    placeholder="E.g., 123 Main St"
-                    className="w-full bg-background border-2 border-border focus:border-primary text-foreground rounded-xl py-3 px-4 outline-none transition-all font-bold"
-                  />
-                </div>
-                
-                <div className="pt-4">
-                  <button 
-                    type="submit"
-                    className="w-full bg-primary text-primary-foreground py-4 rounded-xl font-black uppercase tracking-wider hover:brightness-110 active:scale-[0.98] transition-all"
-                  >
-                    Save Event
-                  </button>
-                </div>
-              </form>
-            </motion.div>
-          </div>
-        )}
       </AnimatePresence>
 
       {/* Toast */}

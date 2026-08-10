@@ -7,8 +7,6 @@ import {
 import { useSiteData } from '../context/SiteDataContext';
 import Footer from '../components/Footer';
 
-const REPAIRS_KEY = 'gv_repairs_v1';
-
 type RepairTicket = {
   id: string;
   ticket: string;
@@ -66,21 +64,36 @@ export default function RepairPage() {
   const [ticketNumber, setTicketNumber] = useState('');
   const formSectionRef = useRef<HTMLElement>(null);
 
-  const handleFormSubmit = (e: React.FormEvent) => {
+  const [submitError, setSubmitError] = useState<string | null>(null);
+
+  const handleFormSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const ticket = 'JQ-' + Math.floor(100000 + Math.random() * 900000);
-    const entry: RepairTicket = {
-      id: crypto.randomUUID(),
-      ticket,
-      ...form,
-      status: 'Checked In',
-      createdAt: new Date().toISOString(),
-    };
-    const existing: RepairTicket[] = (() => {
-      try { return JSON.parse(localStorage.getItem(REPAIRS_KEY) || '[]'); } catch { return []; }
-    })();
-    localStorage.setItem(REPAIRS_KEY, JSON.stringify([...existing, entry]));
-    setTicketNumber(ticket);
+    setSubmitError(null);
+    try {
+      const res = await fetch(`${API_BASE}/repairs`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          category: form.category,
+          brand: form.brand,
+          model: form.model,
+          issue: form.issue,
+          name: form.name,
+          phone: form.phone,
+          email: form.email,
+          date: form.date,
+        }),
+      });
+      if (!res.ok) {
+        setSubmitError('Unable to submit your repair request. Please try again.');
+        return;
+      }
+      const created = await res.json() as RepairTicket;
+      setTicketNumber(created.ticket);
+    } catch {
+      setSubmitError('Unable to reach the server. Please check your connection and try again.');
+      return;
+    }
     setSubmitted(true);
     setForm(emptyForm);
   };
@@ -270,6 +283,11 @@ export default function RepairPage() {
                     onSubmit={handleFormSubmit}
                     className="bg-card border border-border rounded-3xl p-8 md:p-10 space-y-6"
                   >
+                    {submitError && (
+                      <div className="bg-destructive/10 border border-destructive/30 text-destructive rounded-xl px-4 py-3 text-sm font-bold">
+                        {submitError}
+                      </div>
+                    )}
                     <div className="grid sm:grid-cols-2 gap-5">
                       <label className="flex flex-col gap-2">
                         <span className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Device Category</span>
@@ -770,3 +788,5 @@ export default function RepairPage() {
     </div>
   );
 }
+
+const API_BASE = '/api';
