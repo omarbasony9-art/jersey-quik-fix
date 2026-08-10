@@ -15,6 +15,12 @@ const queryClient = new QueryClient();
 // Ensure BASE_URL exists and clean trailing slash
 const base = (import.meta.env.BASE_URL || '/').replace(/\/$/, '');
 
+function ScrollToTop() {
+  const [location] = useLocation();
+  React.useEffect(() => { window.scrollTo(0, 0); }, [location]);
+  return null;
+}
+
 function SharedNav() {
   const [location] = useLocation();
 
@@ -79,6 +85,7 @@ export default function App() {
       <TooltipProvider>
         <SiteDataProvider>
           <WouterRouter base={base}>
+            <ScrollToTop />
             <SharedNav />
             <Switch>
               <Route path="/" component={RepairPage} />
