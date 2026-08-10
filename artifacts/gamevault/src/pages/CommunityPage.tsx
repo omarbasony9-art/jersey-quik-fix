@@ -94,7 +94,7 @@ export default function CommunityPage() {
   return (
     <div className="min-h-[100dvh] flex flex-col font-sans overflow-x-hidden selection:bg-primary selection:text-primary-foreground bg-background text-foreground">
       {/* Promo Bar */}
-      <div className="bg-secondary text-secondary-foreground text-xs font-bold py-3 px-4 text-center tracking-wider">
+      <div className="bg-primary text-primary-foreground text-xs font-bold py-3 px-4 text-center tracking-wider">
         {community.promoBanner}
       </div>
 
@@ -105,9 +105,9 @@ export default function CommunityPage() {
             <img 
               src="https://images.unsplash.com/photo-1529156069898-49953e39b3ac?auto=format&fit=crop&w=1600&q=80" 
               alt="" 
-              className="absolute inset-0 w-full h-full object-cover opacity-10 z-0"
+              className="absolute inset-0 w-full h-full object-cover opacity-25 z-0"
             />
-            <div className="absolute inset-0 bg-gradient-to-r from-background via-background/80 to-background/40 z-0" />
+            <div className="absolute inset-0 bg-gradient-to-r from-background via-background/85 to-background/40 z-0" />
             <div className="absolute top-1/4 -right-1/4 w-[800px] h-[800px] bg-secondary/20 rounded-full blur-[120px] pointer-events-none z-0" />
             <div className="absolute -bottom-1/4 right-1/4 w-[600px] h-[600px] bg-primary/10 rounded-full blur-[100px] pointer-events-none z-0" />
           </div>
@@ -232,9 +232,12 @@ export default function CommunityPage() {
                     className={`border p-8 rounded-3xl flex flex-col relative overflow-hidden ${
                       isFeatured 
                       ? 'bg-secondary border-secondary shadow-xl lg:col-span-1 text-secondary-foreground' 
-                      : 'bg-card border-border text-foreground hover:border-primary/50 transition-colors'
+                      : 'bg-card border-border border-l-4 border-l-accent text-foreground hover:border-primary/50 transition-colors'
                     }`}
                   >
+                    {isFeatured && (
+                      <div className="absolute top-4 bottom-4 left-0 w-1.5 bg-primary rounded-r-full z-20" />
+                    )}
                     {isFeatured && ann.image && (
                       <div className="absolute inset-0 z-0 opacity-20 pointer-events-none">
                         <img src={ann.image} alt="" className="w-full h-full object-cover" />
@@ -281,7 +284,7 @@ export default function CommunityPage() {
         </section>
 
         {/* Events */}
-        <section id="events" className="py-24 bg-background border-b border-border">
+        <section id="events" className="py-24 bg-card border-t-4 border-secondary/40 border-b border-border">
           <div className="max-w-7xl mx-auto px-6">
             <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-6 mb-12">
               <div>
@@ -306,10 +309,10 @@ export default function CommunityPage() {
                     whileInView={{ opacity: 1, x: 0 }}
                     viewport={{ once: true }}
                     transition={{ delay: i * 0.1 }}
-                    className="bg-card border border-border p-6 md:p-8 rounded-3xl flex flex-col md:flex-row gap-6 md:gap-8 items-start md:items-center hover:border-primary/50 transition-colors"
+                    className="bg-background border border-border p-6 md:p-8 rounded-3xl flex flex-col md:flex-row gap-6 md:gap-8 items-start md:items-center hover:border-primary/50 transition-colors"
                   >
-                    <div className="bg-background border border-border rounded-2xl w-24 h-24 flex flex-col items-center justify-center shrink-0">
-                      <span className="text-xs font-bold uppercase tracking-widest text-primary">{ev.date.split(' ')[0]}</span>
+                    <div className="bg-primary text-primary-foreground rounded-2xl w-24 h-24 flex flex-col items-center justify-center shrink-0">
+                      <span className="text-xs font-bold uppercase tracking-widest">{ev.date.split(' ')[0]}</span>
                       <span className="text-3xl font-black">{ev.date.split(' ')[1]}</span>
                     </div>
 
@@ -354,7 +357,7 @@ export default function CommunityPage() {
         </section>
 
         {/* Community Actions */}
-        <section id="actions" className="py-24 bg-card border-b border-border">
+        <section id="actions" className="py-24 bg-background border-b border-border">
           <div className="max-w-7xl mx-auto px-6">
             <div className="mb-12">
               <div className="text-xs font-bold uppercase tracking-widest text-primary mb-4">GROUP EFFORTS</div>
@@ -369,7 +372,7 @@ export default function CommunityPage() {
                   whileInView={{ opacity: 1, scale: 1 }}
                   viewport={{ once: true }}
                   transition={{ delay: i * 0.1 }}
-                  className="bg-background border border-border p-8 rounded-3xl overflow-hidden flex flex-col"
+                  className="bg-card border border-border p-8 rounded-3xl overflow-hidden flex flex-col"
                 >
                   <div className="h-40 overflow-hidden rounded-2xl mb-6 -mt-2 -mx-2 bg-card shrink-0">
                     <img 
@@ -398,7 +401,7 @@ export default function CommunityPage() {
                       <span className="text-primary">{act.volunteers} volunteers</span>
                       <span>{act.progress}% organized</span>
                     </div>
-                    <div className="h-3 bg-card border border-border rounded-full overflow-hidden">
+                    <div className="h-3 bg-background border border-border rounded-full overflow-hidden">
                       <motion.div 
                         initial={{ width: 0 }}
                         whileInView={{ width: `${act.progress}%` }}

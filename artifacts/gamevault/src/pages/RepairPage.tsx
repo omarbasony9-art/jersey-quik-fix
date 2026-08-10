@@ -104,9 +104,9 @@ export default function RepairPage() {
   return (
     <div className="min-h-[100dvh] flex flex-col font-sans overflow-x-hidden selection:bg-primary selection:text-primary-foreground">
       {/* Promo Bar */}
-      <div className="bg-secondary text-secondary-foreground text-xs font-bold py-3 px-4 text-center tracking-wider flex items-center justify-center gap-2 flex-wrap">
+      <div className="bg-primary text-primary-foreground text-xs font-bold py-3 px-4 text-center tracking-wider flex items-center justify-center gap-2 flex-wrap">
         <span>{repair.promoBanner}</span>
-        <button onClick={() => handleOpenModal()} className="underline underline-offset-4 hover:text-primary transition-colors">START A REPAIR</button>
+        <button onClick={() => handleOpenModal()} className="underline underline-offset-4 hover:text-primary-foreground/80 transition-colors">START A REPAIR</button>
       </div>
 
       <main className="flex-1 flex flex-col">
@@ -114,11 +114,11 @@ export default function RepairPage() {
         <section className="relative min-h-[600px] flex items-center overflow-hidden py-20">
           <div className="absolute inset-0 z-0">
             <img 
-              src="https://images.unsplash.com/photo-1518770660439-4636190af475?auto=format&fit=crop&w=1600&q=80" 
-              alt="" 
-              className="w-full h-full object-cover object-center opacity-15"
+              src="https://images.unsplash.com/photo-1597872200969-2b65d56bd16b?auto=format&fit=crop&w=1600&q=80" 
+              alt="Hands repairing phone" 
+              className="w-full h-full object-cover object-center opacity-30"
             />
-            <div className="absolute inset-0 bg-gradient-to-r from-background via-background/95 to-background/70" />
+            <div className="absolute inset-0 bg-gradient-to-r from-background/98 via-background/80 to-transparent" />
           </div>
 
           <div className="relative z-10 max-w-7xl mx-auto w-full px-6 grid md:grid-cols-2 gap-12 items-center">
@@ -139,7 +139,7 @@ export default function RepairPage() {
               </p>
               
               <div className="flex flex-col sm:flex-row gap-4 mb-10">
-                <button onClick={() => handleOpenModal()} className="bg-primary text-primary-foreground px-8 py-4 rounded-xl font-black uppercase tracking-wider hover:brightness-110 active:scale-[0.98] transition-all flex items-center justify-center gap-2 group shadow-[0_0_20px_rgba(245,158,11,0.4)]">
+                <button onClick={() => handleOpenModal()} className="bg-primary text-primary-foreground px-8 py-4 rounded-xl font-black uppercase tracking-wider hover:brightness-110 active:scale-[0.98] transition-all flex items-center justify-center gap-2 group shadow-none">
                   {repair.primaryBtn} <ArrowRight className="group-hover:translate-x-1 transition-transform" size={20} />
                 </button>
                 <button onClick={() => document.getElementById('locations')?.scrollIntoView({ behavior: 'smooth' })} className="border-2 border-border text-foreground px-8 py-4 rounded-xl font-black uppercase tracking-wider hover:bg-card active:scale-[0.98] transition-all flex items-center justify-center gap-2">
@@ -158,36 +158,41 @@ export default function RepairPage() {
               initial={{ opacity: 0, scale: 0.9 }}
               animate={{ opacity: 1, scale: 1 }}
               transition={{ duration: 0.8, delay: 0.2 }}
-              className="hidden md:flex justify-center relative"
+              className="hidden md:flex justify-center md:justify-end relative"
             >
-              {/* Floating card */}
-              <motion.div 
-                animate={{ y: [0, -10, 0] }}
-                transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
-                className="bg-card/80 backdrop-blur-xl border border-primary/30 p-8 rounded-3xl shadow-[0_0_40px_rgba(245,158,11,0.2)] max-w-sm w-full"
-              >
-                <div className="w-16 h-16 bg-primary/20 rounded-2xl flex items-center justify-center mb-6">
-                  <Check size={32} className="text-primary" />
+              <div className="relative">
+                <div className="absolute -top-4 -left-4 z-20 bg-primary text-primary-foreground text-xs font-bold uppercase tracking-widest px-4 py-2 rounded-full shadow-xl">
+                  Est. in your community
                 </div>
-                <h3 className="text-2xl font-black uppercase italic tracking-tight mb-2">{repair.heroCardTitle}</h3>
-                <p className="text-muted-foreground font-medium">{repair.heroCardDesc}</p>
-              </motion.div>
+                <img 
+                  src="https://images.unsplash.com/photo-1621905251189-08b45d6a269e?auto=format&fit=crop&w=600&q=80" 
+                  alt="Technician working" 
+                  className="rounded-3xl border-l-4 border-primary shadow-2xl object-cover w-[400px] h-[500px]"
+                />
+              </div>
             </motion.div>
           </div>
         </section>
 
         {/* Device Picker Section */}
-        <section className="py-20 bg-card border-y border-border">
+        <section className="py-20 bg-background border-t-4 border-primary border-b border-border">
           <div className="max-w-7xl mx-auto px-6">
             <div className="text-center mb-12">
               <h2 className="text-3xl md:text-5xl font-black uppercase italic tracking-tight mb-4">
-                What needs <span className="text-primary">fixing?</span>
+                We fix what <span className="text-primary">matters most.</span>
               </h2>
             </div>
             
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 auto-rows-[320px]">
               {repair.devices.map((device, i) => {
                 const Icon = deviceIconMap[device.id] ?? Wrench;
+                const overrideImages: Record<string, string> = {
+                  phone: 'https://images.unsplash.com/photo-1556742031-c6961e8560b0?auto=format&fit=crop&w=900&q=80',
+                  computer: 'https://images.unsplash.com/photo-1484788984921-03950022c9ef?auto=format&fit=crop&w=900&q=80',
+                  tablet: 'https://images.unsplash.com/photo-1544006659-f0b21884ce1d?auto=format&fit=crop&w=900&q=80',
+                };
+                const imgSrc = overrideImages[device.id] || device.image;
+
                 return (
                   <motion.button
                     key={device.id}
@@ -198,7 +203,7 @@ export default function RepairPage() {
                     onClick={() => handleOpenModal(device.id)}
                     className={`${i === 0 ? 'lg:col-span-2 lg:row-span-2' : ''} relative overflow-hidden rounded-2xl group cursor-pointer text-left w-full h-full bg-card min-h-[320px]`}
                   >
-                    <img src={device.image} alt={device.title} loading={i > 0 ? "lazy" : "eager"} className="absolute inset-0 w-full h-full object-cover object-center transition-transform duration-700 group-hover:scale-105 group-hover:brightness-110" />
+                    <img src={imgSrc} alt={device.title} loading={i > 0 ? "lazy" : "eager"} className="absolute inset-0 w-full h-full object-cover object-center transition-transform duration-700 group-hover:scale-105 group-hover:brightness-110" />
                     <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/40 to-transparent group-hover:from-black/90 transition-all" />
                     <div className="absolute inset-0 flex flex-col justify-end p-6 md:p-8">
                       <div className="w-12 h-12 bg-black/40 backdrop-blur-md rounded-xl flex items-center justify-center mb-auto text-white group-hover:text-primary transition-colors group-hover:scale-110 duration-300 border border-white/10">
@@ -216,7 +221,7 @@ export default function RepairPage() {
         </section>
 
         {/* Repair Intake Form */}
-        <section ref={formSectionRef} id="repair-form" className="py-24 bg-background">
+        <section ref={formSectionRef} id="repair-form" className="py-24 bg-background border-t-4 border-primary">
           <div className="max-w-3xl mx-auto px-6">
             <motion.div
               initial={{ opacity: 0, y: 30 }}
@@ -227,7 +232,10 @@ export default function RepairPage() {
               <div className="text-center mb-12">
                 <div className="text-xs font-bold uppercase tracking-widest text-primary mb-3">START A REPAIR</div>
                 <h2 className="text-4xl md:text-5xl font-black uppercase italic tracking-tight mb-4">
-                  {repair.formHeadline.replace('.', '')}<span className="text-primary">.</span>
+                  {repair.formHeadline.replace('.', '').split(' ').slice(0, -1).join(' ')}{' '}
+                  <span className="relative after:content-[''] after:absolute after:bottom-1 after:left-0 after:w-full after:h-2 after:bg-primary/50 after:rounded-full text-primary inline-block">
+                    {repair.formHeadline.replace('.', '').split(' ').slice(-1)}
+                  </span>
                 </h2>
                 <p className="text-muted-foreground font-medium">{repair.formSubtitle}</p>
               </div>
@@ -370,48 +378,65 @@ export default function RepairPage() {
         </section>
 
         {/* Why Us (Dark Section) */}
-        <section className="py-24 bg-background relative overflow-hidden">
+        <section className="py-28 bg-card relative overflow-hidden" style={{ clipPath: 'polygon(0 4%, 100% 0%, 100% 96%, 0% 100%)' }}>
           <div className="absolute inset-0 z-0 bg-card">
-            <img src="https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?auto=format&fit=crop&w=1600&q=80" alt="" loading="lazy" className="w-full h-full object-cover opacity-10" />
-            <div className="absolute inset-0 bg-background/90" />
+            <img src="https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?auto=format&fit=crop&w=1600&q=80" alt="" loading="lazy" className="w-full h-full object-cover opacity-5" />
           </div>
           <div className="max-w-7xl mx-auto px-6 relative z-10">
-            <div className="grid lg:grid-cols-3 gap-12">
-              <div className="lg:col-span-1">
+            <div className="grid lg:grid-cols-2 gap-12 items-center">
+              <div>
                 <h2 className="text-4xl md:text-5xl font-black uppercase italic tracking-tight mb-6">
-                  {repair.whyUsHeadline} <br /><span className="text-accent">{repair.whyUsAccent}</span>
+                  {repair.whyUsHeadline} <br /><span className="text-primary">{repair.whyUsAccent}</span>
                 </h2>
                 <p className="text-lg text-muted-foreground font-medium mb-8">
                   {repair.whyUsSubtitle}
                 </p>
+                <div className="space-y-6">
+                  {[
+                    { title: 'Free Diagnostics', desc: 'Know what is wrong before paying a dime.', icon: Search },
+                    { title: 'Same-Day Service', desc: 'Most common repairs finished in under 2 hours.', icon: Clock },
+                    { title: '1-Year Warranty', desc: 'Parts and labor guaranteed for a full year.', icon: Shield },
+                    { title: 'Upfront Pricing', desc: 'No hidden fees or surprise charges. Ever.', icon: DollarSign }
+                  ].map((feature, i) => (
+                    <motion.div 
+                      key={feature.title}
+                      initial={{ opacity: 0, y: 20 }}
+                      whileInView={{ opacity: 1, y: 0 }}
+                      viewport={{ once: true }}
+                      transition={{ delay: i * 0.1 }}
+                      className="flex gap-4"
+                    >
+                      <div className="bg-primary/10 text-primary p-3 rounded-xl h-fit">
+                        <feature.icon size={24} />
+                      </div>
+                      <div>
+                        <h3 className="text-xl font-black uppercase tracking-tight mb-1">{feature.title}</h3>
+                        <p className="text-muted-foreground font-medium">{feature.desc}</p>
+                      </div>
+                    </motion.div>
+                  ))}
+                </div>
               </div>
-              <div className="lg:col-span-2 grid sm:grid-cols-2 gap-6">
-                {[
-                  { title: 'Free Diagnostics', desc: 'Know what is wrong before paying a dime.', icon: Search },
-                  { title: 'Same-Day Service', desc: 'Most common repairs finished in under 2 hours.', icon: Clock },
-                  { title: '1-Year Warranty', desc: 'Parts and labor guaranteed for a full year.', icon: Shield },
-                  { title: 'Upfront Pricing', desc: 'No hidden fees or surprise charges. Ever.', icon: DollarSign }
-                ].map((feature, i) => (
-                  <motion.div 
-                    key={feature.title}
-                    initial={{ opacity: 0, y: 20 }}
-                    whileInView={{ opacity: 1, y: 0 }}
-                    viewport={{ once: true }}
-                    transition={{ delay: i * 0.1 }}
-                    className="bg-secondary/30 border border-secondary/50 p-6 rounded-3xl"
-                  >
-                    <feature.icon className="text-primary mb-4" size={32} />
-                    <h3 className="text-xl font-black uppercase tracking-tight mb-2">{feature.title}</h3>
-                    <p className="text-foreground/80 font-medium">{feature.desc}</p>
-                  </motion.div>
-                ))}
+              <div className="relative flex justify-center lg:justify-end mt-10 lg:mt-0">
+                <div className="relative">
+                  <img 
+                    src="https://images.unsplash.com/photo-1562408590-e32931084e23?auto=format&fit=crop&w=400&q=80" 
+                    alt="Repair tech" 
+                    className="w-56 h-56 md:w-80 md:h-80 rounded-full object-cover border-4 border-primary shadow-2xl" 
+                  />
+                  <img 
+                    src="https://images.unsplash.com/photo-1529156069898-49953e39b3ac?auto=format&fit=crop&w=300&q=80" 
+                    alt="Happy family" 
+                    className="w-36 h-36 md:w-48 md:h-48 rounded-full object-cover border-4 border-accent absolute -bottom-8 -right-8 shadow-xl" 
+                  />
+                </div>
               </div>
             </div>
           </div>
         </section>
 
         {/* Reviews */}
-        <section className="py-20 bg-card border-t border-border">
+        <section className="py-20 bg-background border-y-4 border-primary/20">
           <div className="max-w-7xl mx-auto px-6">
             <div className="text-center mb-16">
               <h2 className="text-3xl md:text-5xl font-black uppercase italic tracking-tight">Trusted by <span className="text-primary">Locals</span></h2>
@@ -424,16 +449,17 @@ export default function RepairPage() {
                   whileInView={{ opacity: 1, scale: 1 }}
                   viewport={{ once: true }}
                   transition={{ delay: i * 0.1 }}
-                  className="bg-background border border-border p-8 rounded-3xl shadow-lg relative"
+                  className="bg-card border border-border border-l-4 border-l-primary p-8 rounded-3xl relative"
                 >
-                  <div className="flex gap-1 text-primary mb-6">
+                  <div className="text-primary text-6xl font-black leading-none mb-2 mt-[-10px]">"</div>
+                  <div className="flex gap-1 text-primary mb-4">
                     {[...Array(5)].map((_, j) => <Star key={j} size={18} fill="currentColor" />)}
                   </div>
                   <p className="text-lg font-medium mb-8">"{review.text}"</p>
                   <div className="flex items-center gap-4 mt-auto">
                     <img src={review.avatar} loading="lazy" alt={review.name} className="w-12 h-12 rounded-full object-cover border border-border" />
                     <div>
-                      <h4 className="font-bold">{review.name}</h4>
+                      <h4 className="font-black text-primary">{review.name}</h4>
                       <div className="text-xs text-muted-foreground font-bold uppercase tracking-wider">{review.device}</div>
                     </div>
                   </div>
@@ -444,8 +470,12 @@ export default function RepairPage() {
         </section>
 
         {/* Location Finder */}
-        <section id="locations" className="py-24 bg-background border-t border-border">
-          <div className="max-w-3xl mx-auto px-6 text-center">
+        <section id="locations" className="py-24 bg-background border-t border-border relative overflow-hidden">
+          <div className="absolute inset-0 z-0 bg-background">
+            <img src="https://images.unsplash.com/photo-1477959858617-67f85cf4f1df?auto=format&fit=crop&w=1600&q=80" alt="Neighborhood view" className="w-full h-full object-cover opacity-10" />
+            <div className="absolute inset-0 bg-background/80" />
+          </div>
+          <div className="max-w-3xl mx-auto px-6 text-center relative z-10">
             <MapPin size={48} className="mx-auto text-primary mb-6" />
             <h2 className="text-4xl md:text-5xl font-black uppercase italic tracking-tight mb-6">
               Find a <span className="text-primary">Store</span>
@@ -472,7 +502,7 @@ export default function RepairPage() {
 
             <div className="space-y-4 text-left">
               {repair.locations.map((loc, i) => (
-                <div key={loc.id} className="bg-card border border-border p-6 rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-4 hover:border-primary/50 transition-colors">
+                <div key={loc.id} className="bg-card/90 backdrop-blur-md border border-border p-6 rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-4 hover:border-primary/50 transition-colors">
                   <div>
                     <h4 className="font-black text-xl tracking-tight mb-1">{content.site.name} {loc.city}</h4>
                     <p className="text-muted-foreground font-medium">{loc.address}</p>
@@ -560,12 +590,12 @@ export default function RepairPage() {
             </h2>
             <div className="space-y-4">
               {repair.faqs.map((faq, i) => (
-                <div key={faq.id} className="bg-background border border-border rounded-2xl overflow-hidden">
+                <div key={faq.id} className={`bg-background border rounded-2xl overflow-hidden transition-all ${openFaq === i ? 'border-border border-l-4 border-l-primary' : 'border-border'}`}>
                   <button 
                     onClick={() => setOpenFaq(openFaq === i ? null : i)}
                     className="w-full p-6 text-left flex items-center justify-between gap-4"
                   >
-                    <h4 className="font-black text-lg tracking-tight">{faq.q}</h4>
+                    <h4 className={`font-black text-lg tracking-tight ${openFaq === i ? 'underline underline-offset-4 text-foreground' : ''}`}>{faq.q}</h4>
                     <div className="text-primary flex-shrink-0">
                       {openFaq === i ? <Minus size={20} /> : <Plus size={20} />}
                     </div>

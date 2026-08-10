@@ -33,38 +33,38 @@
 }
 
 :root {
-  /* Near-black */
-  --background: 259 44% 7%; 
-  /* Cream */
-  --foreground: 44 76% 94%; 
-  
-  /* Deep Violet Cards */
-  --card: 263 40% 12%; 
-  --card-foreground: 44 76% 94%;
-  
-  --popover: 263 40% 12%;
-  --popover-foreground: 44 76% 94%;
-  
-  /* Warm Amber */
-  --primary: 38 92% 50%; 
-  --primary-foreground: 259 44% 7%; 
-  
-  /* Deep Violet */
-  --secondary: 263 67% 35%; 
-  --secondary-foreground: 44 76% 94%; 
-  
-  /* Muted violet/gray */
-  --muted: 263 30% 20%;
-  --muted-foreground: 44 30% 70%;
-  
-  /* Electric Violet Accent */
-  --accent: 262 83% 58%; 
-  --accent-foreground: 44 76% 94%;
-  
-  --border: 263 30% 20%;
-  --input: 263 30% 20%;
-  --ring: 38 92% 50%;
-  
+  /* Deep navy — matches the logo background */
+  --background: 220 58% 9%;
+  /* Warm cream — personal, not sterile white */
+  --foreground: 44 60% 92%;
+
+  /* Slightly lighter navy for cards */
+  --card: 220 52% 13%;
+  --card-foreground: 44 60% 92%;
+
+  --popover: 220 52% 13%;
+  --popover-foreground: 44 60% 92%;
+
+  /* Warm orange — adventurous, energetic CTAs */
+  --primary: 24 95% 53%;
+  --primary-foreground: 220 58% 9%;
+
+  /* Royal blue — matches the logo's blue ribbons */
+  --secondary: 217 91% 40%;
+  --secondary-foreground: 44 60% 92%;
+
+  /* Muted navy */
+  --muted: 220 35% 20%;
+  --muted-foreground: 220 20% 60%;
+
+  /* Cyan — matches "QUIK FIX" in the logo */
+  --accent: 192 85% 42%;
+  --accent-foreground: 220 58% 9%;
+
+  --border: 220 35% 18%;
+  --input: 220 35% 18%;
+  --ring: 24 95% 53%;
+
   --radius: 1rem;
 }
 

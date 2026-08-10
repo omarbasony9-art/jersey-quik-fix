@@ -83,12 +83,12 @@ export default function ShopPage() {
     <div className="min-h-[100dvh] flex flex-col font-sans overflow-x-hidden selection:bg-primary selection:text-primary-foreground">
       
       {/* Topbar */}
-      <div className="bg-secondary text-secondary-foreground text-xs font-bold py-2 px-4 text-center tracking-wider">
+      <div className="bg-primary text-primary-foreground text-xs font-bold py-2 px-4 text-center tracking-wider">
         FREE SHIPPING ON ORDERS $79+ &bull; MEMBERS EARN MORE
       </div>
 
       {/* Header */}
-      <header className="sticky top-0 z-40 bg-background/95 backdrop-blur-md border-b border-white/5 shadow-md">
+      <header className="sticky top-0 z-40 bg-card border-b-2 border-primary/30 shadow-md">
         <div className="max-w-7xl mx-auto px-4 md:px-6 h-20 flex items-center justify-between gap-4">
           
           <div className="flex items-center gap-4">
@@ -221,7 +221,7 @@ export default function ShopPage() {
       </header>
 
       {/* Navigation Layer */}
-      <nav className="bg-background border-b border-border hidden md:block">
+      <nav className="bg-card border-b-2 border-primary/30 hidden md:block">
         <div className="max-w-7xl mx-auto px-6 h-12 flex items-center gap-8 text-sm font-bold tracking-wide">
           <div className="flex items-center gap-6 flex-1">
             {categories.slice(1, 5).map(cat => (
@@ -294,7 +294,7 @@ export default function ShopPage() {
               className="w-full h-full object-cover object-center"
             />
             {/* Cinematic Gradient Overlay */}
-            <div className="absolute inset-0 bg-gradient-to-r from-background via-background/95 to-transparent" />
+            <div className="absolute inset-0 bg-gradient-to-r from-background via-background/70 to-background/30" />
             <div className="absolute inset-0 bg-gradient-to-t from-background via-transparent to-transparent" />
           </div>
           
@@ -310,7 +310,7 @@ export default function ShopPage() {
               </div>
               <h1 className="text-5xl md:text-7xl font-black uppercase leading-[0.9] italic tracking-tight mb-6 text-white drop-shadow-2xl">
                 {shop.heroHeadline} <br />
-                <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary to-accent">{shop.heroAccent}</span>
+                <span className="text-accent">{shop.heroAccent}</span>
               </h1>
               <p className="text-lg md:text-xl text-foreground/80 font-medium mb-10 max-w-lg leading-relaxed">
                 {shop.heroSubtitle}
@@ -397,7 +397,7 @@ export default function ShopPage() {
                   exit={{ opacity: 0, scale: 0.9 }}
                   transition={{ duration: 0.2, delay: idx * 0.05 }}
                   key={product.id} 
-                  className="bg-card rounded-2xl overflow-hidden border border-border hover:border-primary/50 transition-all duration-300 group flex flex-col hover:shadow-[0_0_30px_rgba(245,158,11,0.2)]"
+                  className="bg-card rounded-2xl overflow-hidden border border-border hover:border-t-2 hover:border-primary hover:scale-[1.02] transition-all duration-300 group flex flex-col shadow-sm hover:shadow-[0_0_30px_rgba(245,158,11,0.1)]"
                 >
                   <div className="relative min-h-[220px] md:min-h-[260px] overflow-hidden bg-black/50">
                     {product.badge && (
