@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Family & Friends Community</title>
+  <meta name="description" content="A private family and friends community hub for events, announcements, and important updates." />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <header class="topbar">
+    <div class="container nav">
+      <a href="#" class="brand">
+        <span class="brand-mark">F&F</span>
+        <span>Family & Friends</span>
+      </a>
+      <nav class="nav-links">
+        <a href="#announcements">Announcements</a>
+        <a href="#events">Events</a>
+        <a href="#actions">Big Actions</a>
+      </nav>
+      <button class="primary-btn small" onclick="scrollToSection('events')">View Events</button>
+    </div>
+  </header>
+
+  <main>
+    <section class="hero">
+      <div class="container hero-grid">
+        <div>
+          <div class="eyebrow">COMMUNITY HUB</div>
+          <h1>Stay connected to the moments that matter.</h1>
+          <p class="hero-copy">
+            One place for family events, major announcements, important plans,
+            celebrations, group decisions, and community updates.
+          </p>
+          <div class="hero-actions">
+            <button class="primary-btn" onclick="scrollToSection('events')">Upcoming Events</button>
+            <button class="secondary-btn" onclick="scrollToSection('announcements')">Latest Announcements</button>
+          </div>
+        </div>
+        <div class="hero-card">
+          <div class="status-dot"></div>
+          <span class="hero-card-label">Next big event</span>
+          <h3>Annual Family Weekend</h3>
+          <p>Saturday, September 19 • 2:00 PM</p>
+          <div class="countdown" id="countdown">Loading countdown…</div>
+        </div>
+      </div>
+    </section>
+
+    <section class="stats-section">
+      <div class="container stats-grid">
+        <div class="stat-card">
+          <span class="stat-number">4</span>
+          <span class="stat-label">Upcoming Events</span>
+        </div>
+        <div class="stat-card">
+          <span class="stat-number">3</span>
+          <span class="stat-label">Active Announcements</span>
+        </div>
+        <div class="stat-card">
+          <span class="stat-number">2</span>
+          <span class="stat-label">Community Actions</span>
+        </div>
+        <div class="stat-card">
+          <span class="stat-number">26</span>
+          <span class="stat-label">Members Connected</span>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="announcements">
+      <div class="container">
+        <div class="section-heading">
+          <div>
+            <div class="eyebrow">IMPORTANT UPDATES</div>
+            <h2>Big Announcements</h2>
+          </div>
+          <button class="text-btn" onclick="showToast('All announcements are already shown in this demo.')">View all →</button>
+        </div>
+
+        <div class="announcement-grid">
+          <article class="announcement featured">
+            <div class="badge urgent">Major Update</div>
+            <div class="announcement-meta">Posted August 9</div>
+            <h3>Family Weekend details are officially confirmed</h3>
+            <p>
+              The date, location, food plan, and main activities are locked in.
+              RSVP before September 5 so final arrangements can be made.
+            </p>
+            <button class="link-btn" onclick="openModal('Family Weekend', 'The annual Family Weekend is confirmed for September 19. Please RSVP by September 5. More detailed scheduling and directions can be added here.')">Read announcement →</button>
+          </article>
+
+          <article class="announcement">
+            <div class="badge">Community</div>
+            <div class="announcement-meta">Posted August 6</div>
+            <h3>New shared photo archive is live</h3>
+            <p>
+              We now have one central place for family photos, videos, old memories,
+              and event albums.
+            </p>
+            <button class="link-btn" onclick="openModal('Shared Photo Archive', 'Add the link to your real photo archive, Google Photos album, or private cloud storage here.')">Read announcement →</button>
+          </article>
+
+          <article class="announcement">
+            <div class="badge">Planning</div>
+            <div class="announcement-meta">Posted August 3</div>
+            <h3>Holiday planning group is now open</h3>
+            <p>
+              Anyone who wants to help coordinate travel, food, gifts, or activities
+              can join the holiday planning group.
+            </p>
+            <button class="link-btn" onclick="openModal('Holiday Planning', 'This can link to a group chat, signup form, shared document, or planning page.')">Read announcement →</button>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section class="section alt" id="events">
+      <div class="container">
+        <div class="section-heading">
+          <div>
+            <div class="eyebrow">WHAT'S COMING UP</div>
+            <h2>Community Events</h2>
+          </div>
+          <button class="primary-btn small" onclick="openEventForm()">+ Add Event</button>
+        </div>
+
+        <div class="event-list" id="eventList">
+          <article class="event-card">
+            <div class="event-date">
+              <span>SEP</span>
+              <strong>19</strong>
+            </div>
+            <div class="event-content">
+              <div class="event-topline">
+                <span class="badge urgent">Featured</span>
+                <span>2:00 PM – 8:00 PM</span>
+              </div>
+              <h3>Annual Family Weekend</h3>
+              <p class="location">📍 Riverside Park Pavilion</p>
+              <p>Food, games, photos, family updates, and a full afternoon together.</p>
+              <div class="event-actions">
+                <button class="primary-btn small" onclick="rsvp(this)">RSVP</button>
+                <button class="secondary-btn small" onclick="openModal('Annual Family Weekend', 'September 19, 2:00 PM–8:00 PM at Riverside Park Pavilion. Add directions, what to bring, food assignments, and contact info here.')">Details</button>
+              </div>
+            </div>
+          </article>
+
+          <article class="event-card">
+            <div class="event-date">
+              <span>OCT</span>
+              <strong>10</strong>
+            </div>
+            <div class="event-content">
+              <div class="event-topline">
+                <span class="badge">Dinner</span>
+                <span>6:30 PM</span>
+              </div>
+              <h3>Family Dinner Night</h3>
+              <p class="location">📍 Downtown</p>
+              <p>Monthly dinner night for everyone who can make it.</p>
+              <div class="event-actions">
+                <button class="primary-btn small" onclick="rsvp(this)">RSVP</button>
+                <button class="secondary-btn small" onclick="openModal('Family Dinner Night', 'October 10 at 6:30 PM. Restaurant/location details can be added here.')">Details</button>
+              </div>
+            </div>
+          </article>
+
+          <article class="event-card">
+            <div class="event-date">
+              <span>NOV</span>
+              <strong>26</strong>
+            </div>
+            <div class="event-content">
+              <div class="event-topline">
+                <span class="badge">Holiday</span>
+                <span>3:00 PM</span>
+              </div>
+              <h3>Thanksgiving Gathering</h3>
+              <p class="location">📍 Family Home</p>
+              <p>Dinner, dessert, family photos, and holiday planning.</p>
+              <div class="event-actions">
+                <button class="primary-btn small" onclick="rsvp(this)">RSVP</button>
+                <button class="secondary-btn small" onclick="openModal('Thanksgiving Gathering', 'Thanksgiving gathering details, food assignments, and arrival times can go here.')">Details</button>
+              </div>
+            </div>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="actions">
+      <div class="container">
+        <div class="section-heading">
+          <div>
+            <div class="eyebrow">GROUP EFFORTS</div>
+            <h2>Big Actions Happening</h2>
+          </div>
+        </div>
+
+        <div class="action-grid">
+          <article class="action-card">
+            <div class="action-icon">🏡</div>
+            <div class="badge progress">In Progress</div>
+            <h3>Help with the family move</h3>
+            <p>
+              Coordinating vehicles, boxes, pickup times, and volunteers for moving day.
+            </p>
+            <div class="progress-bar"><span style="width:68%"></span></div>
+            <div class="progress-copy">
+              <span>17 volunteers</span>
+              <span>68% organized</span>
+            </div>
+            <button class="primary-btn full" onclick="showToast('You joined the volunteer list.')">Join the Action</button>
+          </article>
+
+          <article class="action-card">
+            <div class="action-icon">🎁</div>
+            <div class="badge progress">Organizing</div>
+            <h3>Group birthday surprise</h3>
+            <p>
+              Collecting contributions, planning the surprise, and coordinating arrival times.
+            </p>
+            <div class="progress-bar"><span style="width:42%"></span></div>
+            <div class="progress-copy">
+              <span>11 people joined</span>
+              <span>42% organized</span>
+            </div>
+            <button class="primary-btn full" onclick="showToast('You joined the birthday planning group.')">Join the Action</button>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section class="section alt">
+      <div class="container">
+        <div class="cta-card">
+          <div>
+            <div class="eyebrow">STAY IN THE LOOP</div>
+            <h2>Never miss a major family update.</h2>
+            <p>
+              This can later connect to email, SMS, push notifications, or a private member account.
+            </p>
+          </div>
+          <div class="subscribe">
+            <input id="emailInput" type="email" placeholder="you@example.com" />
+            <button class="primary-btn" onclick="subscribe()">Get Updates</button>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <div class="container footer-inner">
+      <div>
+        <strong>Family & Friends Community</strong>
+        <p>Events, announcements, and important moments in one place.</p>
+      </div>
+      <span>Private community demo</span>
+    </div>
+  </footer>
+
+  <div class="modal-backdrop" id="modalBackdrop" onclick="closeModal(event)">
+    <div class="modal" onclick="event.stopPropagation()">
+      <button class="modal-close" onclick="closeModal()">×</button>
+      <h3 id="modalTitle">Details</h3>
+      <p id="modalText"></p>
+    </div>
+  </div>
+
+  <div class="modal-backdrop" id="eventFormBackdrop" onclick="closeEventForm(event)">
+    <form class="modal event-form" onclick="event.stopPropagation()" onsubmit="addEvent(event)">
+      <button type="button" class="modal-close" onclick="closeEventForm()">×</button>
+      <h3>Add a Community Event</h3>
+      <label>Event name<input id="eventName" required placeholder="Family BBQ" /></label>
+      <label>Date<input id="eventDate" required type="date" /></label>
+      <label>Time<input id="eventTime" required type="time" /></label>
+      <label>Location<input id="eventLocation" required placeholder="Location" /></label>
+      <button class="primary-btn full" type="submit">Add Event</button>
+    </form>
+  </div>
+
+  <div class="toast" id="toast"></div>
+  <script src="app.js"></script>
+</body>
+</html>

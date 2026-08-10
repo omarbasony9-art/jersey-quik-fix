@@ -1,0 +1,2 @@
+
+document.addEventListener("DOMContentLoaded",()=>{repairForm.onsubmit=e=>{e.preventDefault();const d=jqLoad(),ticket="JQ-"+Math.floor(100000+Math.random()*900000);d.repairs.push({id:Date.now(),ticket,category:rCategory.value,brand:rBrand.value,model:rModel.value,issue:rIssue.value,name:rName.value,phone:rPhone.value,email:rEmail.value,date:rDate.value,status:"Checked In"});jqSave(d);repairNotice.style.display="block";repairNotice.textContent="Repair request created. Ticket "+ticket;repairForm.reset()}})
