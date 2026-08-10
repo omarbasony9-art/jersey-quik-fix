@@ -156,9 +156,6 @@ export default function RepairPage() {
                 <button onClick={() => handleOpenModal()} className="bg-primary text-primary-foreground px-8 py-4 rounded-xl font-black uppercase tracking-wider hover:brightness-110 active:scale-[0.98] transition-all flex items-center justify-center gap-2 group shadow-none">
                   {repair.primaryBtn} <ArrowRight className="group-hover:translate-x-1 transition-transform" size={20} />
                 </button>
-                <button onClick={() => document.getElementById('locations')?.scrollIntoView({ behavior: 'smooth' })} className="border-2 border-border text-foreground px-8 py-4 rounded-xl font-black uppercase tracking-wider hover:bg-card active:scale-[0.98] transition-all flex items-center justify-center gap-2">
-                  {repair.secondaryBtn}
-                </button>
               </div>
 
               <div className="flex flex-col sm:flex-row gap-4 sm:gap-6 text-sm font-bold text-muted-foreground uppercase tracking-widest">
