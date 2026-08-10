@@ -6,7 +6,6 @@ import {
 } from 'lucide-react';
 import { useSiteData } from '../context/SiteDataContext';
 import Footer from '../components/Footer';
-import phoneRepairImg from '../assets/repair-banner.png';
 
 const REPAIRS_KEY = 'gv_repairs_v1';
 
@@ -115,7 +114,7 @@ export default function RepairPage() {
         <section className="relative min-h-[600px] flex items-center overflow-hidden py-20">
           <div className="absolute inset-0 z-0">
             <img 
-              src="https://images.unsplash.com/photo-1597872200969-2b65d56bd16b?auto=format&fit=crop&w=1600&q=80" 
+              src={repair.heroBgImage} 
               alt="Hands repairing phone" 
               className="w-full h-full object-cover object-center opacity-30"
             />
@@ -149,9 +148,9 @@ export default function RepairPage() {
               </div>
 
               <div className="flex flex-col sm:flex-row gap-4 sm:gap-6 text-sm font-bold text-muted-foreground uppercase tracking-widest">
-                <span className="flex items-center gap-1"><Check size={16} className="text-primary" /> Free diagnostics</span>
-                <span className="flex items-center gap-1"><Check size={16} className="text-primary" /> Same-day options</span>
-                <span className="flex items-center gap-1"><Check size={16} className="text-primary" /> 1-year warranty</span>
+                {repair.checklistItems.map((item, i) => (
+                  <span key={i} className="flex items-center gap-1"><Check size={16} className="text-primary" /> {item}</span>
+                ))}
               </div>
             </motion.div>
 
@@ -166,7 +165,7 @@ export default function RepairPage() {
                   Est. in your community
                 </div>
                 <img 
-                  src={phoneRepairImg}
+                  src={repair.heroSideImage || 'https://images.unsplash.com/photo-1556742031-c6961e8560b0?auto=format&fit=crop&w=600&q=80'}
                   alt="Phone repair technician" 
                   className="rounded-3xl border-l-4 border-primary shadow-2xl object-cover w-[400px] h-[500px]"
                 />
@@ -187,12 +186,7 @@ export default function RepairPage() {
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 auto-rows-[320px]">
               {repair.devices.map((device, i) => {
                 const Icon = deviceIconMap[device.id] ?? Wrench;
-                const overrideImages: Record<string, string> = {
-                  phone: 'https://images.unsplash.com/photo-1556742031-c6961e8560b0?auto=format&fit=crop&w=900&q=80',
-                  computer: 'https://images.unsplash.com/photo-1484788984921-03950022c9ef?auto=format&fit=crop&w=900&q=80',
-                  tablet: 'https://images.unsplash.com/photo-1544006659-f0b21884ce1d?auto=format&fit=crop&w=900&q=80',
-                };
-                const imgSrc = overrideImages[device.id] || device.image;
+                const imgSrc = device.image;
 
                 return (
                   <motion.button
@@ -381,7 +375,7 @@ export default function RepairPage() {
         {/* Why Us (Dark Section) */}
         <section className="py-28 bg-card relative overflow-hidden" style={{ clipPath: 'polygon(0 4%, 100% 0%, 100% 96%, 0% 100%)' }}>
           <div className="absolute inset-0 z-0 bg-card">
-            <img src="https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?auto=format&fit=crop&w=1600&q=80" alt="" loading="lazy" className="w-full h-full object-cover opacity-5" />
+            <img src={repair.whyUsBgImage} alt="" loading="lazy" className="w-full h-full object-cover opacity-5" />
           </div>
           <div className="max-w-7xl mx-auto px-6 relative z-10">
             <div className="grid lg:grid-cols-2 gap-12 items-center">
@@ -393,14 +387,9 @@ export default function RepairPage() {
                   {repair.whyUsSubtitle}
                 </p>
                 <div className="space-y-6">
-                  {[
-                    { title: 'Free Diagnostics', desc: 'Know what is wrong before paying a dime.', icon: Search },
-                    { title: 'Same-Day Service', desc: 'Most common repairs finished in under 2 hours.', icon: Clock },
-                    { title: '1-Year Warranty', desc: 'Parts and labor guaranteed for a full year.', icon: Shield },
-                    { title: 'Upfront Pricing', desc: 'No hidden fees or surprise charges. Ever.', icon: DollarSign }
-                  ].map((feature, i) => (
+                  {repair.whyUsPoints.map((point, i) => (
                     <motion.div 
-                      key={feature.title}
+                      key={point.id}
                       initial={{ opacity: 0, y: 20 }}
                       whileInView={{ opacity: 1, y: 0 }}
                       viewport={{ once: true }}
@@ -408,11 +397,11 @@ export default function RepairPage() {
                       className="flex gap-4"
                     >
                       <div className="bg-primary/10 text-primary p-3 rounded-xl h-fit">
-                        <feature.icon size={24} />
+                        <Check size={24} />
                       </div>
                       <div>
-                        <h3 className="text-xl font-black uppercase tracking-tight mb-1">{feature.title}</h3>
-                        <p className="text-muted-foreground font-medium">{feature.desc}</p>
+                        <h3 className="text-xl font-black uppercase tracking-tight mb-1">{point.title}</h3>
+                        <p className="text-muted-foreground font-medium">{point.desc}</p>
                       </div>
                     </motion.div>
                   ))}
@@ -473,7 +462,7 @@ export default function RepairPage() {
         {/* Location Finder */}
         <section id="locations" className="py-24 bg-background border-t border-border relative overflow-hidden">
           <div className="absolute inset-0 z-0 bg-background">
-            <img src="https://images.unsplash.com/photo-1477959858617-67f85cf4f1df?auto=format&fit=crop&w=1600&q=80" alt="Neighborhood view" className="w-full h-full object-cover opacity-10" />
+            <img src={repair.locationsBgImage} alt="Neighborhood view" className="w-full h-full object-cover opacity-10" />
             <div className="absolute inset-0 bg-background/80" />
           </div>
           <div className="max-w-3xl mx-auto px-6 text-center relative z-10">

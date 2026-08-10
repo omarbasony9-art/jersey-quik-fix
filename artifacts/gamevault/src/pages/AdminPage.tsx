@@ -5,28 +5,38 @@ import {
   Gamepad2, Settings, Home, Megaphone, Calendar, 
   Flame, BarChart, LogOut, Download, Upload, 
   Plus, Edit2, Trash2, X, RefreshCcw, Save, LayoutDashboard, Wrench,
-  ShoppingBag, Users, ClipboardList, Package, Receipt, UserCheck, RefreshCcw as RefreshCcw2, Briefcase, Image as ImageIcon
+  ShoppingBag, Users, ClipboardList, Package, Receipt, UserCheck, RefreshCcw as RefreshCcw2, Briefcase, Image as ImageIcon,
+  Check
 } from 'lucide-react';
-import { useSiteData, DEFAULT_CONTENT, type SiteContent, type Product, type InventoryItem, type Order, type Customer, type TradeIn, type Employee } from '../context/SiteDataContext';
+import { useSiteData, DEFAULT_CONTENT, type SiteContent } from '../context/SiteDataContext';
 import jerseyLogo from '../assets/jersey-quik-fix-logo.png';
 
 const ADMIN_PASSWORD = "1964";
 const REPAIRS_KEY = "gv_repairs_v1";
 
 type RepairTicket = {
-  id: string;
-  ticket: string;
-  category: string;
-  brand: string;
-  model: string;
-  issue: string;
-  name: string;
-  phone: string;
-  email: string;
-  date: string;
-  status: string;
-  createdAt: string;
+  id: string; ticket: string; category: string; brand: string; model: string;
+  issue: string; name: string; phone: string; email: string; date: string;
+  status: string; createdAt: string;
 };
+
+// Field helper component
+function ImageField({ label, value, onChange }: { label: string; value: string; onChange: (v: string) => void }) {
+  return (
+    <div>
+      <label className="block text-xs font-bold uppercase tracking-wider text-muted-foreground mb-1.5">{label}</label>
+      <input
+        value={value}
+        onChange={e => onChange(e.target.value)}
+        placeholder="Paste image URL..."
+        className="w-full bg-background border border-border rounded-xl px-4 py-2.5 text-foreground text-sm outline-none focus:border-primary transition-colors font-medium mb-2"
+      />
+      {value && (
+        <img src={value} alt={label} className="w-full h-28 object-cover rounded-xl border border-border" onError={e => (e.currentTarget.style.display='none')} />
+      )}
+    </div>
+  );
+}
 
 export default function AdminPage() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -39,27 +49,10 @@ export default function AdminPage() {
   const [repairs, setRepairs] = useState<RepairTicket[]>([]);
   
   const [toastMsg, setToastMsg] = useState<string | null>(null);
-  
-  // Modal state
-  const [modalOpen, setModalOpen] = useState(false);
-  const [modalType, setModalType] = useState<'ANNOUNCEMENT' | 'EVENT' | 'ACTION'>('ANNOUNCEMENT');
-  const [modalMode, setModalMode] = useState<'ADD' | 'EDIT'>('ADD');
-  const [modalItem, setModalItem] = useState<any>(null);
-
-  const fileInputRef = useRef<HTMLInputElement>(null);
-
-  const loadRepairs = () => {
-    try {
-      const r = JSON.parse(localStorage.getItem(REPAIRS_KEY) || '[]');
-      setRepairs(Array.isArray(r) ? r : []);
-    } catch { setRepairs([]); }
-  };
 
   useEffect(() => {
     const session = localStorage.getItem("gv_admin_session");
-    if (session === "true") {
-      setIsAuthenticated(true);
-    }
+    if (session === "true") setIsAuthenticated(true);
     setDraft(content);
     loadRepairs();
   }, [content]);
@@ -72,6 +65,13 @@ export default function AdminPage() {
   }, [toastMsg]);
 
   const showToast = (msg: string) => setToastMsg(msg);
+
+  const loadRepairs = () => {
+    try {
+      const r = JSON.parse(localStorage.getItem(REPAIRS_KEY) || '[]');
+      setRepairs(Array.isArray(r) ? r : []);
+    } catch { setRepairs([]); }
+  };
 
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
@@ -95,91 +95,107 @@ export default function AdminPage() {
     showToast("Live site updated.");
   };
 
-  const handleResetDemo = () => {
-    if (window.confirm("Are you sure you want to restore demo content? This will overwrite all changes.")) {
-      saveContent(DEFAULT_CONTENT);
-      showToast("Demo content restored.");
-    }
-  };
+  // Helper Setters
+  const setRepairField = (field: string, value: any) =>
+    setDraft(p => ({ ...p, repair: { ...p.repair, [field]: value } }));
 
-  const handleExport = () => {
-    const blob = new Blob([JSON.stringify(draft, null, 2)], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = 'jqf-site-data.json';
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-  };
+  const setShopField = (field: string, value: any) =>
+    setDraft(p => ({ ...p, shop: { ...p.shop, [field]: value } }));
 
-  const handleImport = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    
-    const reader = new FileReader();
-    reader.onload = (event) => {
-      try {
-        const importedData = JSON.parse(event.target?.result as string);
-        saveContent(importedData);
-        showToast("Data imported successfully.");
-      } catch (err) {
-        showToast("Failed to parse JSON file.");
+  const setCommunityField = (field: string, value: any) =>
+    setDraft(p => ({ ...p, community: { ...p.community, [field]: value } }));
+
+  const setSettingsField = (field: string, value: any) =>
+    setDraft(p => ({ ...p, settings: { ...p.settings, [field]: value } }));
+
+  const updateArrayItem = (section: keyof SiteContent, id: string, field: string, value: any) =>
+    setDraft(p => ({
+      ...p,
+      [section]: (p[section] as any[]).map((item: any) =>
+        item.id === id ? { ...item, [field]: value } : item
+      )
+    }));
+
+  const deleteArrayItem = (section: keyof SiteContent, id: string) =>
+    setDraft(p => ({
+      ...p,
+      [section]: (p[section] as any[]).filter((item: any) => item.id !== id)
+    }));
+
+  const updateRepairArray = (field: string, id: string, key: string, value: any) =>
+    setDraft(p => ({
+      ...p,
+      repair: {
+        ...p.repair,
+        [field]: (p.repair as any)[field].map((item: any) =>
+          item.id === id ? { ...item, [key]: value } : item
+        )
       }
-    };
-    reader.readAsText(file);
-    if (fileInputRef.current) fileInputRef.current.value = '';
-  };
+    }));
+
+  const deleteRepairArrayItem = (field: string, id: string) =>
+    setDraft(p => ({
+      ...p,
+      repair: {
+        ...p.repair,
+        [field]: (p.repair as any)[field].filter((item: any) => item.id !== id)
+      }
+    }));
+
+  const addRepairArrayItem = (field: string, item: any) =>
+    setDraft(p => ({
+      ...p,
+      repair: { ...p.repair, [field]: [...(p.repair as any)[field], item] }
+    }));
+
+  const updateCommunityArray = (field: string, id: string, key: string, value: any) =>
+    setDraft(p => ({
+      ...p,
+      community: {
+        ...p.community,
+        [field]: (p.community as any)[field].map((item: any) =>
+          item.id === id ? { ...item, [key]: value } : item
+        )
+      }
+    }));
+
+  const deleteCommunityArrayItem = (field: string, id: string) =>
+    setDraft(p => ({
+      ...p,
+      community: {
+        ...p.community,
+        [field]: (p.community as any)[field].filter((item: any) => item.id !== id)
+      }
+    }));
+
+  const addCommunityArrayItem = (field: string, item: any) =>
+    setDraft(p => ({
+      ...p,
+      community: { ...p.community, [field]: [...(p.community as any)[field], item] }
+    }));
+
+  // Styles
+  const inputCls = "w-full bg-background border border-border rounded-xl px-4 py-2.5 text-foreground text-sm outline-none focus:border-primary transition-colors font-medium";
+  const textareaCls = inputCls + " resize-none min-h-[80px]";
+  const labelCls = "block text-xs font-bold uppercase tracking-wider text-muted-foreground mb-1.5";
+  const sectionHeadCls = "text-xs font-black uppercase tracking-widest text-primary mb-4 border-b border-border pb-3";
+  const cardCls = "bg-card border border-border rounded-2xl p-5 mb-4";
+  const addBtnCls = "flex items-center gap-2 px-4 py-2 bg-primary/10 text-primary border border-primary/30 hover:bg-primary/20 rounded-xl font-black text-xs uppercase tracking-wider transition-colors w-max";
+  const deleteBtnCls = "text-destructive hover:bg-destructive/10 rounded-lg p-2 transition-colors flex-shrink-0";
 
   const panels = [
     { name: 'Dashboard', icon: <LayoutDashboard size={18} /> },
     { name: 'Repair Page', icon: <Wrench size={18} /> },
     { name: 'Shop Page', icon: <ShoppingBag size={18} /> },
     { name: 'Community', icon: <Users size={18} /> },
-    { name: 'Repair Requests', icon: <ClipboardList size={18} /> },
+    { name: 'Repair Tickets', icon: <ClipboardList size={18} /> },
     { name: 'Inventory', icon: <Package size={18} /> },
     { name: 'Orders', icon: <Receipt size={18} /> },
     { name: 'Customers', icon: <UserCheck size={18} /> },
     { name: 'Trade-Ins', icon: <RefreshCcw2 size={18} /> },
     { name: 'Employees', icon: <Briefcase size={18} /> },
-    { name: 'Photos', icon: <ImageIcon size={18} /> },
     { name: 'Settings', icon: <Settings size={18} /> }
   ];
-
-  const updateDraftText = (section: keyof SiteContent, field: string, value: any) => {
-    setDraft(prev => ({
-      ...prev,
-      [section]: {
-        ...(prev[section] as any),
-        [field]: value
-      }
-    }));
-  };
-
-  const updateDraftArray = <K extends keyof SiteContent>(
-    section: K, 
-    id: string, 
-    updater: (item: any) => any
-  ) => {
-    setDraft(prev => {
-      const arr = prev[section] as any[];
-      return {
-        ...prev,
-        [section]: arr.map(item => item.id === id ? updater(item) : item)
-      };
-    });
-  };
-
-  const addDraftArrayItem = <K extends keyof SiteContent>(section: K, newItem: any) => {
-    setDraft(prev => ({ ...prev, [section]: [...(prev[section] as any[]), { ...newItem, id: crypto.randomUUID() }] }));
-  };
-
-  const deleteDraftArrayItem = <K extends keyof SiteContent>(section: K, id: string) => {
-    if (window.confirm("Are you sure you want to delete this item?")) {
-      setDraft(prev => ({ ...prev, [section]: (prev[section] as any[]).filter(item => item.id !== id) }));
-    }
-  };
 
   if (!isAuthenticated) {
     return (
@@ -235,7 +251,7 @@ export default function AdminPage() {
     <div className="min-h-[100dvh] bg-background text-foreground flex font-sans selection:bg-primary selection:text-primary-foreground">
       {/* Sidebar */}
       <aside className="w-64 bg-secondary flex-shrink-0 border-r border-border flex flex-col hidden md:flex">
-        <div className="h-16 flex items-center px-6 border-b border-border">
+        <div className="h-16 flex items-center px-6 border-b border-border shrink-0">
           <div className="flex items-center gap-2">
             <img src={jerseyLogo} alt="JQF" className="h-8 w-8 object-contain bg-primary text-primary-foreground p-1 rounded-lg" />
             <span className="text-xl font-black tracking-tight uppercase italic text-secondary-foreground">
@@ -260,28 +276,7 @@ export default function AdminPage() {
           ))}
         </div>
 
-        <div className="p-4 border-t border-border space-y-2">
-          <button 
-            onClick={handleExport}
-            className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-card text-foreground rounded-xl font-bold text-xs uppercase tracking-wider hover:bg-card/80 transition-colors border border-border"
-          >
-            <Download size={14} /> Export Data
-          </button>
-          
-          <input 
-            type="file" 
-            ref={fileInputRef} 
-            onChange={handleImport} 
-            accept=".json" 
-            className="hidden" 
-          />
-          <button 
-            onClick={() => fileInputRef.current?.click()}
-            className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-card text-foreground rounded-xl font-bold text-xs uppercase tracking-wider hover:bg-card/80 transition-colors border border-border"
-          >
-            <Upload size={14} /> Import Data
-          </button>
-
+        <div className="p-4 border-t border-border space-y-2 shrink-0">
           <Link
             href="/"
             className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-primary/10 text-primary border border-primary/30 hover:bg-primary/20 rounded-xl font-bold text-xs uppercase tracking-wider transition-colors"
@@ -312,12 +307,6 @@ export default function AdminPage() {
           </div>
           <div className="flex gap-3">
             <button 
-              onClick={handleResetDemo}
-              className="flex items-center gap-2 px-4 py-2 bg-card border border-border text-foreground rounded-xl font-bold text-xs uppercase tracking-wider hover:bg-card/80 transition-colors"
-            >
-              <RefreshCcw size={14} /> Reset Demo
-            </button>
-            <button 
               onClick={handleSaveChanges}
               className="flex items-center gap-2 px-6 py-2 bg-primary text-primary-foreground rounded-xl font-black text-sm uppercase tracking-wider hover:brightness-110 active:scale-[0.98] transition-all shadow-[0_0_15px_rgba(245,158,11,0.3)]"
             >
@@ -329,6 +318,11 @@ export default function AdminPage() {
         {/* Scrollable Area */}
         <div className="flex-1 overflow-y-auto p-6 md:p-8">
           <div className="max-w-5xl mx-auto">
+            {toastMsg && (
+              <div className="fixed bottom-6 left-1/2 -translate-x-1/2 bg-primary text-primary-foreground px-6 py-3 rounded-xl font-bold uppercase tracking-wider shadow-2xl z-50 flex items-center gap-3">
+                <Check size={18} /> {toastMsg}
+              </div>
+            )}
             <AnimatePresence mode="wait">
               <motion.div
                 key={activePanel}
@@ -337,129 +331,375 @@ export default function AdminPage() {
                 exit={{ opacity: 0, y: -10 }}
                 transition={{ duration: 0.2 }}
               >
-                {/* OVERVIEW PANEL */}
-                {activePanel === 'Overview' && (
+                
+                {/* Dashboard */}
+                {activePanel === 'Dashboard' && (
                   <div className="space-y-6">
                     <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-                      <div className="bg-card border border-primary/40 rounded-2xl p-6 col-span-2 md:col-span-1 cursor-pointer hover:border-primary transition-colors" onClick={() => setActivePanel('Repair Requests')}>
+                      <div className="bg-card border border-primary/40 rounded-2xl p-6 col-span-2 md:col-span-1 cursor-pointer hover:border-primary transition-colors" onClick={() => setActivePanel('Repair Tickets')}>
                         <div className="text-3xl font-black text-primary mb-1">{repairs.length}</div>
-                        <div className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Repair Requests</div>
+                        <div className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Repair Tickets</div>
                       </div>
                       <div className="bg-card border border-border rounded-2xl p-6">
-                        <div className="text-3xl font-black text-primary mb-1">{data.announcements.length}</div>
-                        <div className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Announcements</div>
+                        <div className="text-3xl font-black text-primary mb-1">{draft.shop.products.length}</div>
+                        <div className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Products</div>
                       </div>
                       <div className="bg-card border border-border rounded-2xl p-6">
-                        <div className="text-3xl font-black text-primary mb-1">{data.events.length}</div>
-                        <div className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Events</div>
+                        <div className="text-3xl font-black text-primary mb-1">{draft.inventory.length}</div>
+                        <div className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Inventory</div>
                       </div>
                       <div className="bg-card border border-border rounded-2xl p-6">
-                        <div className="text-3xl font-black text-primary mb-1">{data.actions.length}</div>
-                        <div className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Big Actions</div>
+                        <div className="text-3xl font-black text-primary mb-1">{draft.customers.length}</div>
+                        <div className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Customers</div>
                       </div>
                       <div className="bg-card border border-border rounded-2xl p-6">
-                        <div className="text-3xl font-black text-primary mb-1">{data.stats.membersConnected}</div>
-                        <div className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Members</div>
+                        <div className="text-3xl font-black text-primary mb-1">{draft.employees.length}</div>
+                        <div className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Employees</div>
                       </div>
                     </div>
-
-                    <div className="grid md:grid-cols-2 gap-6">
-                      <div className="bg-card border border-border rounded-3xl p-6">
-                        <div className="text-xs font-bold uppercase tracking-widest text-primary mb-4">Next Event</div>
-                        {data.events[0] ? (
-                          <>
-                            <h3 className="text-xl font-black uppercase italic tracking-tight mb-2">{data.events[0].title}</h3>
-                            <p className="text-muted-foreground font-medium text-sm">{data.events[0].date} at {data.events[0].time}</p>
-                          </>
-                        ) : (
-                          <p className="text-muted-foreground font-medium text-sm">No events scheduled.</p>
-                        )}
-                      </div>
-                      <div className="bg-card border border-border rounded-3xl p-6">
-                        <div className="text-xs font-bold uppercase tracking-widest text-primary mb-4">Latest Announcement</div>
-                        {data.announcements[0] ? (
-                          <>
-                            <h3 className="text-xl font-black uppercase italic tracking-tight mb-2">{data.announcements[0].title}</h3>
-                            <p className="text-muted-foreground font-medium text-sm line-clamp-2">{data.announcements[0].summary}</p>
-                          </>
-                        ) : (
-                          <p className="text-muted-foreground font-medium text-sm">No announcements.</p>
-                        )}
-                      </div>
-                    </div>
-
-                    <div className="bg-secondary border border-border rounded-3xl p-6 text-center text-secondary-foreground">
+                    <div className="bg-secondary border border-border rounded-3xl p-6 text-center text-secondary-foreground flex flex-col items-center gap-4">
                       <p className="font-bold text-sm tracking-wide">
-                        Everything is editable here — saves to localStorage. Export JSON anytime.
+                        Every change saved here updates the live website instantly.
                       </p>
+                      <button 
+                        onClick={handleSaveChanges}
+                        className="flex items-center gap-2 px-6 py-2 bg-primary text-primary-foreground rounded-xl font-black text-sm uppercase tracking-wider hover:brightness-110 active:scale-[0.98] transition-all shadow-[0_0_15px_rgba(245,158,11,0.3)]"
+                      >
+                        <Save size={16} /> Save All Changes
+                      </button>
                     </div>
                   </div>
                 )}
 
-                {/* REPAIR REQUESTS PANEL */}
-                {activePanel === 'Repair Requests' && (
-                  <div className="space-y-4">
-                    <div className="flex items-center justify-between mb-2">
-                      <div>
-                        <div className="text-xs font-bold uppercase tracking-widest text-primary mb-1">Incoming</div>
-                        <h3 className="text-2xl font-black uppercase italic tracking-tight">{repairs.length} Repair {repairs.length === 1 ? 'Request' : 'Requests'}</h3>
+                {/* Repair Page */}
+                {activePanel === 'Repair Page' && (
+                  <div className="space-y-8">
+                    <div>
+                      <h3 className={sectionHeadCls}>Hero Content</h3>
+                      <div className="grid md:grid-cols-2 gap-4">
+                        <div>
+                          <label className={labelCls}>Eyebrow Text</label>
+                          <input value={draft.repair.heroEyebrow} onChange={e => setRepairField('heroEyebrow', e.target.value)} className={inputCls} />
+                        </div>
+                        <div>
+                          <label className={labelCls}>Headline</label>
+                          <input value={draft.repair.heroHeadline} onChange={e => setRepairField('heroHeadline', e.target.value)} className={inputCls} />
+                        </div>
+                        <div>
+                          <label className={labelCls}>Accent Word</label>
+                          <input value={draft.repair.heroAccent} onChange={e => setRepairField('heroAccent', e.target.value)} className={inputCls} />
+                        </div>
+                        <div className="md:col-span-2">
+                          <label className={labelCls}>Subtitle</label>
+                          <textarea value={draft.repair.heroSubtitle} onChange={e => setRepairField('heroSubtitle', e.target.value)} className={textareaCls} />
+                        </div>
+                        <div>
+                          <label className={labelCls}>Primary Button</label>
+                          <input value={draft.repair.primaryBtn} onChange={e => setRepairField('primaryBtn', e.target.value)} className={inputCls} />
+                        </div>
+                        <div>
+                          <label className={labelCls}>Secondary Button</label>
+                          <input value={draft.repair.secondaryBtn} onChange={e => setRepairField('secondaryBtn', e.target.value)} className={inputCls} />
+                        </div>
+                        <div className="md:col-span-2">
+                          <label className={labelCls}>Promo Banner</label>
+                          <input value={draft.repair.promoBanner} onChange={e => setRepairField('promoBanner', e.target.value)} className={inputCls} />
+                        </div>
                       </div>
-                      <button
-                        onClick={() => { loadRepairs(); showToast('Refreshed.'); }}
-                        className="flex items-center gap-2 px-4 py-2 bg-card border border-border text-foreground rounded-xl font-bold text-xs uppercase tracking-wider hover:bg-card/80 transition-colors"
-                      >
+                    </div>
+
+                    <div>
+                      <h3 className={sectionHeadCls}>Hero Images</h3>
+                      <div className="grid md:grid-cols-2 gap-4">
+                        <ImageField label="Hero Background Photo" value={draft.repair.heroBgImage} onChange={v => setRepairField('heroBgImage', v)} />
+                        <ImageField label="Hero Side Photo (Leave empty for fallback)" value={draft.repair.heroSideImage} onChange={v => setRepairField('heroSideImage', v)} />
+                      </div>
+                    </div>
+
+                    <div>
+                      <h3 className={sectionHeadCls}>Checklist Items</h3>
+                      {draft.repair.checklistItems.map((item, i) => (
+                        <div key={i} className="flex gap-2 mb-2">
+                          <input value={item} onChange={e => {
+                            const newArr = [...draft.repair.checklistItems];
+                            newArr[i] = e.target.value;
+                            setRepairField('checklistItems', newArr);
+                          }} className={inputCls} />
+                          <button onClick={() => {
+                            setRepairField('checklistItems', draft.repair.checklistItems.filter((_, idx) => idx !== i));
+                          }} className={deleteBtnCls}><Trash2 size={16} /></button>
+                        </div>
+                      ))}
+                      <button onClick={() => setRepairField('checklistItems', [...draft.repair.checklistItems, 'New Item'])} className={addBtnCls}><Plus size={14} /> Add Item</button>
+                    </div>
+
+                    <div>
+                      <h3 className={sectionHeadCls}>Why Us Section</h3>
+                      <div className="grid md:grid-cols-2 gap-4 mb-4">
+                        <div><label className={labelCls}>Headline</label><input value={draft.repair.whyUsHeadline} onChange={e => setRepairField('whyUsHeadline', e.target.value)} className={inputCls} /></div>
+                        <div><label className={labelCls}>Accent Word</label><input value={draft.repair.whyUsAccent} onChange={e => setRepairField('whyUsAccent', e.target.value)} className={inputCls} /></div>
+                        <div className="md:col-span-2"><label className={labelCls}>Subtitle</label><textarea value={draft.repair.whyUsSubtitle} onChange={e => setRepairField('whyUsSubtitle', e.target.value)} className={textareaCls} /></div>
+                        <div className="md:col-span-2"><ImageField label="Why Us Background Photo" value={draft.repair.whyUsBgImage} onChange={v => setRepairField('whyUsBgImage', v)} /></div>
+                      </div>
+                      
+                      <h4 className="text-sm font-bold uppercase mb-2">Why Us Points</h4>
+                      {draft.repair.whyUsPoints.map(point => (
+                        <div key={point.id} className={cardCls + " flex gap-4"}>
+                          <div className="flex-1 space-y-2">
+                            <input value={point.title} onChange={e => updateRepairArray('whyUsPoints', point.id, 'title', e.target.value)} className={inputCls} placeholder="Title" />
+                            <textarea value={point.desc} onChange={e => updateRepairArray('whyUsPoints', point.id, 'desc', e.target.value)} className={textareaCls} placeholder="Description" />
+                          </div>
+                          <button onClick={() => deleteRepairArrayItem('whyUsPoints', point.id)} className={deleteBtnCls}><Trash2 size={16} /></button>
+                        </div>
+                      ))}
+                      <button onClick={() => addRepairArrayItem('whyUsPoints', { id: crypto.randomUUID(), title: 'New Point', desc: '' })} className={addBtnCls}><Plus size={14} /> Add Point</button>
+                    </div>
+
+                    <div>
+                      <h3 className={sectionHeadCls}>Device Categories</h3>
+                      {draft.repair.devices.map(dev => (
+                        <div key={dev.id} className={cardCls + " flex gap-4"}>
+                          <div className="flex-1 space-y-2">
+                            <div className="grid md:grid-cols-2 gap-2">
+                              <input value={dev.title} onChange={e => updateRepairArray('devices', dev.id, 'title', e.target.value)} className={inputCls} placeholder="Title" />
+                              <input value={dev.desc} onChange={e => updateRepairArray('devices', dev.id, 'desc', e.target.value)} className={inputCls} placeholder="Description" />
+                            </div>
+                            <ImageField label="Image" value={dev.image} onChange={v => updateRepairArray('devices', dev.id, 'image', v)} />
+                          </div>
+                          <button onClick={() => deleteRepairArrayItem('devices', dev.id)} className={deleteBtnCls}><Trash2 size={16} /></button>
+                        </div>
+                      ))}
+                      <button onClick={() => addRepairArrayItem('devices', { id: crypto.randomUUID(), title: 'New Device', desc: '', image: '' })} className={addBtnCls}><Plus size={14} /> Add Device</button>
+                    </div>
+
+                    <div>
+                      <h3 className={sectionHeadCls}>Customer Reviews</h3>
+                      {draft.repair.reviews.map(rev => (
+                        <div key={rev.id} className={cardCls + " flex gap-4"}>
+                          <div className="flex-1 space-y-2">
+                            <div className="grid md:grid-cols-2 gap-2">
+                              <input value={rev.name} onChange={e => updateRepairArray('reviews', rev.id, 'name', e.target.value)} className={inputCls} placeholder="Name" />
+                              <input value={rev.device} onChange={e => updateRepairArray('reviews', rev.id, 'device', e.target.value)} className={inputCls} placeholder="Repair Type" />
+                            </div>
+                            <textarea value={rev.text} onChange={e => updateRepairArray('reviews', rev.id, 'text', e.target.value)} className={textareaCls} placeholder="Review Text" />
+                            <ImageField label="Avatar" value={rev.avatar} onChange={v => updateRepairArray('reviews', rev.id, 'avatar', v)} />
+                          </div>
+                          <button onClick={() => deleteRepairArrayItem('reviews', rev.id)} className={deleteBtnCls}><Trash2 size={16} /></button>
+                        </div>
+                      ))}
+                      <button onClick={() => addRepairArrayItem('reviews', { id: crypto.randomUUID(), name: 'New User', device: '', text: '', avatar: '' })} className={addBtnCls}><Plus size={14} /> Add Review</button>
+                    </div>
+
+                    <div>
+                      <h3 className={sectionHeadCls}>FAQs</h3>
+                      {draft.repair.faqs.map(faq => (
+                        <div key={faq.id} className={cardCls + " flex gap-4"}>
+                          <div className="flex-1 space-y-2">
+                            <input value={faq.q} onChange={e => updateRepairArray('faqs', faq.id, 'q', e.target.value)} className={inputCls} placeholder="Question" />
+                            <textarea value={faq.a} onChange={e => updateRepairArray('faqs', faq.id, 'a', e.target.value)} className={textareaCls} placeholder="Answer" />
+                          </div>
+                          <button onClick={() => deleteRepairArrayItem('faqs', faq.id)} className={deleteBtnCls}><Trash2 size={16} /></button>
+                        </div>
+                      ))}
+                      <button onClick={() => addRepairArrayItem('faqs', { id: crypto.randomUUID(), q: 'New FAQ', a: '' })} className={addBtnCls}><Plus size={14} /> Add FAQ</button>
+                    </div>
+
+                    <div>
+                      <h3 className={sectionHeadCls}>Locations</h3>
+                      <div className="mb-4">
+                        <ImageField label="Locations Background" value={draft.repair.locationsBgImage} onChange={v => setRepairField('locationsBgImage', v)} />
+                      </div>
+                      {draft.repair.locations.map(loc => (
+                        <div key={loc.id} className={cardCls + " flex gap-4"}>
+                          <div className="flex-1 grid md:grid-cols-2 gap-2">
+                            <input value={loc.city} onChange={e => updateRepairArray('locations', loc.id, 'city', e.target.value)} className={inputCls} placeholder="City" />
+                            <input value={loc.address} onChange={e => updateRepairArray('locations', loc.id, 'address', e.target.value)} className={inputCls} placeholder="Address" />
+                            <input value={loc.distance} onChange={e => updateRepairArray('locations', loc.id, 'distance', e.target.value)} className={inputCls} placeholder="Distance" />
+                            <input value={loc.open} onChange={e => updateRepairArray('locations', loc.id, 'open', e.target.value)} className={inputCls} placeholder="Hours" />
+                          </div>
+                          <button onClick={() => deleteRepairArrayItem('locations', loc.id)} className={deleteBtnCls}><Trash2 size={16} /></button>
+                        </div>
+                      ))}
+                      <button onClick={() => addRepairArrayItem('locations', { id: crypto.randomUUID(), city: 'New City', address: '', distance: '', open: '' })} className={addBtnCls}><Plus size={14} /> Add Location</button>
+                    </div>
+                  </div>
+                )}
+
+                {/* Shop Page */}
+                {activePanel === 'Shop Page' && (
+                  <div className="space-y-8">
+                    <div>
+                      <h3 className={sectionHeadCls}>Hero Section</h3>
+                      <div className="grid md:grid-cols-2 gap-4">
+                        <div><label className={labelCls}>Headline</label><input value={draft.shop.heroHeadline} onChange={e => setShopField('heroHeadline', e.target.value)} className={inputCls} /></div>
+                        <div><label className={labelCls}>Accent</label><input value={draft.shop.heroAccent} onChange={e => setShopField('heroAccent', e.target.value)} className={inputCls} /></div>
+                        <div className="md:col-span-2"><label className={labelCls}>Subtitle</label><textarea value={draft.shop.heroSubtitle} onChange={e => setShopField('heroSubtitle', e.target.value)} className={textareaCls} /></div>
+                        <div className="md:col-span-2"><label className={labelCls}>Promo Banner</label><input value={draft.shop.promoBanner} onChange={e => setShopField('promoBanner', e.target.value)} className={inputCls} /></div>
+                        <div className="md:col-span-2"><ImageField label="Hero Background" value={draft.shop.heroImage} onChange={v => setShopField('heroImage', v)} /></div>
+                      </div>
+                    </div>
+
+                    <div>
+                      <h3 className={sectionHeadCls}>Products</h3>
+                      {draft.shop.products.map(p => (
+                        <div key={p.id} className={cardCls + " flex gap-4"}>
+                          <div className="flex-1 space-y-2">
+                            <div className="grid grid-cols-3 gap-2">
+                              <input value={p.name} onChange={e => updateArrayItem('shop', p.id, 'name', e.target.value)} className={inputCls} placeholder="Name" />
+                              <input value={p.category} onChange={e => updateArrayItem('shop', p.id, 'category', e.target.value)} className={inputCls} placeholder="Category" />
+                              <input value={p.sku} onChange={e => updateArrayItem('shop', p.id, 'sku', e.target.value)} className={inputCls} placeholder="SKU" />
+                            </div>
+                            <div className="grid grid-cols-3 gap-2">
+                              <input type="number" value={p.price} onChange={e => updateArrayItem('shop', p.id, 'price', Number(e.target.value))} className={inputCls} placeholder="Price" />
+                              <input type="number" value={p.oldPrice || ''} onChange={e => updateArrayItem('shop', p.id, 'oldPrice', Number(e.target.value))} className={inputCls} placeholder="Old Price" />
+                              <input type="number" value={p.stock} onChange={e => updateArrayItem('shop', p.id, 'stock', Number(e.target.value))} className={inputCls} placeholder="Stock" />
+                            </div>
+                            <div className="grid grid-cols-3 gap-2">
+                              <input value={p.badge || ''} onChange={e => updateArrayItem('shop', p.id, 'badge', e.target.value)} className={inputCls} placeholder="Badge" />
+                              <input type="number" step="0.1" value={p.rating} onChange={e => updateArrayItem('shop', p.id, 'rating', Number(e.target.value))} className={inputCls} placeholder="Rating" />
+                              <select value={p.active ? 'Yes' : 'No'} onChange={e => updateArrayItem('shop', p.id, 'active', e.target.value === 'Yes')} className={inputCls}>
+                                <option>Yes</option><option>No</option>
+                              </select>
+                            </div>
+                            <ImageField label="Image" value={p.image} onChange={v => updateArrayItem('shop', p.id, 'image', v)} />
+                          </div>
+                          <button onClick={() => setDraft(d => ({...d, shop: {...d.shop, products: d.shop.products.filter(x => x.id !== p.id)}}))} className={deleteBtnCls}><Trash2 size={16} /></button>
+                        </div>
+                      ))}
+                      <button onClick={() => setDraft(d => ({...d, shop: {...d.shop, products: [...d.shop.products, { id: crypto.randomUUID(), name: 'New Product', category: 'Accessories', price: 0, rating: 4.5, badge: '', image: '', stock: 0, sku: '', active: true }]}}))} className={addBtnCls}><Plus size={14} /> Add Product</button>
+                    </div>
+                  </div>
+                )}
+
+                {/* Community Page */}
+                {activePanel === 'Community' && (
+                  <div className="space-y-8">
+                    <div>
+                      <h3 className={sectionHeadCls}>Hero Section</h3>
+                      <div className="grid md:grid-cols-2 gap-4">
+                        <div className="md:col-span-2"><label className={labelCls}>Headline</label><textarea value={draft.community.heroHeadline} onChange={e => setCommunityField('heroHeadline', e.target.value)} className={textareaCls} /></div>
+                        <div className="md:col-span-2"><label className={labelCls}>Subtitle</label><textarea value={draft.community.heroSubtitle} onChange={e => setCommunityField('heroSubtitle', e.target.value)} className={textareaCls} /></div>
+                        <div><label className={labelCls}>Promo Banner</label><input value={draft.community.promoBanner} onChange={e => setCommunityField('promoBanner', e.target.value)} className={inputCls} /></div>
+                        <div><label className={labelCls}>Countdown Target</label><input type="datetime-local" value={draft.community.countdownTarget} onChange={e => setCommunityField('countdownTarget', e.target.value)} className={inputCls} /></div>
+                        <div className="md:col-span-2"><ImageField label="Hero Background" value={draft.community.heroBgImage} onChange={v => setCommunityField('heroBgImage', v)} /></div>
+                      </div>
+                    </div>
+
+                    <div>
+                      <h3 className={sectionHeadCls}>Announcements</h3>
+                      {draft.community.announcements.map(ann => (
+                        <div key={ann.id} className={cardCls + " flex gap-4"}>
+                          <div className="flex-1 space-y-2">
+                            <div className="grid grid-cols-2 gap-2">
+                              <input value={ann.title} onChange={e => updateCommunityArray('announcements', ann.id, 'title', e.target.value)} className={inputCls} placeholder="Title" />
+                              <input value={ann.badge} onChange={e => updateCommunityArray('announcements', ann.id, 'badge', e.target.value)} className={inputCls} placeholder="Badge" />
+                            </div>
+                            <div className="grid grid-cols-2 gap-2">
+                              <input value={ann.date} onChange={e => updateCommunityArray('announcements', ann.id, 'date', e.target.value)} className={inputCls} placeholder="Date" />
+                              <select value={ann.featured ? 'Yes' : 'No'} onChange={e => updateCommunityArray('announcements', ann.id, 'featured', e.target.value === 'Yes')} className={inputCls}>
+                                <option>Yes</option><option>No</option>
+                              </select>
+                            </div>
+                            <textarea value={ann.desc} onChange={e => updateCommunityArray('announcements', ann.id, 'desc', e.target.value)} className={textareaCls} placeholder="Description" />
+                            <ImageField label="Image" value={ann.image} onChange={v => updateCommunityArray('announcements', ann.id, 'image', v)} />
+                          </div>
+                          <button onClick={() => deleteCommunityArrayItem('announcements', ann.id)} className={deleteBtnCls}><Trash2 size={16} /></button>
+                        </div>
+                      ))}
+                      <button onClick={() => addCommunityArrayItem('announcements', { id: crypto.randomUUID(), badge: 'New', date: new Date().toLocaleDateString('en-US',{month:'long',day:'numeric'}), title: 'New Announcement', desc: '', featured: false, image: '' })} className={addBtnCls}><Plus size={14} /> Add Announcement</button>
+                    </div>
+
+                    <div>
+                      <h3 className={sectionHeadCls}>Events</h3>
+                      {draft.community.events.map(ev => (
+                        <div key={ev.id} className={cardCls + " flex gap-4"}>
+                          <div className="flex-1 space-y-2">
+                            <div className="grid grid-cols-2 gap-2">
+                              <input value={ev.title} onChange={e => updateCommunityArray('events', ev.id, 'title', e.target.value)} className={inputCls} placeholder="Title" />
+                              <input value={ev.badge} onChange={e => updateCommunityArray('events', ev.id, 'badge', e.target.value)} className={inputCls} placeholder="Badge" />
+                            </div>
+                            <div className="grid grid-cols-3 gap-2">
+                              <input type="date" value={ev.date} onChange={e => updateCommunityArray('events', ev.id, 'date', e.target.value)} className={inputCls} />
+                              <input type="time" value={ev.time} onChange={e => updateCommunityArray('events', ev.id, 'time', e.target.value)} className={inputCls} />
+                              <input value={ev.location} onChange={e => updateCommunityArray('events', ev.id, 'location', e.target.value)} className={inputCls} placeholder="Location" />
+                            </div>
+                            <textarea value={ev.desc} onChange={e => updateCommunityArray('events', ev.id, 'desc', e.target.value)} className={textareaCls} placeholder="Description" />
+                          </div>
+                          <button onClick={() => deleteCommunityArrayItem('events', ev.id)} className={deleteBtnCls}><Trash2 size={16} /></button>
+                        </div>
+                      ))}
+                      <button onClick={() => addCommunityArrayItem('events', { id: crypto.randomUUID(), date: '', badge: 'Event', time: '', endTime: '', title: 'New Event', location: '', desc: '' })} className={addBtnCls}><Plus size={14} /> Add Event</button>
+                    </div>
+
+                    <div>
+                      <h3 className={sectionHeadCls}>Actions</h3>
+                      {draft.community.actions.map(act => (
+                        <div key={act.id} className={cardCls + " flex gap-4"}>
+                          <div className="flex-1 space-y-2">
+                            <div className="grid grid-cols-3 gap-2">
+                              <input value={act.icon} onChange={e => updateCommunityArray('actions', act.id, 'icon', e.target.value)} className={inputCls} placeholder="Icon (emoji)" />
+                              <input value={act.title} onChange={e => updateCommunityArray('actions', act.id, 'title', e.target.value)} className={inputCls} placeholder="Title" />
+                              <input value={act.badge} onChange={e => updateCommunityArray('actions', act.id, 'badge', e.target.value)} className={inputCls} placeholder="Badge" />
+                            </div>
+                            <div className="grid grid-cols-2 gap-2">
+                              <input type="number" value={act.progress} onChange={e => updateCommunityArray('actions', act.id, 'progress', Number(e.target.value))} className={inputCls} placeholder="Progress %" />
+                              <input type="number" value={act.volunteers} onChange={e => updateCommunityArray('actions', act.id, 'volunteers', Number(e.target.value))} className={inputCls} placeholder="Volunteers" />
+                            </div>
+                            <textarea value={act.desc} onChange={e => updateCommunityArray('actions', act.id, 'desc', e.target.value)} className={textareaCls} placeholder="Description" />
+                            <ImageField label="Image" value={act.image} onChange={v => updateCommunityArray('actions', act.id, 'image', v)} />
+                          </div>
+                          <button onClick={() => deleteCommunityArrayItem('actions', act.id)} className={deleteBtnCls}><Trash2 size={16} /></button>
+                        </div>
+                      ))}
+                      <button onClick={() => addCommunityArrayItem('actions', { id: crypto.randomUUID(), icon: '⭐', badge: 'Planning', title: 'New Action', desc: '', progress: 0, volunteers: 0, image: '' })} className={addBtnCls}><Plus size={14} /> Add Action</button>
+                    </div>
+                  </div>
+                )}
+
+                {/* Repair Tickets Panel */}
+                {activePanel === 'Repair Tickets' && (
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between mb-4">
+                      <h3 className={sectionHeadCls}>Repair Requests</h3>
+                      <button onClick={() => { loadRepairs(); showToast('Refreshed.'); }} className="flex items-center gap-2 px-4 py-2 bg-card border border-border text-foreground rounded-xl font-bold text-xs uppercase hover:bg-card/80 transition-colors">
                         <RefreshCcw size={14} /> Refresh
                       </button>
                     </div>
 
                     {repairs.length === 0 ? (
                       <div className="bg-card border border-border rounded-3xl p-16 text-center">
-                        <div className="w-16 h-16 bg-primary/10 rounded-2xl flex items-center justify-center mx-auto mb-4">
-                          <Wrench size={28} className="text-primary" />
-                        </div>
-                        <h4 className="text-xl font-black uppercase italic tracking-tight mb-2">No requests yet</h4>
-                        <p className="text-muted-foreground font-medium text-sm">Repair requests submitted on the Repair page will appear here.</p>
+                        <p className="text-muted-foreground font-medium">No requests yet.</p>
                       </div>
                     ) : (
                       <div className="space-y-3">
-                        {[...repairs].reverse().map((r) => (
+                        {[...repairs].reverse().map(r => (
                           <div key={r.id} className="bg-card border border-border rounded-2xl p-5 flex flex-col md:flex-row md:items-center gap-4">
                             <div className="flex-shrink-0">
-                              <div className="bg-primary/10 text-primary font-black text-xs tracking-wider px-3 py-1.5 rounded-lg inline-block">{r.ticket}</div>
+                              <div className="bg-primary/10 text-primary font-black text-xs tracking-wider px-3 py-1.5 rounded-lg">{r.ticket}</div>
                             </div>
                             <div className="flex-1 min-w-0">
-                              <div className="flex flex-wrap items-center gap-2 mb-1">
-                                <span className="font-black text-foreground">{r.name}</span>
-                                <span className="text-muted-foreground text-sm">·</span>
-                                <span className="text-muted-foreground text-sm font-medium">{r.phone}</span>
-                                {r.email && <>
-                                  <span className="text-muted-foreground text-sm">·</span>
-                                  <span className="text-muted-foreground text-sm font-medium">{r.email}</span>
-                                </>}
-                              </div>
-                              <div className="flex flex-wrap gap-2 text-xs font-bold uppercase tracking-wider">
-                                <span className="bg-background border border-border px-2 py-1 rounded-lg">{r.category}</span>
-                                <span className="bg-background border border-border px-2 py-1 rounded-lg">{r.brand} {r.model}</span>
-                                <span className="bg-background border border-border px-2 py-1 rounded-lg">{r.issue}</span>
-                                {r.date && <span className="bg-background border border-border px-2 py-1 rounded-lg">{r.date}</span>}
+                              <div className="font-black mb-1">{r.name} · {r.phone}</div>
+                              <div className="flex gap-2 text-xs font-bold uppercase tracking-wider text-muted-foreground">
+                                <span>{r.category}</span>
+                                <span>{r.brand} {r.model}</span>
+                                <span>{r.issue}</span>
                               </div>
                             </div>
-                            <div className="flex items-center gap-3 flex-shrink-0">
-                              <span className="text-xs font-bold uppercase tracking-widest text-primary bg-primary/10 px-3 py-1.5 rounded-lg whitespace-nowrap">{r.status}</span>
-                              <button
-                                onClick={() => {
-                                  if (window.confirm(`Delete ticket ${r.ticket}?`)) {
-                                    const updated = repairs.filter(x => x.id !== r.id);
-                                    localStorage.setItem(REPAIRS_KEY, JSON.stringify(updated));
-                                    setRepairs(updated);
-                                    showToast('Ticket deleted.');
-                                  }
-                                }}
-                                className="text-destructive hover:bg-destructive/10 p-2 rounded-lg transition-colors"
-                                title="Delete"
-                              >
-                                <Trash2 size={16} />
-                              </button>
+                            <div className="flex items-center gap-3">
+                              <span className="text-xs font-bold uppercase text-primary bg-primary/10 px-3 py-1.5 rounded-lg">{r.status}</span>
+                              <button onClick={() => {
+                                const updated = repairs.map(x => x.id === r.id ? { ...x, status: 'Ready for Pickup' } : x);
+                                localStorage.setItem(REPAIRS_KEY, JSON.stringify(updated));
+                                setRepairs(updated);
+                                showToast('Marked ready.');
+                              }} className="text-xs font-bold uppercase px-3 py-1.5 bg-accent/10 text-accent rounded-lg hover:bg-accent/20">Mark Ready</button>
+                              <button onClick={() => {
+                                if (window.confirm(`Delete ticket ${r.ticket}?`)) {
+                                  const updated = repairs.filter(x => x.id !== r.id);
+                                  localStorage.setItem(REPAIRS_KEY, JSON.stringify(updated));
+                                  setRepairs(updated);
+                                }
+                              }} className={deleteBtnCls}><Trash2 size={16} /></button>
                             </div>
                           </div>
                         ))}
@@ -468,341 +708,161 @@ export default function AdminPage() {
                   </div>
                 )}
 
-                {/* HOMEPAGE PANEL */}
-                {activePanel === 'Homepage' && (
-                  <div className="bg-card border border-border rounded-3xl p-6 space-y-6">
-                    <h3 className="text-lg font-black uppercase italic tracking-tight mb-4 border-b border-border pb-4">Hero Section Content</h3>
-                    <div className="grid md:grid-cols-2 gap-6">
-                      <div className="space-y-2">
-                        <label className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Eyebrow</label>
-                        <input 
-                          type="text" 
-                          value={draftData.homepage.heroEyebrow}
-                          onChange={e => updateDraft('homepage', 'heroEyebrow', e.target.value)}
-                          className="w-full bg-background border border-border focus:border-primary text-foreground rounded-xl py-3 px-4 outline-none font-bold"
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <label className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Community Name</label>
-                        <input 
-                          type="text" 
-                          value={draftData.homepage.communityName}
-                          onChange={e => updateDraft('homepage', 'communityName', e.target.value)}
-                          className="w-full bg-background border border-border focus:border-primary text-foreground rounded-xl py-3 px-4 outline-none font-bold"
-                        />
-                      </div>
-                      <div className="space-y-2 md:col-span-2">
-                        <label className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Headline</label>
-                        <input 
-                          type="text" 
-                          value={draftData.homepage.heroHeadline}
-                          onChange={e => updateDraft('homepage', 'heroHeadline', e.target.value)}
-                          className="w-full bg-background border border-border focus:border-primary text-foreground rounded-xl py-3 px-4 outline-none font-bold"
-                        />
-                      </div>
-                      <div className="space-y-2 md:col-span-2">
-                        <label className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Description</label>
-                        <textarea 
-                          value={draftData.homepage.heroDescription}
-                          onChange={e => updateDraft('homepage', 'heroDescription', e.target.value)}
-                          rows={3}
-                          className="w-full bg-background border border-border focus:border-primary text-foreground rounded-xl py-3 px-4 outline-none font-medium resize-none"
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <label className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Primary Button Text</label>
-                        <input 
-                          type="text" 
-                          value={draftData.homepage.heroPrimaryButton}
-                          onChange={e => updateDraft('homepage', 'heroPrimaryButton', e.target.value)}
-                          className="w-full bg-background border border-border focus:border-primary text-foreground rounded-xl py-3 px-4 outline-none font-bold"
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <label className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Secondary Button Text</label>
-                        <input 
-                          type="text" 
-                          value={draftData.homepage.heroSecondaryButton}
-                          onChange={e => updateDraft('homepage', 'heroSecondaryButton', e.target.value)}
-                          className="w-full bg-background border border-border focus:border-primary text-foreground rounded-xl py-3 px-4 outline-none font-bold"
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <label className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Next Event Card Label</label>
-                        <input 
-                          type="text" 
-                          value={draftData.homepage.nextEventLabel}
-                          onChange={e => updateDraft('homepage', 'nextEventLabel', e.target.value)}
-                          className="w-full bg-background border border-border focus:border-primary text-foreground rounded-xl py-3 px-4 outline-none font-bold"
-                        />
-                      </div>
-                    </div>
-                  </div>
-                )}
-
-                {/* ANNOUNCEMENTS PANEL */}
-                {activePanel === 'Announcements' && (
-                  <div className="space-y-6">
-                    <div className="flex justify-end">
-                      <button 
-                        onClick={() => openModal('ANNOUNCEMENT', 'ADD')}
-                        className="flex items-center gap-2 px-5 py-2.5 bg-primary text-primary-foreground rounded-xl font-bold text-sm uppercase tracking-wider hover:brightness-110 transition-all"
-                      >
-                        <Plus size={16} /> Add Announcement
-                      </button>
-                    </div>
-                    <div className="space-y-4">
-                      {data.announcements.map((ann) => (
-                        <div key={ann.id} className="bg-card border border-border rounded-3xl p-6 flex flex-col md:flex-row md:items-center justify-between gap-6">
-                          <div className="flex-1 space-y-2">
-                            <div className="flex gap-2 mb-1">
-                              <span className="text-[10px] font-bold uppercase tracking-widest bg-secondary/50 text-secondary-foreground px-2 py-0.5 rounded text-primary">
-                                {ann.category}
-                              </span>
-                              <span className="text-[10px] font-bold uppercase tracking-widest bg-background px-2 py-0.5 rounded text-muted-foreground">
-                                {ann.date}
-                              </span>
-                              {ann.featured && (
-                                <span className="text-[10px] font-bold uppercase tracking-widest bg-primary/20 text-primary px-2 py-0.5 rounded">
-                                  Featured
-                                </span>
-                              )}
-                            </div>
-                            <h4 className="text-lg font-black uppercase italic tracking-tight">{ann.title}</h4>
-                            <p className="text-muted-foreground text-sm line-clamp-2">{ann.summary}</p>
-                          </div>
-                          <div className="flex gap-2 shrink-0">
-                            <button 
-                              onClick={() => openModal('ANNOUNCEMENT', 'EDIT', ann)}
-                              className="p-3 bg-background border border-border text-foreground rounded-xl hover:border-primary transition-colors"
-                            >
-                              <Edit2 size={16} />
-                            </button>
-                            <button 
-                              onClick={() => handleDeleteItem('announcements', ann.id)}
-                              className="p-3 bg-background border border-border text-destructive rounded-xl hover:bg-destructive/10 hover:border-destructive transition-colors"
-                            >
-                              <Trash2 size={16} />
-                            </button>
-                          </div>
+                {/* Inventory Panel */}
+                {activePanel === 'Inventory' && (
+                  <div className="space-y-4">
+                    <h3 className={sectionHeadCls}>Inventory</h3>
+                    {draft.inventory.map(inv => (
+                      <div key={inv.id} className={cardCls + ` flex gap-4 ${inv.quantity <= inv.threshold ? 'border-l-4 border-l-primary' : ''}`}>
+                        <div className="flex-1 grid md:grid-cols-5 gap-2">
+                          <input value={inv.item} onChange={e => updateArrayItem('inventory', inv.id, 'item', e.target.value)} className={inputCls} placeholder="Item Name" />
+                          <input type="number" value={inv.quantity} onChange={e => updateArrayItem('inventory', inv.id, 'quantity', Number(e.target.value))} className={inputCls} placeholder="Qty" />
+                          <input type="number" value={inv.reserved} onChange={e => updateArrayItem('inventory', inv.id, 'reserved', Number(e.target.value))} className={inputCls} placeholder="Reserved" />
+                          <input type="number" value={inv.threshold} onChange={e => updateArrayItem('inventory', inv.id, 'threshold', Number(e.target.value))} className={inputCls} placeholder="Threshold" />
+                          <input value={inv.reason} onChange={e => updateArrayItem('inventory', inv.id, 'reason', e.target.value)} className={inputCls} placeholder="Reason" />
                         </div>
-                      ))}
-                    </div>
+                        <button onClick={() => deleteArrayItem('inventory', inv.id)} className={deleteBtnCls}><Trash2 size={16} /></button>
+                      </div>
+                    ))}
+                    <button onClick={() => setDraft(d => ({...d, inventory: [...d.inventory, { id: crypto.randomUUID(), item: '', quantity: 0, reserved: 0, threshold: 5, reason: 'Manual add' }]}))} className={addBtnCls}><Plus size={14} /> Add Item</button>
                   </div>
                 )}
 
-                {/* EVENTS PANEL */}
-                {activePanel === 'Events' && (
-                  <div className="space-y-6">
-                    <div className="flex justify-end">
-                      <button 
-                        onClick={() => openModal('EVENT', 'ADD')}
-                        className="flex items-center gap-2 px-5 py-2.5 bg-primary text-primary-foreground rounded-xl font-bold text-sm uppercase tracking-wider hover:brightness-110 transition-all"
-                      >
-                        <Plus size={16} /> Add Event
-                      </button>
-                    </div>
-                    <div className="space-y-4">
-                      {data.events.map((ev) => (
-                        <div key={ev.id} className="bg-card border border-border rounded-3xl p-6 flex flex-col md:flex-row md:items-center justify-between gap-6">
-                          <div className="flex-1 space-y-2">
-                            <div className="flex gap-2 mb-1">
-                              <span className="text-[10px] font-bold uppercase tracking-widest bg-secondary/50 text-secondary-foreground px-2 py-0.5 rounded text-primary">
-                                {ev.date}
-                              </span>
-                              <span className="text-[10px] font-bold uppercase tracking-widest bg-background px-2 py-0.5 rounded text-muted-foreground">
-                                {ev.time} {ev.endTime ? `- ${ev.endTime}` : ''}
-                              </span>
-                              {ev.featured && (
-                                <span className="text-[10px] font-bold uppercase tracking-widest bg-primary/20 text-primary px-2 py-0.5 rounded">
-                                  Featured
-                                </span>
-                              )}
-                            </div>
-                            <h4 className="text-lg font-black uppercase italic tracking-tight">{ev.title}</h4>
-                            <p className="text-muted-foreground text-sm">📍 {ev.location}</p>
-                          </div>
-                          <div className="flex gap-2 shrink-0">
-                            <button 
-                              onClick={() => openModal('EVENT', 'EDIT', ev)}
-                              className="p-3 bg-background border border-border text-foreground rounded-xl hover:border-primary transition-colors"
-                            >
-                              <Edit2 size={16} />
-                            </button>
-                            <button 
-                              onClick={() => handleDeleteItem('events', ev.id)}
-                              className="p-3 bg-background border border-border text-destructive rounded-xl hover:bg-destructive/10 hover:border-destructive transition-colors"
-                            >
-                              <Trash2 size={16} />
-                            </button>
-                          </div>
+                {/* Orders Panel */}
+                {activePanel === 'Orders' && (
+                  <div className="space-y-4">
+                    <h3 className={sectionHeadCls}>Orders</h3>
+                    {draft.orders.map(ord => (
+                      <div key={ord.id} className={cardCls + " flex gap-4"}>
+                        <div className="flex-1 grid md:grid-cols-4 gap-2">
+                          <input value={ord.order} onChange={e => updateArrayItem('orders', ord.id, 'order', e.target.value)} className={inputCls} placeholder="Order #" />
+                          <input value={ord.customer} onChange={e => updateArrayItem('orders', ord.id, 'customer', e.target.value)} className={inputCls} placeholder="Customer" />
+                          <input value={ord.total} onChange={e => updateArrayItem('orders', ord.id, 'total', e.target.value)} className={inputCls} placeholder="Total" />
+                          <select value={ord.status} onChange={e => updateArrayItem('orders', ord.id, 'status', e.target.value)} className={inputCls}>
+                            <option>Pending</option><option>Processing</option><option>Shipped</option><option>Completed</option><option>Cancelled</option>
+                          </select>
                         </div>
-                      ))}
-                    </div>
+                        <button onClick={() => deleteArrayItem('orders', ord.id)} className={deleteBtnCls}><Trash2 size={16} /></button>
+                      </div>
+                    ))}
+                    <button onClick={() => setDraft(d => ({...d, orders: [...d.orders, { id: crypto.randomUUID(), order: 'ORD-'+Math.floor(Math.random()*99999), customer: '', total: '0', status: 'Pending' }]}))} className={addBtnCls}><Plus size={14} /> Add Order</button>
                   </div>
                 )}
 
-                {/* ACTIONS PANEL */}
-                {activePanel === 'Big Actions' && (
-                  <div className="space-y-6">
-                    <div className="flex justify-end">
-                      <button 
-                        onClick={() => openModal('ACTION', 'ADD')}
-                        className="flex items-center gap-2 px-5 py-2.5 bg-primary text-primary-foreground rounded-xl font-bold text-sm uppercase tracking-wider hover:brightness-110 transition-all"
-                      >
-                        <Plus size={16} /> Add Action
-                      </button>
-                    </div>
-                    <div className="grid md:grid-cols-2 gap-4">
-                      {data.actions.map((act) => (
-                        <div key={act.id} className="bg-card border border-border rounded-3xl p-6 flex flex-col">
-                          <div className="flex items-center justify-between mb-4">
-                            <div className="text-3xl bg-background border border-border w-12 h-12 flex items-center justify-center rounded-2xl">{act.icon}</div>
-                            <div className="flex gap-2">
-                               <button 
-                                onClick={() => openModal('ACTION', 'EDIT', act)}
-                                className="p-2 bg-background border border-border text-foreground rounded-lg hover:border-primary transition-colors"
-                              >
-                                <Edit2 size={14} />
-                              </button>
-                              <button 
-                                onClick={() => handleDeleteItem('actions', act.id)}
-                                className="p-2 bg-background border border-border text-destructive rounded-lg hover:bg-destructive/10 hover:border-destructive transition-colors"
-                              >
-                                <Trash2 size={14} />
-                              </button>
-                            </div>
-                          </div>
-                          <div className="flex gap-2 mb-2">
-                            <span className="text-[10px] font-bold uppercase tracking-widest bg-secondary/50 text-secondary-foreground px-2 py-0.5 rounded text-primary">
-                              {act.status}
-                            </span>
-                          </div>
-                          <h4 className="text-lg font-black uppercase italic tracking-tight mb-2">{act.title}</h4>
-                          <p className="text-muted-foreground text-sm mb-4 flex-1">{act.description}</p>
-                          <div className="space-y-2">
-                            <div className="flex justify-between text-xs font-bold text-muted-foreground">
-                              <span>{act.participants} participants</span>
-                              <span>{act.progress}%</span>
-                            </div>
-                            <div className="h-2 bg-background border border-border rounded-full overflow-hidden">
-                              <div className="h-full bg-primary" style={{ width: `${act.progress}%` }} />
-                            </div>
-                          </div>
+                {/* Customers Panel */}
+                {activePanel === 'Customers' && (
+                  <div className="space-y-4">
+                    <h3 className={sectionHeadCls}>Customers</h3>
+                    {draft.customers.map(cust => (
+                      <div key={cust.id} className={cardCls + " flex gap-4"}>
+                        <div className="flex-1 grid md:grid-cols-4 gap-2">
+                          <input value={cust.name} onChange={e => updateArrayItem('customers', cust.id, 'name', e.target.value)} className={inputCls} placeholder="Name" />
+                          <input value={cust.phone} onChange={e => updateArrayItem('customers', cust.id, 'phone', e.target.value)} className={inputCls} placeholder="Phone" />
+                          <input value={cust.email} onChange={e => updateArrayItem('customers', cust.id, 'email', e.target.value)} className={inputCls} placeholder="Email" />
+                          <input value={cust.lifetimeSpend} onChange={e => updateArrayItem('customers', cust.id, 'lifetimeSpend', e.target.value)} className={inputCls} placeholder="Lifetime Spend" />
                         </div>
-                      ))}
-                    </div>
+                        <button onClick={() => deleteArrayItem('customers', cust.id)} className={deleteBtnCls}><Trash2 size={16} /></button>
+                      </div>
+                    ))}
+                    <button onClick={() => setDraft(d => ({...d, customers: [...d.customers, { id: crypto.randomUUID(), name: '', phone: '', email: '', lifetimeSpend: '0' }]}))} className={addBtnCls}><Plus size={14} /> Add Customer</button>
                   </div>
                 )}
 
-                {/* STATS PANEL */}
-                {activePanel === 'Stats' && (
-                  <div className="bg-card border border-border rounded-3xl p-6 space-y-6">
-                    <h3 className="text-lg font-black uppercase italic tracking-tight mb-4 border-b border-border pb-4">Stats Section Content</h3>
-                    <div className="grid md:grid-cols-2 gap-6">
-                      <div className="space-y-2">
-                        <label className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Members Connected (Number)</label>
-                        <input 
-                          type="number" 
-                          value={draftData.stats.membersConnected}
-                          onChange={e => updateDraft('stats', 'membersConnected', parseInt(e.target.value) || 0)}
-                          className="w-full bg-background border border-border focus:border-primary text-foreground rounded-xl py-3 px-4 outline-none font-bold"
-                        />
+                {/* Trade-Ins Panel */}
+                {activePanel === 'Trade-Ins' && (
+                  <div className="space-y-4">
+                    <h3 className={sectionHeadCls}>Trade-Ins</h3>
+                    {draft.tradeins.map(tr => (
+                      <div key={tr.id} className={cardCls + " flex gap-4"}>
+                        <div className="flex-1 grid md:grid-cols-5 gap-2">
+                          <input value={tr.customer} onChange={e => updateArrayItem('tradeins', tr.id, 'customer', e.target.value)} className={inputCls} placeholder="Customer" />
+                          <input value={tr.device} onChange={e => updateArrayItem('tradeins', tr.id, 'device', e.target.value)} className={inputCls} placeholder="Device" />
+                          <select value={tr.condition} onChange={e => updateArrayItem('tradeins', tr.id, 'condition', e.target.value)} className={inputCls}>
+                            <option>Excellent</option><option>Good</option><option>Fair</option><option>Poor</option>
+                          </select>
+                          <input value={tr.offer} onChange={e => updateArrayItem('tradeins', tr.id, 'offer', e.target.value)} className={inputCls} placeholder="Offer" />
+                          <select value={tr.status} onChange={e => updateArrayItem('tradeins', tr.id, 'status', e.target.value)} className={inputCls}>
+                            <option>Submitted</option><option>Reviewing</option><option>Approved</option><option>Completed</option><option>Declined</option>
+                          </select>
+                        </div>
+                        <button onClick={() => deleteArrayItem('tradeins', tr.id)} className={deleteBtnCls}><Trash2 size={16} /></button>
                       </div>
-                      <div className="space-y-2">
-                        <label className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Member Label</label>
-                        <input 
-                          type="text" 
-                          value={draftData.stats.memberStatLabel}
-                          onChange={e => updateDraft('stats', 'memberStatLabel', e.target.value)}
-                          className="w-full bg-background border border-border focus:border-primary text-foreground rounded-xl py-3 px-4 outline-none font-bold"
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <label className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Announcement Label</label>
-                        <input 
-                          type="text" 
-                          value={draftData.stats.announcementStatLabel}
-                          onChange={e => updateDraft('stats', 'announcementStatLabel', e.target.value)}
-                          className="w-full bg-background border border-border focus:border-primary text-foreground rounded-xl py-3 px-4 outline-none font-bold"
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <label className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Event Label</label>
-                        <input 
-                          type="text" 
-                          value={draftData.stats.eventStatLabel}
-                          onChange={e => updateDraft('stats', 'eventStatLabel', e.target.value)}
-                          className="w-full bg-background border border-border focus:border-primary text-foreground rounded-xl py-3 px-4 outline-none font-bold"
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <label className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Action Label</label>
-                        <input 
-                          type="text" 
-                          value={draftData.stats.actionStatLabel}
-                          onChange={e => updateDraft('stats', 'actionStatLabel', e.target.value)}
-                          className="w-full bg-background border border-border focus:border-primary text-foreground rounded-xl py-3 px-4 outline-none font-bold"
-                        />
-                      </div>
-                    </div>
+                    ))}
+                    <button onClick={() => setDraft(d => ({...d, tradeins: [...d.tradeins, { id: crypto.randomUUID(), customer: '', device: '', condition: 'Good', offer: '0', status: 'Submitted' }]}))} className={addBtnCls}><Plus size={14} /> Add Trade-In</button>
                   </div>
                 )}
 
-                {/* SETTINGS PANEL */}
+                {/* Employees Panel */}
+                {activePanel === 'Employees' && (
+                  <div className="space-y-4">
+                    <h3 className={sectionHeadCls}>Employees</h3>
+                    {draft.employees.map(emp => (
+                      <div key={emp.id} className={cardCls + " flex gap-4"}>
+                        <div className="flex-1 grid md:grid-cols-4 gap-2">
+                          <input value={emp.name} onChange={e => updateArrayItem('employees', emp.id, 'name', e.target.value)} className={inputCls} placeholder="Name" />
+                          <input value={emp.email} onChange={e => updateArrayItem('employees', emp.id, 'email', e.target.value)} className={inputCls} placeholder="Email" />
+                          <select value={emp.role} onChange={e => updateArrayItem('employees', emp.id, 'role', e.target.value)} className={inputCls}>
+                            <option>Owner</option><option>Manager</option><option>Technician</option><option>Sales</option><option>Front Desk</option>
+                          </select>
+                          <select value={emp.status} onChange={e => updateArrayItem('employees', emp.id, 'status', e.target.value)} className={inputCls}>
+                            <option>Active</option><option>Inactive</option>
+                          </select>
+                        </div>
+                        <button onClick={() => deleteArrayItem('employees', emp.id)} className={deleteBtnCls}><Trash2 size={16} /></button>
+                      </div>
+                    ))}
+                    <button onClick={() => setDraft(d => ({...d, employees: [...d.employees, { id: crypto.randomUUID(), name: '', email: '', role: 'Technician', status: 'Active' }]}))} className={addBtnCls}><Plus size={14} /> Add Employee</button>
+                  </div>
+                )}
+
+                {/* Settings Panel */}
                 {activePanel === 'Settings' && (
-                  <div className="bg-card border border-border rounded-3xl p-6 space-y-6">
-                    <h3 className="text-lg font-black uppercase italic tracking-tight mb-4 border-b border-border pb-4">Global Settings</h3>
-                    <div className="grid md:grid-cols-2 gap-6">
-                      <div className="space-y-2">
-                        <label className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Contact Email</label>
-                        <input 
-                          type="email" 
-                          value={draftData.settings.contactEmail}
-                          onChange={e => updateDraft('settings', 'contactEmail', e.target.value)}
-                          className="w-full bg-background border border-border focus:border-primary text-foreground rounded-xl py-3 px-4 outline-none font-bold"
-                        />
+                  <div className="space-y-8">
+                    <div>
+                      <h3 className={sectionHeadCls}>Global Settings</h3>
+                      <div className="grid md:grid-cols-2 gap-4">
+                        <div>
+                          <label className={labelCls}>Site Name</label>
+                          <input value={draft.site.name} onChange={e => setDraft(p => ({ ...p, site: { ...p.site, name: e.target.value } }))} className={inputCls} />
+                        </div>
+                        <div>
+                          <label className={labelCls}>Site Tagline</label>
+                          <input value={draft.site.tagline} onChange={e => setDraft(p => ({ ...p, site: { ...p.site, tagline: e.target.value } }))} className={inputCls} />
+                        </div>
+                        <div>
+                          <label className={labelCls}>Store Name</label>
+                          <input value={draft.settings.storeName} onChange={e => setSettingsField('storeName', e.target.value)} className={inputCls} />
+                        </div>
+                        <div>
+                          <label className={labelCls}>Contact Email</label>
+                          <input value={draft.settings.contactEmail} onChange={e => setSettingsField('contactEmail', e.target.value)} className={inputCls} />
+                        </div>
+                        <div>
+                          <label className={labelCls}>Phone</label>
+                          <input value={draft.settings.phone} onChange={e => setSettingsField('phone', e.target.value)} className={inputCls} />
+                        </div>
+                        <div>
+                          <label className={labelCls}>Visibility</label>
+                          <select value={draft.settings.visibility} onChange={e => setSettingsField('visibility', e.target.value)} className={inputCls}>
+                            <option>Public</option><option>Private</option>
+                          </select>
+                        </div>
+                        <div className="md:col-span-2">
+                          <label className={labelCls}>Footer Text</label>
+                          <textarea value={draft.settings.footer} onChange={e => setSettingsField('footer', e.target.value)} className={textareaCls} />
+                        </div>
                       </div>
-                      <div className="space-y-2">
-                        <label className="text-xs font-bold uppercase tracking-widest text-muted-foreground">RSVP Deadline Text</label>
-                        <input 
-                          type="text" 
-                          value={draftData.settings.rsvpDeadlineText}
-                          onChange={e => updateDraft('settings', 'rsvpDeadlineText', e.target.value)}
-                          className="w-full bg-background border border-border focus:border-primary text-foreground rounded-xl py-3 px-4 outline-none font-bold"
-                        />
-                      </div>
-                      <div className="space-y-2 md:col-span-2">
-                        <label className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Footer Message</label>
-                        <input 
-                          type="text" 
-                          value={draftData.settings.footerMessage}
-                          onChange={e => updateDraft('settings', 'footerMessage', e.target.value)}
-                          className="w-full bg-background border border-border focus:border-primary text-foreground rounded-xl py-3 px-4 outline-none font-bold"
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <label className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Signup Enabled</label>
-                        <select 
-                          value={draftData.settings.signupEnabled ? 'yes' : 'no'}
-                          onChange={e => updateDraft('settings', 'signupEnabled', e.target.value === 'yes')}
-                          className="w-full bg-background border border-border focus:border-primary text-foreground rounded-xl py-3 px-4 outline-none font-bold appearance-none"
-                        >
-                          <option value="yes">Yes</option>
-                          <option value="no">No</option>
-                        </select>
-                      </div>
-                      <div className="space-y-2">
-                        <label className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Site Visibility</label>
-                        <select 
-                          value={draftData.settings.siteVisibility}
-                          onChange={e => updateDraft('settings', 'siteVisibility', e.target.value)}
-                          className="w-full bg-background border border-border focus:border-primary text-foreground rounded-xl py-3 px-4 outline-none font-bold appearance-none"
-                        >
-                          <option value="public">Public</option>
-                          <option value="private">Private (Password Protected)</option>
-                        </select>
-                      </div>
+                    </div>
+
+                    <div className="pt-6 border-t border-border">
+                      <button onClick={() => {
+                        if (window.confirm("Reset all settings to default demo data?")) {
+                          saveContent(DEFAULT_CONTENT);
+                          showToast('Reset to defaults.');
+                        }
+                      }} className="flex items-center gap-2 px-4 py-2 bg-destructive/10 text-destructive border border-destructive/30 hover:bg-destructive/20 rounded-xl font-black text-xs uppercase tracking-wider transition-colors">
+                        <RefreshCcw size={14} /> Reset to Defaults
+                      </button>
                     </div>
                   </div>
                 )}
@@ -811,180 +871,6 @@ export default function AdminPage() {
           </div>
         </div>
       </main>
-
-      {/* Editor Modal */}
-      <AnimatePresence>
-        {modalOpen && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-            <motion.div 
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              onClick={() => setModalOpen(false)}
-              className="absolute inset-0 bg-black/80 backdrop-blur-sm"
-            />
-            <motion.div 
-              initial={{ opacity: 0, scale: 0.95, y: 20 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.95, y: 20 }}
-              className="relative w-full max-w-lg bg-card border border-border rounded-3xl shadow-2xl z-10 flex flex-col max-h-[90dvh]"
-            >
-              <div className="p-6 border-b border-border flex justify-between items-center bg-background/50 shrink-0">
-                <div>
-                  <div className="text-[10px] font-bold uppercase tracking-widest text-primary leading-none mb-1">
-                    {modalType}
-                  </div>
-                  <h3 className="font-black text-2xl uppercase tracking-tight italic leading-none">
-                    {modalMode === 'ADD' ? 'Add Item' : 'Edit Item'}
-                  </h3>
-                </div>
-                <button 
-                  onClick={() => setModalOpen(false)}
-                  className="text-muted-foreground hover:text-foreground bg-card p-2 rounded-full border border-transparent hover:border-border transition-colors"
-                >
-                  <X size={20} />
-                </button>
-              </div>
-              
-              <div className="overflow-y-auto p-6">
-                <form id="modal-form" onSubmit={handleModalSave} className="space-y-4">
-                  {modalType === 'ANNOUNCEMENT' && (
-                    <>
-                      <div className="space-y-1">
-                        <label className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Title *</label>
-                        <input required type="text" value={modalItem.title} onChange={e => setModalItem({...modalItem, title: e.target.value})} className="w-full bg-background border border-border focus:border-primary rounded-xl py-3 px-4 font-bold outline-none" />
-                      </div>
-                      <div className="grid grid-cols-2 gap-4">
-                        <div className="space-y-1">
-                          <label className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Category</label>
-                          <input type="text" value={modalItem.category} onChange={e => setModalItem({...modalItem, category: e.target.value})} className="w-full bg-background border border-border focus:border-primary rounded-xl py-3 px-4 font-bold outline-none" />
-                        </div>
-                        <div className="space-y-1">
-                          <label className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Date</label>
-                          <input type="date" value={modalItem.date} onChange={e => setModalItem({...modalItem, date: e.target.value})} className="w-full bg-background border border-border focus:border-primary rounded-xl py-3 px-4 font-bold outline-none" />
-                        </div>
-                      </div>
-                      <div className="space-y-1">
-                        <label className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Summary *</label>
-                        <textarea required rows={4} value={modalItem.summary} onChange={e => setModalItem({...modalItem, summary: e.target.value})} className="w-full bg-background border border-border focus:border-primary rounded-xl py-3 px-4 font-medium outline-none resize-none" />
-                      </div>
-                      <div className="space-y-1">
-                        <label className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Featured</label>
-                        <select value={modalItem.featured ? 'yes' : 'no'} onChange={e => setModalItem({...modalItem, featured: e.target.value === 'yes'})} className="w-full bg-background border border-border focus:border-primary rounded-xl py-3 px-4 font-bold outline-none appearance-none">
-                          <option value="no">No</option>
-                          <option value="yes">Yes</option>
-                        </select>
-                      </div>
-                    </>
-                  )}
-
-                  {modalType === 'EVENT' && (
-                    <>
-                      <div className="space-y-1">
-                        <label className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Event Name *</label>
-                        <input required type="text" value={modalItem.title} onChange={e => setModalItem({...modalItem, title: e.target.value})} className="w-full bg-background border border-border focus:border-primary rounded-xl py-3 px-4 font-bold outline-none" />
-                      </div>
-                      <div className="grid grid-cols-3 gap-4">
-                        <div className="space-y-1 col-span-3 sm:col-span-1">
-                          <label className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Date</label>
-                          <input type="date" value={modalItem.date} onChange={e => setModalItem({...modalItem, date: e.target.value})} className="w-full bg-background border border-border focus:border-primary rounded-xl py-3 px-4 font-bold outline-none" />
-                        </div>
-                        <div className="space-y-1 col-span-3 sm:col-span-1">
-                          <label className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Start Time</label>
-                          <input type="time" value={modalItem.time} onChange={e => setModalItem({...modalItem, time: e.target.value})} className="w-full bg-background border border-border focus:border-primary rounded-xl py-3 px-4 font-bold outline-none" />
-                        </div>
-                        <div className="space-y-1 col-span-3 sm:col-span-1">
-                          <label className="text-xs font-bold uppercase tracking-widest text-muted-foreground">End Time</label>
-                          <input type="time" value={modalItem.endTime} onChange={e => setModalItem({...modalItem, endTime: e.target.value})} className="w-full bg-background border border-border focus:border-primary rounded-xl py-3 px-4 font-bold outline-none" />
-                        </div>
-                      </div>
-                      <div className="space-y-1">
-                        <label className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Location *</label>
-                        <input required type="text" value={modalItem.location} onChange={e => setModalItem({...modalItem, location: e.target.value})} className="w-full bg-background border border-border focus:border-primary rounded-xl py-3 px-4 font-bold outline-none" />
-                      </div>
-                      <div className="space-y-1">
-                        <label className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Description *</label>
-                        <textarea required rows={3} value={modalItem.description} onChange={e => setModalItem({...modalItem, description: e.target.value})} className="w-full bg-background border border-border focus:border-primary rounded-xl py-3 px-4 font-medium outline-none resize-none" />
-                      </div>
-                      <div className="space-y-1">
-                        <label className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Featured</label>
-                        <select value={modalItem.featured ? 'yes' : 'no'} onChange={e => setModalItem({...modalItem, featured: e.target.value === 'yes'})} className="w-full bg-background border border-border focus:border-primary rounded-xl py-3 px-4 font-bold outline-none appearance-none">
-                          <option value="no">No</option>
-                          <option value="yes">Yes</option>
-                        </select>
-                      </div>
-                    </>
-                  )}
-
-                  {modalType === 'ACTION' && (
-                    <>
-                      <div className="space-y-1">
-                        <label className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Title *</label>
-                        <input required type="text" value={modalItem.title} onChange={e => setModalItem({...modalItem, title: e.target.value})} className="w-full bg-background border border-border focus:border-primary rounded-xl py-3 px-4 font-bold outline-none" />
-                      </div>
-                      <div className="grid grid-cols-2 gap-4">
-                        <div className="space-y-1">
-                          <label className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Status</label>
-                          <input type="text" value={modalItem.status} onChange={e => setModalItem({...modalItem, status: e.target.value})} placeholder="e.g. In Progress" className="w-full bg-background border border-border focus:border-primary rounded-xl py-3 px-4 font-bold outline-none" />
-                        </div>
-                        <div className="space-y-1">
-                          <label className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Icon (Emoji)</label>
-                          <input type="text" value={modalItem.icon} onChange={e => setModalItem({...modalItem, icon: e.target.value})} className="w-full bg-background border border-border focus:border-primary rounded-xl py-3 px-4 font-bold outline-none text-center" maxLength={2} />
-                        </div>
-                      </div>
-                      <div className="space-y-1">
-                        <label className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Description *</label>
-                        <textarea required rows={3} value={modalItem.description} onChange={e => setModalItem({...modalItem, description: e.target.value})} className="w-full bg-background border border-border focus:border-primary rounded-xl py-3 px-4 font-medium outline-none resize-none" />
-                      </div>
-                      <div className="grid grid-cols-2 gap-4">
-                        <div className="space-y-1">
-                          <label className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Progress (0-100)</label>
-                          <input type="number" min="0" max="100" value={modalItem.progress} onChange={e => setModalItem({...modalItem, progress: parseInt(e.target.value) || 0})} className="w-full bg-background border border-border focus:border-primary rounded-xl py-3 px-4 font-bold outline-none" />
-                        </div>
-                        <div className="space-y-1">
-                          <label className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Participants</label>
-                          <input type="number" min="0" value={modalItem.participants} onChange={e => setModalItem({...modalItem, participants: parseInt(e.target.value) || 0})} className="w-full bg-background border border-border focus:border-primary rounded-xl py-3 px-4 font-bold outline-none" />
-                        </div>
-                      </div>
-                    </>
-                  )}
-                </form>
-              </div>
-
-              <div className="p-6 border-t border-border bg-background/50 shrink-0 flex gap-4">
-                <button 
-                  onClick={() => setModalOpen(false)}
-                  className="flex-1 bg-background border-2 border-border text-foreground py-3 rounded-xl font-black uppercase tracking-wider hover:border-primary transition-all"
-                >
-                  Cancel
-                </button>
-                <button 
-                  type="submit"
-                  form="modal-form"
-                  className="flex-1 bg-primary text-primary-foreground py-3 rounded-xl font-black uppercase tracking-wider hover:brightness-110 transition-all shadow-[0_0_15px_rgba(245,158,11,0.3)]"
-                >
-                  Save Item
-                </button>
-              </div>
-            </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
-
-      {/* Global Toast */}
-      <AnimatePresence>
-        {toastMsg && (
-          <motion.div
-            initial={{ opacity: 0, y: 50, scale: 0.9 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, scale: 0.9, y: 20 }}
-            className="fixed bottom-8 left-1/2 -translate-x-1/2 z-[100] bg-foreground text-background px-6 py-4 rounded-2xl font-black uppercase tracking-widest shadow-2xl flex items-center gap-3 text-sm"
-          >
-            <div className="w-2 h-2 bg-background rounded-full animate-pulse" />
-            {toastMsg}
-          </motion.div>
-        )}
-      </AnimatePresence>
     </div>
   );
 }

@@ -21,21 +21,28 @@ export type SiteContent = {
     promoBanner: string;
     heroEyebrow: string; heroHeadline: string; heroAccent: string; heroSubtitle: string;
     primaryBtn: string; secondaryBtn: string;
+    heroBgImage: string; heroSideImage: string;
     heroCardTitle: string; heroCardDesc: string;
+    checklistItems: string[];
     whyUsHeadline: string; whyUsSubtitle: string;
-    whyUsAccent: string;
+    whyUsAccent: string; whyUsBgImage: string;
+    whyUsPoints: { id: string; title: string; desc: string }[];
     formHeadline: string; formSubtitle: string;
     devices: RepairDevice[];
     reviews: { id: string; name: string; device: string; text: string; avatar: string }[];
     faqs: { id: string; q: string; a: string }[];
     locations: { id: string; city: string; address: string; distance: string; open: string }[];
+    locationsBgImage: string;
   };
   shop: {
+    promoBanner: string;
     heroHeadline: string; heroAccent: string; heroSubtitle: string; heroImage: string;
     products: Product[];
   };
   community: {
     promoBanner: string;
+    heroBgImage: string;
+    countdownTarget: string;
     heroHeadline: string; heroSubtitle: string;
     announcements: Announcement[];
     events: CommunityEvent[];
@@ -58,14 +65,24 @@ const DEFAULT: SiteContent = {
     heroHeadline: 'Broken tech?', heroAccent: 'We can fix that.',
     heroSubtitle: 'Fast, professional repairs for the devices you rely on every day—from cracked phone screens to game console HDMI ports.',
     primaryBtn: 'Start a Repair', secondaryBtn: 'Find a Store',
+    heroBgImage: 'https://images.unsplash.com/photo-1518770660439-4636190af475?auto=format&fit=crop&w=1600&q=80',
+    heroSideImage: '',
     heroCardTitle: 'Ready Today', heroCardDesc: 'Bring it in by 2 PM, get it back by dinner.',
+    checklistItems: ['Free diagnostics', 'Same-day options', '1-year warranty'],
     whyUsHeadline: 'Why choose', whyUsAccent: 'Jersey Quik Fix?',
     whyUsSubtitle: 'We treat your devices like our own. Transparent pricing, expert technicians, and a guarantee you can trust.',
+    whyUsBgImage: 'https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?auto=format&fit=crop&w=1600&q=80',
+    whyUsPoints: [
+      { id: '1', title: 'Free Diagnostics', desc: 'Know what is wrong before paying a dime.' },
+      { id: '2', title: 'Same-Day Service', desc: 'Most common repairs finished in under 2 hours.' },
+      { id: '3', title: '1-Year Warranty', desc: 'Parts and labor guaranteed for a full year.' },
+      { id: '4', title: 'Upfront Pricing', desc: 'No hidden fees or surprise charges. Ever.' },
+    ],
     formHeadline: 'Tell us what happened.', formSubtitle: "Fill out the form and we'll generate a repair ticket instantly.",
     devices: [
-      { id: 'phone', title: 'Phone', desc: 'Apple, Samsung, Google and more.', image: 'https://images.unsplash.com/photo-1512941937669-90a1b58e7e9c?auto=format&fit=crop&w=900&q=80' },
-      { id: 'computer', title: 'Computer', desc: 'Mac, Windows, laptops and desktops.', image: 'https://images.unsplash.com/photo-1496181133206-80ce9b88a853?auto=format&fit=crop&w=900&q=80' },
-      { id: 'tablet', title: 'Tablet', desc: 'iPad, Galaxy Tab and more.', image: 'https://images.unsplash.com/photo-1544244015-0df4b3ffc6b0?auto=format&fit=crop&w=900&q=80' },
+      { id: 'phone', title: 'Phone', desc: 'Apple, Samsung, Google and more.', image: 'https://images.unsplash.com/photo-1556742031-c6961e8560b0?auto=format&fit=crop&w=900&q=80' },
+      { id: 'computer', title: 'Computer', desc: 'Mac, Windows, laptops and desktops.', image: 'https://images.unsplash.com/photo-1484788984921-03950022c9ef?auto=format&fit=crop&w=900&q=80' },
+      { id: 'tablet', title: 'Tablet', desc: 'iPad, Galaxy Tab and more.', image: 'https://images.unsplash.com/photo-1544006659-f0b21884ce1d?auto=format&fit=crop&w=900&q=80' },
       { id: 'console', title: 'Console', desc: 'PlayStation, Xbox and Nintendo.', image: 'https://images.unsplash.com/photo-1493711662062-fa541adb3fc8?auto=format&fit=crop&w=900&q=80' },
     ],
     reviews: [
@@ -84,8 +101,10 @@ const DEFAULT: SiteContent = {
       { id: '2', city: 'Northside', address: '4800 North Avenue', distance: '4.8 mi', open: 'Open until 8 PM' },
       { id: '3', city: 'West End', address: '892 West Plaza Drive', distance: '7.1 mi', open: 'Open until 7 PM' },
     ],
+    locationsBgImage: 'https://images.unsplash.com/photo-1477959858617-67f85cf4f1df?auto=format&fit=crop&w=1600&q=80',
   },
   shop: {
+    promoBanner: 'FREE SHIPPING ON ORDERS $79+ • MEMBERS EARN MORE',
     heroHeadline: 'Level Up', heroAccent: 'Your Setup',
     heroSubtitle: 'Score the hottest new releases, upgrade your battlestation, or trade in your old gear for serious credit.',
     heroImage: 'https://images.unsplash.com/photo-1538481199705-c710c4e965fc?auto=format&fit=crop&w=1600&q=80',
@@ -102,6 +121,8 @@ const DEFAULT: SiteContent = {
   },
   community: {
     promoBanner: 'PRIVATE COMMUNITY • FAMILY & FRIENDS HUB',
+    heroBgImage: 'https://images.unsplash.com/photo-1529156069898-49953e39b3ac?auto=format&fit=crop&w=1600&q=80',
+    countdownTarget: '2026-09-19T14:00:00',
     heroHeadline: 'Stay connected to the moments that matter.',
     heroSubtitle: 'One place for family events, announcements, plans, and community updates.',
     announcements: [
@@ -140,7 +161,17 @@ export function SiteDataProvider({ children }: { children: ReactNode }) {
   const [content, setContent] = useState<SiteContent>(() => {
     try {
       const stored = localStorage.getItem(SITE_DATA_KEY);
-      if (stored) return { ...DEFAULT, ...JSON.parse(stored) };
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        return {
+          ...DEFAULT,
+          ...parsed,
+          repair: { ...DEFAULT.repair, ...(parsed.repair ?? {}) },
+          shop: { ...DEFAULT.shop, ...(parsed.shop ?? {}) },
+          community: { ...DEFAULT.community, ...(parsed.community ?? {}) },
+          settings: { ...DEFAULT.settings, ...(parsed.settings ?? {}) },
+        };
+      }
     } catch {}
     return DEFAULT;
   });

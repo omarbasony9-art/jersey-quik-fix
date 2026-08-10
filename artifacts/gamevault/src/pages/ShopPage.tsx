@@ -84,7 +84,7 @@ export default function ShopPage() {
       
       {/* Topbar */}
       <div className="bg-primary text-primary-foreground text-xs font-bold py-2 px-4 text-center tracking-wider">
-        FREE SHIPPING ON ORDERS $79+ &bull; MEMBERS EARN MORE
+        {shop.promoBanner}
       </div>
 
       {/* Header */}

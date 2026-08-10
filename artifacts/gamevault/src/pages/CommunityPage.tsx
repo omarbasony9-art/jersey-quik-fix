@@ -19,7 +19,7 @@ export default function CommunityPage() {
   const [newEventTime, setNewEventTime] = useState('');
   const [newEventLocation, setNewEventLocation] = useState('');
 
-  const targetDate = new Date('2026-09-19T14:00:00').getTime();
+  const targetDate = new Date(community.countdownTarget).getTime();
   const [timeLeft, setTimeLeft] = useState({ days: 0, hours: 0 });
 
   useEffect(() => {
@@ -103,7 +103,7 @@ export default function CommunityPage() {
         <section className="relative min-h-[600px] flex items-center overflow-hidden py-20">
           <div className="absolute inset-0 z-0 bg-background overflow-hidden flex items-center justify-center">
             <img 
-              src="https://images.unsplash.com/photo-1529156069898-49953e39b3ac?auto=format&fit=crop&w=1600&q=80" 
+              src={community.heroBgImage} 
               alt="" 
               className="absolute inset-0 w-full h-full object-cover opacity-25 z-0"
             />
