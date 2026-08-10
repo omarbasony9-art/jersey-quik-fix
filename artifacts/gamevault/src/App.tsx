@@ -6,6 +6,7 @@ import { Gamepad2 } from 'lucide-react';
 import ShopPage from './pages/ShopPage';
 import RepairPage from './pages/RepairPage';
 import CommunityPage from './pages/CommunityPage';
+import AdminPage from './pages/AdminPage';
 
 const queryClient = new QueryClient();
 
@@ -14,6 +15,9 @@ const base = (import.meta.env.BASE_URL || '/').replace(/\/$/, '');
 
 function SharedNav() {
   const [location] = useLocation();
+
+  // Hide SharedNav entirely on the admin route
+  if (location === '/admin') return null;
 
   return (
     <nav className="bg-background border-b border-border sticky top-0 z-50">
@@ -76,6 +80,7 @@ export default function App() {
             <Route path="/" component={RepairPage} />
             <Route path="/shop" component={ShopPage} />
             <Route path="/community" component={CommunityPage} />
+            <Route path="/admin" component={AdminPage} />
             <Route>
               <div className="flex flex-col items-center justify-center min-h-[50vh] text-center">
                 <Gamepad2 size={48} className="text-muted-foreground mb-4 opacity-50" />
