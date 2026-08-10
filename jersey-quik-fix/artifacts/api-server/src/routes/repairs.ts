@@ -78,6 +78,37 @@ repairsRouter.patch("/repairs/:id/status", requireAdminAuth, async (req, res): P
   }
 });
 
+// GET /api/repairs/lookup/:ticketCode — public status lookup by ticket code (e.g. JQ-123456)
+repairsRouter.get("/repairs/lookup/:ticketCode", async (req, res): Promise<void> => {
+  const ticketCode = String(req.params["ticketCode"]).toUpperCase().trim();
+  try {
+    const tickets = await db
+      .select()
+      .from(repairTicketsTable)
+      .where(eq(repairTicketsTable.ticket, ticketCode));
+    if (!tickets.length) {
+      res.status(404).json({ error: "No ticket found with that code." });
+      return;
+    }
+    const t = tickets[0];
+    // Return safe public fields — no full phone/email exposure
+    res.json({
+      ticket: t.ticket,
+      category: t.category,
+      brand: t.brand,
+      model: t.model,
+      issue: t.issue,
+      status: t.status,
+      date: t.date,
+      createdAt: t.createdAt,
+      // Show only first name for privacy
+      name: t.name ? t.name.split(" ")[0] : "",
+    });
+  } catch (_err) {
+    res.status(500).json({ error: "Failed to look up ticket" });
+  }
+});
+
 // DELETE /api/repairs/:id — delete a ticket (admin only)
 repairsRouter.delete("/repairs/:id", requireAdminAuth, async (req, res): Promise<void> => {
   const id = String(req.params["id"]);

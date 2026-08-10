@@ -6,18 +6,28 @@ import {
   Flame, BarChart, LogOut, Download, Upload, 
   Plus, Edit2, Trash2, X, RefreshCcw, Save, LayoutDashboard, Wrench,
   ShoppingBag, Users, ClipboardList, Package, Receipt, UserCheck, RefreshCcw as RefreshCcw2, Briefcase, Image as ImageIcon,
-  Check
+  Check, Mail
 } from 'lucide-react';
 import { useSiteData, DEFAULT_CONTENT, type SiteContent } from '../context/SiteDataContext';
 import jerseyLogo from '../assets/jersey-quik-fix-logo.png';
 
-const API_BASE = import.meta.env.VITE_API_BASE_URL || "/api";
+const API_BASE = "/api";
 const SESSION_KEY = "gv_admin_token";
+
+type EmailSubscriber = {
+  id: string; email: string; name: string; source: string; createdAt: string;
+};
 
 type RepairTicket = {
   id: string; ticket: string; category: string; brand: string; model: string;
   issue: string; name: string; phone: string; email: string; date: string;
   status: string; createdAt: string;
+};
+
+type TradeInquiry = {
+  id: number; name: string; email: string; phone: string;
+  deviceType: string; deviceDescription: string; condition: string;
+  notes: string | null; status: string; createdAt: string;
 };
 
 // Field helper component
@@ -47,6 +57,8 @@ export default function AdminPage() {
   const { content, saveContent } = useSiteData();
   const [draft, setDraft] = useState<SiteContent>(content);
   const [repairs, setRepairs] = useState<RepairTicket[]>([]);
+  const [emails, setEmails] = useState<EmailSubscriber[]>([]);
+  const [tradeInquiries, setTradeInquiries] = useState<TradeInquiry[]>([]);
   
   const [adminToken, setAdminToken] = useState<string | null>(null);
   const [toastMsg, setToastMsg] = useState<string | null>(null);
@@ -65,9 +77,9 @@ export default function AdminPage() {
     setDraft(content);
   }, [content]);
 
-  // Load repairs when token is available
+  // Load repairs, emails, and trade inquiries when token is available
   useEffect(() => {
-    if (adminToken) loadRepairs();
+    if (adminToken) { loadRepairs(); loadEmails(); loadTradeInquiries(); }
   }, [adminToken]);
 
   useEffect(() => {
@@ -89,6 +101,28 @@ export default function AdminPage() {
       .then(r => r.ok ? r.json() : [])
       .then(data => setRepairs(Array.isArray(data) ? data : []))
       .catch(() => setRepairs([]));
+  };
+
+  const loadEmails = () => {
+    const token = sessionStorage.getItem(SESSION_KEY);
+    if (!token) return;
+    fetch(`${API_BASE}/emails`, {
+      headers: { 'Authorization': `Bearer ${token}` },
+    })
+      .then(r => r.ok ? r.json() : [])
+      .then(data => setEmails(Array.isArray(data) ? data : []))
+      .catch(() => setEmails([]));
+  };
+
+  const loadTradeInquiries = () => {
+    const token = sessionStorage.getItem(SESSION_KEY);
+    if (!token) return;
+    fetch(`${API_BASE}/trade-inquiries`, {
+      headers: { 'Authorization': `Bearer ${token}` },
+    })
+      .then(r => r.ok ? r.json() : [])
+      .then(data => setTradeInquiries(Array.isArray(data) ? data : []))
+      .catch(() => setTradeInquiries([]));
   };
 
   const handleLogin = async (e: React.FormEvent) => {
@@ -225,6 +259,7 @@ export default function AdminPage() {
     { name: 'Customers', icon: <UserCheck size={18} /> },
     { name: 'Trade-Ins', icon: <RefreshCcw2 size={18} /> },
     { name: 'Employees', icon: <Briefcase size={18} /> },
+    { name: 'Email List', icon: <Mail size={18} /> },
     { name: 'Settings', icon: <Settings size={18} /> }
   ];
 
@@ -386,6 +421,10 @@ export default function AdminPage() {
                       <div className="bg-card border border-border rounded-2xl p-6">
                         <div className="text-3xl font-black text-primary mb-1">{draft.employees.length}</div>
                         <div className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Employees</div>
+                      </div>
+                      <div className="bg-card border border-border rounded-2xl p-6 cursor-pointer hover:border-primary transition-colors" onClick={() => setActivePanel('Email List')}>
+                        <div className="text-3xl font-black text-primary mb-1">{emails.length}</div>
+                        <div className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Subscribers</div>
                       </div>
                     </div>
                     <div className="bg-secondary border border-border rounded-3xl p-6 text-center text-secondary-foreground flex flex-col items-center gap-4">
@@ -599,6 +638,24 @@ export default function AdminPage() {
                       ))}
                       <button onClick={() => setDraft(d => ({...d, shop: {...d.shop, products: [...d.shop.products, { id: crypto.randomUUID(), name: 'New Product', category: 'Accessories', price: 0, rating: 4.5, badge: '', image: '', stock: 0, sku: '', active: true }]}}))} className={addBtnCls}><Plus size={14} /> Add Product</button>
                     </div>
+
+                    <div>
+                      <h3 className={sectionHeadCls}>Promo Cards</h3>
+                      {(draft.shop.promoCards ?? []).map((card: any) => (
+                        <div key={card.id} className={cardCls + " flex gap-4"}>
+                          <div className="flex-1 space-y-2">
+                            <div className="grid grid-cols-2 gap-2">
+                              <div><label className={labelCls}>Eyebrow</label><input value={card.eyebrow} onChange={e => setDraft(d => ({...d, shop: {...d.shop, promoCards: d.shop.promoCards.map((c: any) => c.id === card.id ? {...c, eyebrow: e.target.value} : c)}}))} className={inputCls} /></div>
+                              <div><label className={labelCls}>Button Text</label><input value={card.buttonText} onChange={e => setDraft(d => ({...d, shop: {...d.shop, promoCards: d.shop.promoCards.map((c: any) => c.id === card.id ? {...c, buttonText: e.target.value} : c)}}))} className={inputCls} /></div>
+                            </div>
+                            <div><label className={labelCls}>Headline</label><input value={card.headline} onChange={e => setDraft(d => ({...d, shop: {...d.shop, promoCards: d.shop.promoCards.map((c: any) => c.id === card.id ? {...c, headline: e.target.value} : c)}}))} className={inputCls} /></div>
+                            <ImageField label="Background Image" value={card.image} onChange={(v: string) => setDraft(d => ({...d, shop: {...d.shop, promoCards: d.shop.promoCards.map((c: any) => c.id === card.id ? {...c, image: v} : c)}}))} />
+                          </div>
+                          <button onClick={() => setDraft(d => ({...d, shop: {...d.shop, promoCards: d.shop.promoCards.filter((c: any) => c.id !== card.id)}}))} className={deleteBtnCls}><Trash2 size={16} /></button>
+                        </div>
+                      ))}
+                      <button onClick={() => setDraft(d => ({...d, shop: {...d.shop, promoCards: [...(d.shop.promoCards ?? []), { id: crypto.randomUUID(), eyebrow: 'New Section', headline: 'Promo Title', buttonText: 'Shop Now', image: '' }]}}))} className={addBtnCls}><Plus size={14} /> Add Promo Card</button>
+                    </div>
                   </div>
                 )}
 
@@ -716,23 +773,50 @@ export default function AdminPage() {
                                 <span>{r.issue}</span>
                               </div>
                             </div>
-                            <div className="flex items-center gap-3">
-                              <span className="text-xs font-bold uppercase text-primary bg-primary/10 px-3 py-1.5 rounded-lg">{r.status}</span>
-                              <button onClick={() => {
-                                if (!adminToken) return;
-                                fetch(`${API_BASE}/repairs/${r.id}/status`, {
-                                  method: 'PATCH',
-                                  headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${adminToken}` },
-                                  body: JSON.stringify({ status: 'Ready for Pickup' }),
-                                }).then(res => {
-                                  if (res.ok) {
-                                    setRepairs(prev => prev.map(x => x.id === r.id ? { ...x, status: 'Ready for Pickup' } : x));
-                                    showToast('Marked ready.');
-                                  } else {
-                                    showToast('Failed to update ticket.');
-                                  }
-                                }).catch(() => showToast('Failed to update ticket.'));
-                              }} className="text-xs font-bold uppercase px-3 py-1.5 bg-accent/10 text-accent rounded-lg hover:bg-accent/20">Mark Ready</button>
+                            <div className="flex items-center gap-3 flex-shrink-0">
+                              {(() => {
+                                const statusColors: Record<string, string> = {
+                                  'Checked In':       'text-blue-400',
+                                  'Diagnosing':       'text-yellow-400',
+                                  'Parts Ordered':    'text-orange-400',
+                                  'In Repair':        'text-primary',
+                                  'Quality Check':    'text-purple-400',
+                                  'Ready for Pickup': 'text-green-400',
+                                  'Completed':        'text-green-400',
+                                  'On Hold':          'text-yellow-400',
+                                  'Cancelled':        'text-red-400',
+                                };
+                                return (
+                                  <select
+                                    value={r.status}
+                                    onChange={e => {
+                                      const newStatus = e.target.value;
+                                      if (!adminToken) return;
+                                      fetch(`${API_BASE}/repairs/${r.id}/status`, {
+                                        method: 'PATCH',
+                                        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${adminToken}` },
+                                        body: JSON.stringify({ status: newStatus }),
+                                      }).then(res => {
+                                        if (res.ok) {
+                                          setRepairs(prev => prev.map(x => x.id === r.id ? { ...x, status: newStatus } : x));
+                                          showToast('Status updated.');
+                                        } else showToast('Failed to update.');
+                                      }).catch(() => showToast('Failed.'));
+                                    }}
+                                    className={`bg-background border border-border rounded-xl px-3 py-2 text-xs font-black outline-none focus:border-primary transition-colors cursor-pointer ${statusColors[r.status] || 'text-foreground'}`}
+                                  >
+                                    <option>Checked In</option>
+                                    <option>Diagnosing</option>
+                                    <option>Parts Ordered</option>
+                                    <option>In Repair</option>
+                                    <option>Quality Check</option>
+                                    <option>Ready for Pickup</option>
+                                    <option>Completed</option>
+                                    <option>On Hold</option>
+                                    <option>Cancelled</option>
+                                  </select>
+                                );
+                              })()}
                               <button onClick={() => {
                                 if (!adminToken) return;
                                 if (window.confirm(`Delete ticket ${r.ticket}?`)) {
@@ -740,11 +824,8 @@ export default function AdminPage() {
                                     method: 'DELETE',
                                     headers: { 'Authorization': `Bearer ${adminToken}` },
                                   }).then(res => {
-                                    if (res.ok) {
-                                      setRepairs(prev => prev.filter(x => x.id !== r.id));
-                                    } else {
-                                      showToast('Failed to delete ticket.');
-                                    }
+                                    if (res.ok) setRepairs(prev => prev.filter(x => x.id !== r.id));
+                                    else showToast('Failed to delete ticket.');
                                   }).catch(() => showToast('Failed to delete ticket.'));
                                 }
                               }} className={deleteBtnCls}><Trash2 size={16} /></button>
@@ -816,27 +897,99 @@ export default function AdminPage() {
                   </div>
                 )}
 
-                {/* Trade-Ins Panel */}
+                {/* Trade Inquiries Panel */}
                 {activePanel === 'Trade-Ins' && (
                   <div className="space-y-4">
-                    <h3 className={sectionHeadCls}>Trade-Ins</h3>
-                    {draft.tradeins.map(tr => (
-                      <div key={tr.id} className={cardCls + " flex gap-4"}>
-                        <div className="flex-1 grid md:grid-cols-5 gap-2">
-                          <input value={tr.customer} onChange={e => updateArrayItem('tradeins', tr.id, 'customer', e.target.value)} className={inputCls} placeholder="Customer" />
-                          <input value={tr.device} onChange={e => updateArrayItem('tradeins', tr.id, 'device', e.target.value)} className={inputCls} placeholder="Device" />
-                          <select value={tr.condition} onChange={e => updateArrayItem('tradeins', tr.id, 'condition', e.target.value)} className={inputCls}>
-                            <option>Excellent</option><option>Good</option><option>Fair</option><option>Poor</option>
-                          </select>
-                          <input value={tr.offer} onChange={e => updateArrayItem('tradeins', tr.id, 'offer', e.target.value)} className={inputCls} placeholder="Offer" />
-                          <select value={tr.status} onChange={e => updateArrayItem('tradeins', tr.id, 'status', e.target.value)} className={inputCls}>
-                            <option>Submitted</option><option>Reviewing</option><option>Approved</option><option>Completed</option><option>Declined</option>
-                          </select>
-                        </div>
-                        <button onClick={() => deleteArrayItem('tradeins', tr.id)} className={deleteBtnCls}><Trash2 size={16} /></button>
+                    <div className="flex items-center justify-between mb-4">
+                      <h3 className={sectionHeadCls}>Trade Inquiries ({tradeInquiries.length})</h3>
+                      <button
+                        onClick={() => { loadTradeInquiries(); showToast('Refreshed.'); }}
+                        className="flex items-center gap-2 px-4 py-2 bg-card border border-border text-foreground rounded-xl font-bold text-xs uppercase hover:bg-card/80 transition-colors"
+                      >
+                        <RefreshCcw2 size={14} /> Refresh
+                      </button>
+                    </div>
+
+                    {tradeInquiries.length === 0 ? (
+                      <div className="bg-card border border-dashed border-border rounded-3xl p-16 text-center">
+                        <RefreshCcw2 size={40} className="mx-auto text-muted-foreground/30 mb-4" />
+                        <p className="text-muted-foreground font-medium">No trade inquiries yet.</p>
+                        <p className="text-xs text-muted-foreground/60 mt-1">When customers submit a trade inquiry on the shop page, it will appear here.</p>
                       </div>
-                    ))}
-                    <button onClick={() => setDraft(d => ({...d, tradeins: [...d.tradeins, { id: crypto.randomUUID(), customer: '', device: '', condition: 'Good', offer: '0', status: 'Submitted' }]}))} className={addBtnCls}><Plus size={14} /> Add Trade-In</button>
+                    ) : (
+                      <div className="space-y-3">
+                        {tradeInquiries.map(inq => {
+                          const statusColors: Record<string, string> = {
+                            'New': 'bg-blue-500/15 text-blue-400 border-blue-500/30',
+                            'Reviewing': 'bg-yellow-500/15 text-yellow-400 border-yellow-500/30',
+                            'Offer Sent': 'bg-purple-500/15 text-purple-400 border-purple-500/30',
+                            'Completed': 'bg-green-500/15 text-green-400 border-green-500/30',
+                            'Declined': 'bg-red-500/15 text-red-400 border-red-500/30',
+                          };
+                          return (
+                            <div key={inq.id} className="bg-card border border-border rounded-2xl p-5 flex flex-col md:flex-row gap-4">
+                              {/* Customer info */}
+                              <div className="flex-1 min-w-0 space-y-2">
+                                <div className="flex flex-wrap items-center gap-3">
+                                  <span className="font-black text-foreground">{inq.name}</span>
+                                  <span className={`text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full border ${statusColors[inq.status] || 'bg-card border-border text-muted-foreground'}`}>
+                                    {inq.status}
+                                  </span>
+                                  <span className="text-xs text-muted-foreground">
+                                    {new Date(inq.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                                  </span>
+                                </div>
+                                <div className="flex flex-wrap gap-4 text-sm text-muted-foreground font-medium">
+                                  <a href={`mailto:${inq.email}`} className="hover:text-primary transition-colors">{inq.email}</a>
+                                  <a href={`tel:${inq.phone}`} className="hover:text-primary transition-colors">{inq.phone}</a>
+                                </div>
+                                <div className="bg-background rounded-xl px-4 py-2.5 text-sm">
+                                  <span className="text-xs font-black uppercase tracking-wider text-muted-foreground mr-2">{inq.deviceType} · {inq.condition}</span>
+                                  <span className="text-foreground">{inq.deviceDescription}</span>
+                                </div>
+                                {inq.notes && (
+                                  <div className="text-xs text-muted-foreground italic px-1">Notes: {inq.notes}</div>
+                                )}
+                              </div>
+
+                              {/* Actions */}
+                              <div className="flex md:flex-col gap-2 items-start md:items-end justify-end flex-shrink-0">
+                                <select
+                                  value={inq.status}
+                                  onChange={e => {
+                                    const newStatus = e.target.value;
+                                    fetch(`${API_BASE}/trade-inquiries/${inq.id}`, {
+                                      method: 'PATCH',
+                                      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${adminToken}` },
+                                      body: JSON.stringify({ status: newStatus }),
+                                    }).then(r => r.ok ? (setTradeInquiries(prev => prev.map(i => i.id === inq.id ? { ...i, status: newStatus } : i)), showToast('Status updated.')) : showToast('Failed.'))
+                                    .catch(() => showToast('Failed.'));
+                                  }}
+                                  className="bg-background border border-border rounded-xl px-3 py-2 text-xs font-bold text-foreground outline-none focus:border-primary transition-colors cursor-pointer"
+                                >
+                                  <option>New</option>
+                                  <option>Reviewing</option>
+                                  <option>Offer Sent</option>
+                                  <option>Completed</option>
+                                  <option>Declined</option>
+                                </select>
+                                <button
+                                  onClick={() => {
+                                    if (!window.confirm(`Delete inquiry from ${inq.name}?`)) return;
+                                    fetch(`${API_BASE}/trade-inquiries/${inq.id}`, {
+                                      method: 'DELETE',
+                                      headers: { 'Authorization': `Bearer ${adminToken}` },
+                                    }).then(r => r.ok ? (setTradeInquiries(prev => prev.filter(i => i.id !== inq.id)), showToast('Deleted.')) : showToast('Failed.'))
+                                    .catch(() => showToast('Failed.'));
+                                  }}
+                                  className={deleteBtnCls}
+                                ><Trash2 size={16} /></button>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
                   </div>
                 )}
 
@@ -864,6 +1017,76 @@ export default function AdminPage() {
                 )}
 
                 {/* Settings Panel */}
+                {/* Email List */}
+                {activePanel === 'Email List' && (
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between mb-4">
+                      <h3 className={sectionHeadCls}>Email Subscribers ({emails.length})</h3>
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => {
+                            const csv = ['Email,Name,Source,Date', ...emails.map(e =>
+                              `${e.email},${e.name},${e.source},${new Date(e.createdAt).toLocaleDateString()}`
+                            )].join('\n');
+                            const blob = new Blob([csv], { type: 'text/csv' });
+                            const url = URL.createObjectURL(blob);
+                            const a = document.createElement('a');
+                            a.href = url; a.download = 'subscribers.csv'; a.click();
+                            URL.revokeObjectURL(url);
+                          }}
+                          className="flex items-center gap-2 px-4 py-2 bg-card border border-border text-foreground rounded-xl font-bold text-xs uppercase hover:bg-card/80 transition-colors"
+                        >
+                          <Download size={14} /> Export CSV
+                        </button>
+                        <button onClick={() => { loadEmails(); showToast('Refreshed.'); }} className="flex items-center gap-2 px-4 py-2 bg-card border border-border text-foreground rounded-xl font-bold text-xs uppercase hover:bg-card/80 transition-colors">
+                          <RefreshCcw size={14} /> Refresh
+                        </button>
+                      </div>
+                    </div>
+
+                    {emails.length === 0 ? (
+                      <div className="bg-card border border-dashed border-border rounded-3xl p-16 text-center">
+                        <Mail size={40} className="mx-auto text-muted-foreground/30 mb-4" />
+                        <p className="text-muted-foreground font-medium">No subscribers yet.</p>
+                        <p className="text-xs text-muted-foreground/60 mt-1">Emails collected from the website signup form will appear here.</p>
+                      </div>
+                    ) : (
+                      <div className="space-y-2">
+                        {[...emails].reverse().map(e => (
+                          <div key={e.id} className="bg-card border border-border rounded-2xl px-5 py-4 flex items-center gap-4">
+                            <div className="w-9 h-9 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
+                              <Mail size={16} className="text-primary" />
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <div className="font-black truncate">{e.email}</div>
+                              <div className="text-xs text-muted-foreground font-medium mt-0.5">
+                                {e.name && <span className="mr-3">{e.name}</span>}
+                                <span className="uppercase tracking-wider opacity-60">{e.source}</span>
+                                <span className="mx-2 opacity-30">·</span>
+                                <span>{new Date(e.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span>
+                              </div>
+                            </div>
+                            <button
+                              onClick={() => {
+                                if (!adminToken) return;
+                                if (!window.confirm(`Remove ${e.email}?`)) return;
+                                fetch(`${API_BASE}/emails/${e.id}`, {
+                                  method: 'DELETE',
+                                  headers: { 'Authorization': `Bearer ${adminToken}` },
+                                }).then(res => {
+                                  if (res.ok) { setEmails(prev => prev.filter(x => x.id !== e.id)); showToast('Removed.'); }
+                                  else showToast('Failed to remove.');
+                                }).catch(() => showToast('Failed to remove.'));
+                              }}
+                              className={deleteBtnCls}
+                            ><Trash2 size={16} /></button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
+
                 {activePanel === 'Settings' && (
                   <div className="space-y-8">
                     <div>

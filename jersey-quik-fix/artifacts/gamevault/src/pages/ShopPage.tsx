@@ -1,25 +1,22 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Search, ShoppingCart, User, MapPin, ChevronRight, 
   Star, Menu, X, Gamepad2, RefreshCcw, BadgeDollarSign,
-  Plus, Minus, Trash2
+  Plus, Minus, Trash2, Check
 } from 'lucide-react';
+import { useLocation } from 'wouter';
+import { useUser } from '@clerk/react';
 import { useSiteData, type Product } from '../context/SiteDataContext';
 import Footer from '../components/Footer';
 
-const tradeValues: Record<string, number> = {
-  'Console': 220,
-  'Game': 28,
-  'Controller': 35,
-  'Trading Card': 70
-};
-
-const conditionMultipliers: Record<string, number> = {
-  'Excellent': 1.15,
-  'Good': 1.0,
-  'Fair': 0.72
-};
+const DEVICE_TYPES = ['Phone', 'Tablet', 'Laptop', 'Game Console', 'Controller', 'Other Electronics'];
+const CONDITIONS = [
+  { label: 'Excellent', sub: 'Like new, fully functional, minimal wear' },
+  { label: 'Good', sub: 'Normal wear, works perfectly' },
+  { label: 'Fair', sub: 'Visible wear or minor issues, still functional' },
+  { label: 'Poor', sub: 'Heavy damage, not fully working' },
+];
 
 type CartItem = Product & { quantity: number };
 
@@ -28,15 +25,27 @@ export default function ShopPage() {
   const { shop } = content;
   const products = shop.products.filter(p => p.active);
   const categories = ['All', ...Array.from(new Set(products.map(p => p.category)))];
+  const [, navigate] = useLocation();
+  const { user, isLoaded: clerkLoaded } = useUser();
 
   const [query, setQuery] = useState('');
   const [activeCategory, setActiveCategory] = useState('All');
   const [cart, setCart] = useState<CartItem[]>([]);
   const [menuOpen, setMenuOpen] = useState(false);
   const [cartOpen, setCartOpen] = useState(false);
+  const [checkoutLoading, setCheckoutLoading] = useState(false);
+  const [checkoutBanner, setCheckoutBanner] = useState<{ type: 'success' | 'error'; text: string } | null>(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('checkout') === 'success') return { type: 'success', text: '🎉 Order placed! Check your email for confirmation.' };
+    if (params.get('checkout') === 'cancelled') return { type: 'error', text: 'Checkout cancelled — your cart is saved.' };
+    return null;
+  });
   
-  const [tradeType, setTradeType] = useState<string>('Console');
-  const [tradeCondition, setTradeCondition] = useState<string>('Good');
+  // Trade inquiry form state
+  const [tradeForm, setTradeForm] = useState({ name: '', email: '', phone: '', deviceType: '', deviceDescription: '', condition: '', notes: '' });
+  const [tradeSubmitting, setTradeSubmitting] = useState(false);
+  const [tradeStatus, setTradeStatus] = useState<'idle' | 'success' | 'error'>('idle');
+  const [tradeError, setTradeError] = useState('');
 
   // Filtering products
   const filteredProducts = useMemo(() => {
@@ -76,12 +85,130 @@ export default function ShopPage() {
   const cartItemCount = cart.reduce((sum, item) => sum + item.quantity, 0);
   const cartTotal = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
 
-  // Trade Estimator calculation
-  const estimatedValue = Math.round(tradeValues[tradeType] * conditionMultipliers[tradeCondition]);
+  // ── Cart persistence ────────────────────────────────────────────────────
+  const cartSyncTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const cartLoaded = useRef(false);
+
+  // Load saved cart from API when user signs in
+  useEffect(() => {
+    if (!clerkLoaded) return;
+    if (!user) { cartLoaded.current = false; return; }
+    if (cartLoaded.current) return;
+    cartLoaded.current = true;
+
+    fetch('/api/cart', { credentials: 'include' })
+      .then(r => r.ok ? r.json() : null)
+      .then(data => {
+        if (!data?.items?.length) return;
+        setCart(prev => {
+          const merged = [...prev];
+          for (const saved of data.items) {
+            if (!merged.find(i => i.id === saved.productId)) {
+              merged.push({
+                id: saved.productId, name: saved.productName,
+                category: saved.productCategory || '', price: Number(saved.price),
+                quantity: saved.quantity, image: saved.image || '',
+                sku: saved.sku || '', badge: saved.badge || undefined,
+                rating: 0, stock: 999, active: true, oldPrice: undefined,
+              });
+            }
+          }
+          return merged;
+        });
+      })
+      .catch(() => {});
+  }, [user, clerkLoaded]);
+
+  // Debounced sync cart to API whenever it changes (only if signed in)
+  useEffect(() => {
+    if (!user) return;
+    if (cartSyncTimer.current) clearTimeout(cartSyncTimer.current);
+    cartSyncTimer.current = setTimeout(() => {
+      fetch('/api/cart/sync', {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          items: cart.map(item => ({
+            productId: item.id, productName: item.name,
+            productCategory: item.category, price: item.price,
+            quantity: item.quantity, image: item.image,
+            sku: item.sku, badge: item.badge,
+          })),
+        }),
+      }).catch(() => {});
+    }, 800);
+    return () => { if (cartSyncTimer.current) clearTimeout(cartSyncTimer.current); };
+  }, [cart, user]);
+
+  const handleCheckout = async () => {
+    if (cart.length === 0) return;
+    setCheckoutLoading(true);
+    try {
+      const res = await fetch('/api/stripe/checkout', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          items: cart.map(item => ({
+            name: item.name,
+            price: item.price,
+            quantity: item.quantity,
+            image: item.image || undefined,
+            category: item.category || undefined,
+          })),
+        }),
+      });
+      const data = await res.json();
+      if (data.url) {
+        window.location.href = data.url;
+      } else {
+        setCheckoutBanner({ type: 'error', text: data.error || 'Checkout failed — please try again.' });
+      }
+    } catch {
+      setCheckoutBanner({ type: 'error', text: 'Network error — please try again.' });
+    } finally {
+      setCheckoutLoading(false);
+    }
+  };
+
+  // Trade inquiry submit
+  const handleTradeSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setTradeSubmitting(true);
+    setTradeError('');
+    try {
+      const res = await fetch('/api/trade-inquiries', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(tradeForm),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setTradeStatus('success');
+        setTradeForm({ name: '', email: '', phone: '', deviceType: '', deviceDescription: '', condition: '', notes: '' });
+      } else {
+        setTradeError(data.error || 'Something went wrong. Please try again.');
+        setTradeStatus('error');
+      }
+    } catch {
+      setTradeError('Network error — please try again.');
+      setTradeStatus('error');
+    } finally {
+      setTradeSubmitting(false);
+    }
+  };
 
   return (
     <div className="min-h-[100dvh] flex flex-col font-sans overflow-x-hidden selection:bg-primary selection:text-primary-foreground">
       
+      {/* Checkout Banner */}
+      {checkoutBanner && (
+        <div className={`flex items-center justify-between px-6 py-3 text-sm font-bold ${checkoutBanner.type === 'success' ? 'bg-green-600 text-white' : 'bg-destructive text-destructive-foreground'}`}>
+          <span>{checkoutBanner.text}</span>
+          <button onClick={() => setCheckoutBanner(null)} className="ml-4 opacity-70 hover:opacity-100">✕</button>
+        </div>
+      )}
+
       {/* Topbar */}
       <div className="bg-primary text-primary-foreground text-xs font-bold py-2 px-4 text-center tracking-wider">
         {shop.promoBanner}
@@ -108,7 +235,7 @@ export default function ShopPage() {
           <div className="hidden md:flex flex-1 max-w-xl mx-8 relative">
             <input 
               type="text" 
-              placeholder="Search games, consoles, gear..." 
+              placeholder="Search products, accessories, cables..." 
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               className="w-full bg-card border-2 border-transparent focus:border-primary text-foreground rounded-full py-3 px-5 pl-12 outline-none transition-all placeholder:text-muted-foreground font-medium"
@@ -117,8 +244,18 @@ export default function ShopPage() {
           </div>
 
           <div className="flex items-center gap-1 md:gap-3">
-            <button className="hidden md:flex items-center justify-center p-3 rounded-full hover:bg-card transition-colors">
-              <User size={22} className="text-foreground" />
+            <button
+              onClick={() => navigate(user ? '/shop' : '/sign-in')}
+              title={user ? `Signed in as ${user.firstName || user.emailAddresses[0]?.emailAddress}` : 'Sign in'}
+              className="hidden md:flex items-center justify-center p-3 rounded-full hover:bg-card transition-colors relative"
+            >
+              {user ? (
+                <span className="w-[22px] h-[22px] rounded-full bg-primary text-primary-foreground text-[10px] font-black flex items-center justify-center">
+                  {(user.firstName?.[0] || user.emailAddresses[0]?.emailAddress?.[0] || '?').toUpperCase()}
+                </span>
+              ) : (
+                <User size={22} className="text-foreground" />
+              )}
             </button>
             <div className="relative">
               <button 
@@ -189,11 +326,16 @@ export default function ShopPage() {
                           <span>Subtotal</span>
                           <span>${cartTotal.toFixed(2)}</span>
                         </div>
-                        <button 
-                          onClick={() => alert('Checkout flow triggered! (Mock)')}
-                          className="w-full bg-primary text-primary-foreground py-3 rounded-xl font-bold hover:brightness-110 active:scale-[0.98] transition-all"
+                        <button
+                          onClick={handleCheckout}
+                          disabled={checkoutLoading}
+                          className="w-full bg-primary text-primary-foreground py-3 rounded-xl font-bold hover:brightness-110 active:scale-[0.98] transition-all disabled:opacity-60 disabled:cursor-wait flex items-center justify-center gap-2"
                         >
-                          Secure Checkout
+                          {checkoutLoading ? (
+                            <><span className="inline-block w-4 h-4 border-2 border-primary-foreground/40 border-t-primary-foreground rounded-full animate-spin" /> Processing…</>
+                          ) : (
+                            '🔒 Checkout with Stripe'
+                          )}
                         </button>
                       </div>
                     )}
@@ -331,9 +473,9 @@ export default function ShopPage() {
         <section className="max-w-7xl mx-auto px-6 -mt-12 relative z-20 w-full mb-16">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {[
-              { title: 'Shop Gaming', subtitle: 'Consoles & Titles', icon: Gamepad2, image: 'https://images.unsplash.com/photo-1550745165-9bc0b252726f?auto=format&fit=crop&w=600&q=80' },
-              { title: 'Trade It In', subtitle: 'Get Instant Credit', icon: RefreshCcw, image: 'https://images.unsplash.com/photo-1606144042614-b2417e99c4e3?auto=format&fit=crop&w=600&q=80' },
-              { title: 'Member Rewards', subtitle: 'Join JQF+', icon: Star, image: 'https://images.unsplash.com/photo-1585771724684-38269d6639fd?auto=format&fit=crop&w=600&q=80' }
+              { title: 'Shop Accessories', subtitle: 'Cases & Protectors', icon: Gamepad2, image: 'https://images.unsplash.com/photo-1601784551446-20c9e07cdbdb?auto=format&fit=crop&w=600&q=80' },
+              { title: 'Trade It In', subtitle: 'Get Store Credit', icon: RefreshCcw, image: 'https://images.unsplash.com/photo-1583863788434-e58a36330cf0?auto=format&fit=crop&w=600&q=80' },
+              { title: 'Member Rewards', subtitle: 'Earn on Every Visit', icon: Star, image: 'https://images.unsplash.com/photo-1585771724684-38269d6639fd?auto=format&fit=crop&w=600&q=80' }
             ].map((tile, i) => (
               <motion.div 
                 key={tile.title}
@@ -363,7 +505,7 @@ export default function ShopPage() {
           <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-12">
             <div>
               <h2 className="text-3xl md:text-5xl font-black uppercase italic tracking-tight mb-4">
-                The <span className="text-primary">Vault</span>
+                The <span className="text-primary">Store</span>
               </h2>
               <div className="flex flex-wrap gap-2">
                 {categories.map(cat => (
@@ -462,103 +604,171 @@ export default function ShopPage() {
         </section>
 
         {/* Promo Grid */}
-        <section id="deals" className="max-w-7xl mx-auto w-full px-6 py-12">
-          <div className="grid md:grid-cols-2 gap-6">
-            <div className="relative rounded-3xl overflow-hidden aspect-[16/9] md:aspect-auto md:h-80 group">
-              <img src="https://images.unsplash.com/photo-1486401899868-0e435ed85128?auto=format&fit=crop&w=1000&q=80" alt="Pre-Owned Games" className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" />
-              <div className="absolute inset-0 bg-gradient-to-r from-background/90 to-background/20" />
-              <div className="absolute inset-0 p-8 md:p-12 flex flex-col justify-center">
-                <span className="text-primary font-black uppercase tracking-widest mb-2 text-sm">Massive Selection</span>
-                <h3 className="text-3xl md:text-4xl font-black uppercase italic leading-tight mb-4 max-w-[200px]">Pre-Owned Classics</h3>
-                <button className="self-start bg-white text-black px-6 py-2 rounded-full font-bold uppercase hover:bg-primary transition-colors mt-auto">Shop Now</button>
-              </div>
+        {shop.promoCards && shop.promoCards.length > 0 && (
+          <section id="deals" className="max-w-7xl mx-auto w-full px-6 py-12">
+            <div className="grid md:grid-cols-2 gap-6">
+              {shop.promoCards.map((card, idx) => (
+                <div key={card.id} className="relative rounded-3xl overflow-hidden aspect-[16/9] md:aspect-auto md:h-80 group">
+                  {card.image && <img src={card.image} alt={card.headline} className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" />}
+                  <div className={`absolute inset-0 ${idx % 2 === 0 ? 'bg-gradient-to-r from-background/90 to-background/20' : 'bg-gradient-to-r from-secondary/90 to-background/20'}`} />
+                  <div className="absolute inset-0 p-8 md:p-12 flex flex-col justify-center">
+                    <span className={`${idx % 2 === 0 ? 'text-primary' : 'text-accent'} font-black uppercase tracking-widest mb-2 text-sm`}>{card.eyebrow}</span>
+                    <h3 className="text-3xl md:text-4xl font-black uppercase italic leading-tight mb-4 max-w-[220px]">{card.headline}</h3>
+                    <button className={`self-start ${idx % 2 === 0 ? 'bg-white text-black hover:bg-primary' : 'bg-accent text-accent-foreground hover:brightness-110'} px-6 py-2 rounded-full font-bold uppercase transition-colors mt-auto`}>{card.buttonText}</button>
+                  </div>
+                </div>
+              ))}
             </div>
-            
-            <div className="relative rounded-3xl overflow-hidden aspect-[16/9] md:aspect-auto md:h-80 group">
-              <img src="https://images.unsplash.com/photo-1606167668584-78701c57f13d?auto=format&fit=crop&w=1000&q=80" alt="Trading Cards" className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" />
-              <div className="absolute inset-0 bg-gradient-to-r from-secondary/90 to-background/20" />
-              <div className="absolute inset-0 p-8 md:p-12 flex flex-col justify-center">
-                <span className="text-accent font-black uppercase tracking-widest mb-2 text-sm">New Drops</span>
-                <h3 className="text-3xl md:text-4xl font-black uppercase italic leading-tight mb-4 max-w-[200px]">TCG Booster Boxes</h3>
-                <button className="self-start bg-accent text-accent-foreground px-6 py-2 rounded-full font-bold uppercase hover:brightness-110 transition-colors mt-auto">Shop Cards</button>
-              </div>
-            </div>
-          </div>
-        </section>
+          </section>
+        )}
 
-        {/* Trade-In Estimator */}
+        {/* Trade-In Inquiry */}
         <section id="trade" className="py-24 bg-card border-y border-border relative overflow-hidden">
           <div className="absolute top-0 right-0 w-1/2 h-full bg-secondary/10 blur-[120px] rounded-full pointer-events-none" />
-          
+
           <div className="max-w-4xl mx-auto px-6 relative z-10 text-center">
             <RefreshCcw size={48} className="mx-auto text-primary mb-6" />
-            <h2 className="text-4xl md:text-6xl font-black uppercase italic tracking-tight mb-6">
-              Turn Old Gear <br />
-              <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary to-accent">Into New Loot</span>
+            <h2 className="text-4xl md:text-6xl font-black uppercase italic tracking-tight mb-4">
+              Trade It In, <br />
+              <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary to-accent">Get Paid.</span>
             </h2>
             <p className="text-lg text-muted-foreground font-medium mb-12 max-w-2xl mx-auto">
-              Answer two quick questions to get an instant estimate on your trade-in value. 
-              Bring it into the store to finalize and get paid.
+              Tell us what you've got — we'll review it and reach out with a real offer. No commitment, no pressure.
             </p>
 
-            <div className="bg-background border border-border p-8 rounded-3xl shadow-2xl text-left max-w-2xl mx-auto">
-              <div className="grid md:grid-cols-2 gap-8 mb-8">
-                <div>
-                  <label className="block text-sm font-black uppercase tracking-wider text-muted-foreground mb-3">Item Type</label>
-                  <div className="grid grid-cols-2 gap-2">
-                    {Object.keys(tradeValues).map(type => (
-                      <button 
-                        key={type}
-                        onClick={() => setTradeType(type)}
-                        className={`p-3 rounded-xl border text-sm font-bold transition-all ${tradeType === type ? 'border-primary bg-primary/10 text-primary' : 'border-border bg-card hover:border-primary/50'}`}
-                      >
-                        {type}
-                      </button>
-                    ))}
+            <AnimatePresence mode="wait">
+              {tradeStatus === 'success' ? (
+                <motion.div
+                  key="success"
+                  initial={{ opacity: 0, scale: 0.95 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  className="bg-background border border-green-500/30 rounded-3xl p-12 max-w-lg mx-auto flex flex-col items-center gap-4"
+                >
+                  <div className="w-16 h-16 rounded-full bg-green-500/15 flex items-center justify-center">
+                    <Check size={32} className="text-green-400" />
                   </div>
-                </div>
-                
-                <div>
-                  <label className="block text-sm font-black uppercase tracking-wider text-muted-foreground mb-3">Condition</label>
-                  <div className="flex flex-col gap-2">
-                    {Object.keys(conditionMultipliers).map(cond => (
-                      <button 
-                        key={cond}
-                        onClick={() => setTradeCondition(cond)}
-                        className={`p-3 rounded-xl border text-sm font-bold text-left transition-all ${tradeCondition === cond ? 'border-accent bg-accent/10 text-accent' : 'border-border bg-card hover:border-accent/50'}`}
-                      >
-                        {cond} 
-                        <span className="block text-xs font-normal opacity-70 mt-1">
-                          {cond === 'Excellent' && 'Like new, complete in box'}
-                          {cond === 'Good' && 'Normal wear, fully functional'}
-                          {cond === 'Fair' && 'Heavy wear, missing pieces'}
-                        </span>
-                      </button>
-                    ))}
+                  <h3 className="text-2xl font-black text-foreground">Inquiry Received!</h3>
+                  <p className="text-muted-foreground font-medium text-center">
+                    We'll review your device and reach out to the number and email you provided with an offer — usually within 24 hours.
+                  </p>
+                  <button
+                    onClick={() => setTradeStatus('idle')}
+                    className="mt-2 px-8 py-3 rounded-xl border border-border font-bold text-sm hover:border-primary transition-colors"
+                  >Submit Another</button>
+                </motion.div>
+              ) : (
+                <motion.form
+                  key="form"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  onSubmit={handleTradeSubmit}
+                  className="bg-background border border-border p-8 rounded-3xl shadow-2xl text-left max-w-2xl mx-auto space-y-6"
+                >
+                  {/* Contact info */}
+                  <div>
+                    <p className="text-xs font-black uppercase tracking-wider text-muted-foreground mb-3">Your Contact Info</p>
+                    <div className="grid sm:grid-cols-3 gap-3">
+                      <input
+                        required
+                        placeholder="Full name"
+                        value={tradeForm.name}
+                        onChange={e => setTradeForm(f => ({ ...f, name: e.target.value }))}
+                        className="bg-card border border-border rounded-xl px-4 py-3 text-sm font-medium text-foreground placeholder:text-muted-foreground/60 outline-none focus:border-primary transition-colors"
+                      />
+                      <input
+                        required type="email"
+                        placeholder="Email address"
+                        value={tradeForm.email}
+                        onChange={e => setTradeForm(f => ({ ...f, email: e.target.value }))}
+                        className="bg-card border border-border rounded-xl px-4 py-3 text-sm font-medium text-foreground placeholder:text-muted-foreground/60 outline-none focus:border-primary transition-colors"
+                      />
+                      <input
+                        required type="tel"
+                        placeholder="Phone number"
+                        value={tradeForm.phone}
+                        onChange={e => setTradeForm(f => ({ ...f, phone: e.target.value }))}
+                        className="bg-card border border-border rounded-xl px-4 py-3 text-sm font-medium text-foreground placeholder:text-muted-foreground/60 outline-none focus:border-primary transition-colors"
+                      />
+                    </div>
                   </div>
-                </div>
-              </div>
 
-              <div className="bg-card rounded-2xl p-6 flex flex-col sm:flex-row items-center justify-between border border-border gap-6">
-                <div>
-                  <div className="text-sm font-bold text-muted-foreground uppercase tracking-wider mb-1">Estimated Store Credit</div>
-                  <div className="text-4xl font-black text-foreground flex items-baseline gap-2">
-                    <motion.span
-                      key={estimatedValue}
-                      initial={{ opacity: 0, y: -10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      className="text-primary"
-                    >
-                      ${estimatedValue}
-                    </motion.span>
-                    <span className="text-lg text-muted-foreground">.00</span>
+                  {/* Device type */}
+                  <div>
+                    <p className="text-xs font-black uppercase tracking-wider text-muted-foreground mb-3">What are you trading?</p>
+                    <div className="grid grid-cols-3 sm:grid-cols-6 gap-2">
+                      {DEVICE_TYPES.map(type => (
+                        <button
+                          key={type} type="button"
+                          onClick={() => setTradeForm(f => ({ ...f, deviceType: type }))}
+                          className={`py-2.5 px-2 rounded-xl border text-xs font-bold transition-all text-center ${tradeForm.deviceType === type ? 'border-primary bg-primary/10 text-primary' : 'border-border bg-card hover:border-primary/50 text-muted-foreground'}`}
+                        >{type}</button>
+                      ))}
+                    </div>
                   </div>
-                </div>
-                <button className="w-full sm:w-auto bg-foreground text-background px-8 py-4 rounded-xl font-black uppercase hover:bg-primary transition-colors">
-                  Find a Store
-                </button>
-              </div>
-            </div>
+
+                  {/* Description */}
+                  <div>
+                    <p className="text-xs font-black uppercase tracking-wider text-muted-foreground mb-3">Describe what you have</p>
+                    <textarea
+                      required rows={3}
+                      placeholder="Make, model, storage size, color — and anything we should know (cracked screen, missing charger, etc.)"
+                      value={tradeForm.deviceDescription}
+                      onChange={e => setTradeForm(f => ({ ...f, deviceDescription: e.target.value }))}
+                      className="w-full bg-card border border-border rounded-xl px-4 py-3 text-sm font-medium text-foreground placeholder:text-muted-foreground/60 outline-none focus:border-primary transition-colors resize-none"
+                    />
+                  </div>
+
+                  {/* Condition */}
+                  <div>
+                    <p className="text-xs font-black uppercase tracking-wider text-muted-foreground mb-3">Condition</p>
+                    <div className="grid sm:grid-cols-4 gap-2">
+                      {CONDITIONS.map(({ label, sub }) => (
+                        <button
+                          key={label} type="button"
+                          onClick={() => setTradeForm(f => ({ ...f, condition: label }))}
+                          className={`p-3 rounded-xl border text-sm font-bold text-left transition-all ${tradeForm.condition === label ? 'border-accent bg-accent/10 text-accent' : 'border-border bg-card hover:border-accent/50 text-muted-foreground'}`}
+                        >
+                          {label}
+                          <span className="block text-[10px] font-normal opacity-70 mt-1 leading-tight">{sub}</span>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Optional notes */}
+                  <div>
+                    <p className="text-xs font-black uppercase tracking-wider text-muted-foreground mb-3">Anything else? <span className="font-normal normal-case">(optional)</span></p>
+                    <textarea
+                      rows={2}
+                      placeholder="Accessories included, preferred time to be contacted, etc."
+                      value={tradeForm.notes}
+                      onChange={e => setTradeForm(f => ({ ...f, notes: e.target.value }))}
+                      className="w-full bg-card border border-border rounded-xl px-4 py-3 text-sm font-medium text-foreground placeholder:text-muted-foreground/60 outline-none focus:border-primary transition-colors resize-none"
+                    />
+                  </div>
+
+                  {tradeError && (
+                    <p className="text-destructive text-sm font-bold">{tradeError}</p>
+                  )}
+
+                  <button
+                    type="submit"
+                    disabled={tradeSubmitting || !tradeForm.deviceType || !tradeForm.condition}
+                    className="w-full bg-primary text-primary-foreground py-4 rounded-xl font-black uppercase tracking-wider hover:brightness-110 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                  >
+                    {tradeSubmitting ? (
+                      <><RefreshCcw size={18} className="animate-spin" /> Submitting…</>
+                    ) : (
+                      <><RefreshCcw size={18} /> Send My Trade Inquiry</>
+                    )}
+                  </button>
+
+                  <p className="text-center text-xs text-muted-foreground/60">
+                    We'll reach out by phone or email within 24 hours with a real offer. No obligation.
+                  </p>
+                </motion.form>
+              )}
+            </AnimatePresence>
           </div>
         </section>
 
@@ -579,9 +789,44 @@ export default function ShopPage() {
                 <li className="flex items-center gap-3"><ChevronRight className="text-primary" size={20} /> Exclusive early access to restocks</li>
                 <li className="flex items-center gap-3"><ChevronRight className="text-primary" size={20} /> Free expedited shipping</li>
               </ul>
-              <button className="bg-primary text-primary-foreground px-8 py-4 rounded-xl font-black uppercase tracking-wider hover:brightness-110 transition-all w-full sm:w-auto shadow-[0_0_20px_rgba(245,158,11,0.3)]">
-                Join for $14.99/yr
-              </button>
+              {(() => {
+                const jqfInCart = cart.some(i => i.id === 'jqf-plus-membership');
+                return (
+                  <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
+                    <button
+                      onClick={() => {
+                        if (!jqfInCart) addToCart({
+                          id: 'jqf-plus-membership',
+                          name: 'JQF+ Membership (1 Year)',
+                          category: 'Membership',
+                          price: 14.99,
+                          rating: 5,
+                          badge: 'BEST VALUE',
+                          image: '',
+                          stock: 999,
+                          sku: 'JQF-PLUS-YR',
+                          active: true,
+                        });
+                      }}
+                      className={`px-8 py-4 rounded-xl font-black uppercase tracking-wider transition-all w-full sm:w-auto shadow-[0_0_20px_rgba(245,158,11,0.3)] ${
+                        jqfInCart
+                          ? 'bg-green-600 text-white cursor-default'
+                          : 'bg-primary text-primary-foreground hover:brightness-110'
+                      }`}
+                    >
+                      {jqfInCart ? '✓ Added to Cart' : 'Join for $14.99/yr'}
+                    </button>
+                    {jqfInCart && (
+                      <button
+                        onClick={() => setCartOpen(true)}
+                        className="text-primary font-bold underline underline-offset-4 hover:brightness-110 transition-all text-sm"
+                      >
+                        View cart →
+                      </button>
+                    )}
+                  </div>
+                );
+              })()}
             </div>
 
             <div className="relative z-10 w-full max-w-md aspect-card rotate-[-5deg] hover:rotate-0 transition-transform duration-500">
