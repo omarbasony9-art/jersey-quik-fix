@@ -5,6 +5,7 @@ import { TooltipProvider } from '@/components/ui/tooltip';
 import { Gamepad2 } from 'lucide-react';
 import ShopPage from './pages/ShopPage';
 import RepairPage from './pages/RepairPage';
+import CommunityPage from './pages/CommunityPage';
 
 const queryClient = new QueryClient();
 
@@ -47,6 +48,16 @@ function SharedNav() {
           >
             Shop
           </Link>
+          <Link 
+            href="/community" 
+            className={`px-6 py-2 rounded-full font-bold text-sm uppercase tracking-wider transition-all ${
+              location === '/community' 
+                ? 'bg-primary text-primary-foreground shadow-[0_0_15px_rgba(245,158,11,0.5)]' 
+                : 'text-muted-foreground hover:text-foreground'
+            }`}
+          >
+            Community
+          </Link>
         </div>
         
         <div className="w-[100px] hidden sm:block"></div> {/* Spacer for centering */}
@@ -64,6 +75,7 @@ export default function App() {
           <Switch>
             <Route path="/" component={RepairPage} />
             <Route path="/shop" component={ShopPage} />
+            <Route path="/community" component={CommunityPage} />
             <Route>
               <div className="flex flex-col items-center justify-center min-h-[50vh] text-center">
                 <Gamepad2 size={48} className="text-muted-foreground mb-4 opacity-50" />

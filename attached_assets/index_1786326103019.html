@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Community Admin</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <aside class="sidebar">
+    <div class="brand">
+      <div class="brand-mark">F&F</div>
+      <div>
+        <strong>Community Admin</strong>
+        <span>Family & Friends</span>
+      </div>
+    </div>
+
+    <nav>
+      <button class="nav-btn active" data-section="dashboard">Overview</button>
+      <button class="nav-btn" data-section="homepage">Homepage</button>
+      <button class="nav-btn" data-section="announcements">Announcements</button>
+      <button class="nav-btn" data-section="events">Events</button>
+      <button class="nav-btn" data-section="actions">Big Actions</button>
+      <button class="nav-btn" data-section="stats">Stats</button>
+      <button class="nav-btn" data-section="settings">Settings</button>
+    </nav>
+
+    <div class="sidebar-footer">
+      <button class="secondary-btn full" id="exportBtn">Export Data</button>
+      <label class="secondary-btn full file-label">
+        Import Data
+        <input type="file" id="importInput" accept=".json" hidden />
+      </label>
+    </div>
+  </aside>
+
+  <main class="main">
+    <header class="topbar">
+      <div>
+        <div class="eyebrow">ADMIN CONTROL PANEL</div>
+        <h1 id="pageTitle">Overview</h1>
+      </div>
+      <div class="top-actions">
+        <button class="secondary-btn" id="resetBtn">Reset Demo</button>
+        <button class="primary-btn" id="saveAllBtn">Save Changes</button>
+      </div>
+    </header>
+
+    <section class="panel-section active" id="dashboard">
+      <div class="metric-grid">
+        <article class="metric">
+          <span>Announcements</span>
+          <strong id="announcementCount">0</strong>
+        </article>
+        <article class="metric">
+          <span>Events</span>
+          <strong id="eventCount">0</strong>
+        </article>
+        <article class="metric">
+          <span>Big Actions</span>
+          <strong id="actionCount">0</strong>
+        </article>
+        <article class="metric">
+          <span>Members</span>
+          <strong id="memberCountMetric">0</strong>
+        </article>
+      </div>
+
+      <div class="two-col">
+        <article class="card">
+          <div class="card-head">
+            <div>
+              <span class="mini-label">NEXT EVENT</span>
+              <h3 id="nextEventName">—</h3>
+            </div>
+          </div>
+          <p id="nextEventDetails" class="muted">No upcoming event.</p>
+        </article>
+
+        <article class="card">
+          <div class="card-head">
+            <div>
+              <span class="mini-label">LATEST ANNOUNCEMENT</span>
+              <h3 id="latestAnnouncementName">—</h3>
+            </div>
+          </div>
+          <p id="latestAnnouncementDetails" class="muted">No announcement.</p>
+        </article>
+      </div>
+
+      <article class="card">
+        <div class="card-head">
+          <div>
+            <span class="mini-label">HOW THIS WORKS</span>
+            <h3>Everything is editable here</h3>
+          </div>
+        </div>
+        <p class="muted">
+          This admin stores edits in your browser using localStorage. Export the JSON backup anytime.
+          When you add a backend later, the same fields can be saved to a real database.
+        </p>
+      </article>
+    </section>
+
+    <section class="panel-section" id="homepage">
+      <article class="card form-card">
+        <div class="card-head">
+          <div>
+            <span class="mini-label">HERO</span>
+            <h3>Homepage Content</h3>
+          </div>
+        </div>
+
+        <div class="form-grid">
+          <label>
+            Eyebrow
+            <input id="heroEyebrow" />
+          </label>
+          <label class="span-2">
+            Headline
+            <input id="heroHeadline" />
+          </label>
+          <label class="span-2">
+            Description
+            <textarea id="heroDescription" rows="4"></textarea>
+          </label>
+          <label>
+            Primary Button
+            <input id="heroPrimaryButton" />
+          </label>
+          <label>
+            Secondary Button
+            <input id="heroSecondaryButton" />
+          </label>
+          <label>
+            Next Event Card Label
+            <input id="nextEventLabel" />
+          </label>
+          <label>
+            Community Name
+            <input id="communityName" />
+          </label>
+        </div>
+      </article>
+    </section>
+
+    <section class="panel-section" id="announcements">
+      <div class="section-toolbar">
+        <div>
+          <span class="mini-label">CONTENT</span>
+          <h2>Announcements</h2>
+        </div>
+        <button class="primary-btn" id="addAnnouncementBtn">+ Add Announcement</button>
+      </div>
+      <div id="announcementList" class="stack"></div>
+    </section>
+
+    <section class="panel-section" id="events">
+      <div class="section-toolbar">
+        <div>
+          <span class="mini-label">SCHEDULE</span>
+          <h2>Events</h2>
+        </div>
+        <button class="primary-btn" id="addEventBtn">+ Add Event</button>
+      </div>
+      <div id="eventList" class="stack"></div>
+    </section>
+
+    <section class="panel-section" id="actions">
+      <div class="section-toolbar">
+        <div>
+          <span class="mini-label">GROUP EFFORTS</span>
+          <h2>Big Actions</h2>
+        </div>
+        <button class="primary-btn" id="addActionBtn">+ Add Action</button>
+      </div>
+      <div id="actionList" class="stack"></div>
+    </section>
+
+    <section class="panel-section" id="stats">
+      <article class="card form-card">
+        <div class="card-head">
+          <div>
+            <span class="mini-label">COUNTERS</span>
+            <h3>Homepage Stats</h3>
+          </div>
+        </div>
+
+        <div class="form-grid">
+          <label>
+            Members Connected
+            <input id="membersConnected" type="number" min="0" />
+          </label>
+          <label>
+            Announcement Label
+            <input id="announcementStatLabel" />
+          </label>
+          <label>
+            Event Label
+            <input id="eventStatLabel" />
+          </label>
+          <label>
+            Action Label
+            <input id="actionStatLabel" />
+          </label>
+          <label>
+            Member Label
+            <input id="memberStatLabel" />
+          </label>
+        </div>
+      </article>
+    </section>
+
+    <section class="panel-section" id="settings">
+      <article class="card form-card">
+        <div class="card-head">
+          <div>
+            <span class="mini-label">GENERAL</span>
+            <h3>Community Settings</h3>
+          </div>
+        </div>
+
+        <div class="form-grid">
+          <label>
+            Contact Email
+            <input id="contactEmail" type="email" />
+          </label>
+          <label>
+            RSVP Deadline Text
+            <input id="rsvpDeadlineText" />
+          </label>
+          <label class="span-2">
+            Footer Message
+            <input id="footerMessage" />
+          </label>
+          <label>
+            Signup Enabled
+            <select id="signupEnabled">
+              <option value="true">Enabled</option>
+              <option value="false">Disabled</option>
+            </select>
+          </label>
+          <label>
+            Site Visibility
+            <select id="siteVisibility">
+              <option value="private">Private</option>
+              <option value="public">Public</option>
+            </select>
+          </label>
+        </div>
+      </article>
+    </section>
+  </main>
+
+  <div class="modal-backdrop" id="modalBackdrop">
+    <form class="modal" id="editorForm">
+      <button type="button" class="modal-close" id="modalClose">×</button>
+      <div class="mini-label" id="modalType">EDITOR</div>
+      <h3 id="modalTitle">Edit Item</h3>
+      <div id="modalFields" class="modal-fields"></div>
+      <div class="modal-actions">
+        <button type="button" class="secondary-btn" id="cancelModal">Cancel</button>
+        <button type="submit" class="primary-btn">Save Item</button>
+      </div>
+    </form>
+  </div>
+
+  <div id="toast" class="toast"></div>
+  <script src="app.js"></script>
+</body>
+</html>

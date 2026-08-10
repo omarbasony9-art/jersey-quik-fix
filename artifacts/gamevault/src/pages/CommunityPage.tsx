@@ -1,0 +1,647 @@
+import React, { useState, useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { ArrowRight, Clock, X, Plus, Check } from 'lucide-react';
+
+const initialEvents = [
+  {
+    id: 1,
+    date: 'SEP 19',
+    badge: 'Featured/urgent',
+    time: '2:00 PM–8:00 PM',
+    title: 'Annual Family Weekend',
+    location: 'Riverside Park Pavilion',
+    desc: 'Food, games, photos, family updates, and a full afternoon together.'
+  },
+  {
+    id: 2,
+    date: 'OCT 10',
+    badge: 'Dinner',
+    time: '6:30 PM',
+    title: 'Family Dinner Night',
+    location: 'Downtown',
+    desc: 'Monthly dinner night for everyone who can make it.'
+  },
+  {
+    id: 3,
+    date: 'NOV 26',
+    badge: 'Holiday',
+    time: '3:00 PM',
+    title: 'Thanksgiving Gathering',
+    location: 'Family Home',
+    desc: 'Dinner, dessert, family photos, and holiday planning.'
+  }
+];
+
+const announcements = [
+  {
+    badge: 'Major Update',
+    date: 'August 9',
+    title: 'Family Weekend details are officially confirmed',
+    desc: 'The date, location, food plan, and main activities are locked in. RSVP before September 5 so final arrangements can be made.'
+  },
+  {
+    badge: 'Community',
+    date: 'August 6',
+    title: 'New shared photo archive is live',
+    desc: 'We now have one central place for family photos, videos, old memories, and event albums.'
+  },
+  {
+    badge: 'Planning',
+    date: 'August 3',
+    title: 'Holiday planning group is now open',
+    desc: 'Anyone who wants to help coordinate travel, food, gifts, or activities can join the holiday planning group.'
+  }
+];
+
+const actions = [
+  {
+    icon: '🏡',
+    badge: 'In Progress',
+    title: 'Help with the family move',
+    desc: 'Join the action to assist with packing, moving boxes, and getting the new place set up.',
+    progress: 68,
+    volunteers: 17
+  },
+  {
+    icon: '🎁',
+    badge: 'Organizing',
+    title: 'Group birthday surprise',
+    desc: 'Pitch in for a big shared gift and help coordinate the surprise dinner next month.',
+    progress: 42,
+    volunteers: 11
+  }
+];
+
+export default function CommunityPage() {
+  const [events, setEvents] = useState(initialEvents);
+  const [toastMsg, setToastMsg] = useState<string | null>(null);
+  
+  const [addEventOpen, setAddEventOpen] = useState(false);
+  const [detailOpen, setDetailOpen] = useState<{title: string, desc: string} | null>(null);
+  const [rsvps, setRsvps] = useState<Record<number, boolean>>({});
+
+  const [newEventName, setNewEventName] = useState('');
+  const [newEventDate, setNewEventDate] = useState('');
+  const [newEventTime, setNewEventTime] = useState('');
+  const [newEventLocation, setNewEventLocation] = useState('');
+
+  const targetDate = new Date('2026-09-19T14:00:00').getTime();
+  const [timeLeft, setTimeLeft] = useState({ days: 0, hours: 0 });
+
+  useEffect(() => {
+    const updateCountdown = () => {
+      const now = new Date().getTime();
+      const distance = targetDate - now;
+      if (distance > 0) {
+        const days = Math.floor(distance / (1000 * 60 * 60 * 24));
+        const hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+        setTimeLeft({ days, hours });
+      }
+    };
+    updateCountdown();
+    const timerId = setInterval(updateCountdown, 60000);
+    return () => clearInterval(timerId);
+  }, [targetDate]);
+
+  useEffect(() => {
+    if (toastMsg) {
+      const timer = setTimeout(() => setToastMsg(null), 2600);
+      return () => clearTimeout(timer);
+    }
+  }, [toastMsg]);
+
+  const showToast = (msg: string) => setToastMsg(msg);
+
+  const handleRsvp = (id: number) => {
+    const isGoing = !rsvps[id];
+    setRsvps(prev => ({ ...prev, [id]: isGoing }));
+    showToast(isGoing ? "You're going!" : "RSVP cancelled.");
+  };
+
+  const formatTime = (time: string) => {
+    if (!time) return 'TBD';
+    const [h, m] = time.split(':');
+    const hh = parseInt(h, 10);
+    const ampm = hh >= 12 ? 'PM' : 'AM';
+    const h12 = hh % 12 || 12;
+    return `${h12}:${m} ${ampm}`;
+  };
+
+  const formatDate = (dateStr: string) => {
+    if (!dateStr) return 'TBD';
+    const [y, m, d] = dateStr.split('-');
+    const monthStrs = ["JAN", "FEB", "MAR", "APR", "MAY", "JUN", "JUL", "AUG", "SEP", "OCT", "NOV", "DEC"];
+    return `${monthStrs[parseInt(m, 10) - 1]} ${parseInt(d, 10)}`;
+  };
+
+  const handleAddEvent = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newEventName || !newEventDate) return;
+
+    setEvents(prev => [...prev, {
+      id: Date.now(),
+      date: formatDate(newEventDate),
+      badge: 'Community',
+      time: formatTime(newEventTime),
+      title: newEventName,
+      location: newEventLocation || 'TBD',
+      desc: 'Community added event.'
+    }]);
+
+    setAddEventOpen(false);
+    setNewEventName('');
+    setNewEventDate('');
+    setNewEventTime('');
+    setNewEventLocation('');
+    showToast("Event added.");
+  };
+
+  return (
+    <div className="min-h-[100dvh] flex flex-col font-sans overflow-x-hidden selection:bg-primary selection:text-primary-foreground bg-background text-foreground">
+      {/* Promo Bar */}
+      <div className="bg-secondary text-secondary-foreground text-xs font-bold py-3 px-4 text-center tracking-wider">
+        PRIVATE COMMUNITY • FAMILY &amp; FRIENDS HUB
+      </div>
+
+      <main className="flex-1 flex flex-col">
+        {/* Hero Section */}
+        <section className="relative min-h-[600px] flex items-center overflow-hidden py-20">
+          <div className="absolute inset-0 z-0 bg-background overflow-hidden flex items-center justify-center">
+            <div className="absolute top-1/4 -right-1/4 w-[800px] h-[800px] bg-secondary/20 rounded-full blur-[120px] pointer-events-none" />
+            <div className="absolute -bottom-1/4 right-1/4 w-[600px] h-[600px] bg-primary/10 rounded-full blur-[100px] pointer-events-none" />
+          </div>
+
+          <div className="relative z-10 max-w-7xl mx-auto w-full px-6 grid md:grid-cols-2 gap-12 items-center">
+            <motion.div 
+              initial={{ opacity: 0, y: 30 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.8 }}
+            >
+              <div className="text-xs font-bold uppercase tracking-widest text-primary mb-4">
+                COMMUNITY HUB
+              </div>
+              <h1 className="text-5xl md:text-7xl font-black uppercase leading-[0.9] italic tracking-tight mb-6 text-foreground drop-shadow-2xl">
+                Stay connected to the moments that matter.
+              </h1>
+              <p className="text-lg md:text-xl text-foreground/80 font-medium mb-10 max-w-lg leading-relaxed">
+                One place for family events, major announcements, important plans, celebrations, group decisions, and community updates.
+              </p>
+              
+              <div className="flex flex-col sm:flex-row gap-4">
+                <button 
+                  onClick={() => document.getElementById('events')?.scrollIntoView({ behavior: 'smooth' })} 
+                  className="bg-primary text-primary-foreground px-8 py-4 rounded-xl font-black uppercase tracking-wider hover:brightness-110 active:scale-[0.98] transition-all flex items-center justify-center gap-2 group shadow-[0_0_20px_rgba(245,158,11,0.4)]"
+                >
+                  Upcoming Events <ArrowRight className="group-hover:translate-x-1 transition-transform" size={20} />
+                </button>
+                <button 
+                  onClick={() => document.getElementById('announcements')?.scrollIntoView({ behavior: 'smooth' })} 
+                  className="border-2 border-border text-foreground px-8 py-4 rounded-xl font-black uppercase tracking-wider hover:bg-card active:scale-[0.98] transition-all flex items-center justify-center"
+                >
+                  Latest Announcements
+                </button>
+              </div>
+            </motion.div>
+
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ duration: 0.8, delay: 0.2 }}
+              className="flex justify-center md:justify-end relative"
+            >
+              <motion.div 
+                animate={{ y: [0, -10, 0] }}
+                transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
+                className="bg-card/80 backdrop-blur-xl border border-primary/30 p-8 rounded-3xl shadow-[0_0_40px_rgba(245,158,11,0.2)] max-w-sm w-full relative"
+              >
+                <div className="absolute -top-3 -right-3">
+                  <div className="relative flex h-6 w-6">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+                    <span className="relative inline-flex rounded-full h-6 w-6 bg-green-500 border-2 border-background"></span>
+                  </div>
+                </div>
+                
+                <h3 className="text-sm font-bold uppercase tracking-widest text-muted-foreground mb-4">
+                  Next big event
+                </h3>
+                <div className="mb-6">
+                  <h4 className="text-2xl font-black uppercase italic tracking-tight mb-2">Annual Family Weekend</h4>
+                  <p className="text-foreground/80 font-medium">Saturday, September 19 • 2:00 PM</p>
+                </div>
+                
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="bg-background border border-border p-4 rounded-2xl text-center">
+                    <div className="text-3xl font-black text-primary">{timeLeft.days}</div>
+                    <div className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Days</div>
+                  </div>
+                  <div className="bg-background border border-border p-4 rounded-2xl text-center">
+                    <div className="text-3xl font-black text-primary">{timeLeft.hours}</div>
+                    <div className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Hours</div>
+                  </div>
+                </div>
+              </motion.div>
+            </motion.div>
+          </div>
+        </section>
+
+        {/* Stats Row */}
+        <section className="py-12 bg-background border-y border-border">
+          <div className="max-w-7xl mx-auto px-6">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              {[
+                { num: '4', label: 'Upcoming Events' },
+                { num: '3', label: 'Active Announcements' },
+                { num: '2', label: 'Community Actions' },
+                { num: '26', label: 'Members Connected' }
+              ].map((stat, i) => (
+                <motion.div 
+                  key={i}
+                  initial={{ opacity: 0, y: 20 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true }}
+                  transition={{ delay: i * 0.1 }}
+                  className="bg-card border border-border p-6 rounded-3xl text-center"
+                >
+                  <div className="text-4xl md:text-5xl font-black text-primary mb-2">{stat.num}</div>
+                  <div className="text-sm font-bold uppercase tracking-widest text-muted-foreground">{stat.label}</div>
+                </motion.div>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        {/* Announcements */}
+        <section id="announcements" className="py-24 bg-card border-b border-border">
+          <div className="max-w-7xl mx-auto px-6">
+            <div className="mb-12">
+              <div className="text-xs font-bold uppercase tracking-widest text-primary mb-4">IMPORTANT UPDATES</div>
+              <h2 className="text-4xl md:text-5xl font-black uppercase italic tracking-tight">Big Announcements</h2>
+            </div>
+            
+            <div className="grid lg:grid-cols-3 gap-6">
+              {announcements.map((ann, i) => {
+                const isFeatured = i === 0;
+                return (
+                  <motion.div
+                    key={i}
+                    initial={{ opacity: 0, y: 20 }}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    viewport={{ once: true }}
+                    transition={{ delay: i * 0.1 }}
+                    className={`border p-8 rounded-3xl flex flex-col ${
+                      isFeatured 
+                      ? 'bg-secondary border-secondary shadow-xl lg:col-span-1 text-secondary-foreground' 
+                      : 'bg-background border-border text-foreground hover:border-primary/50 transition-colors'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between mb-6">
+                      <span className={`text-xs font-bold uppercase tracking-widest px-3 py-1 rounded-full ${
+                        isFeatured ? 'bg-background/20 text-white' : 'bg-secondary/20 text-secondary'
+                      }`}>
+                        {ann.badge}
+                      </span>
+                      <span className={`text-sm font-bold ${isFeatured ? 'text-white/70' : 'text-muted-foreground'}`}>
+                        Posted {ann.date}
+                      </span>
+                    </div>
+                    <h3 className={`text-2xl font-black uppercase italic tracking-tight mb-4 ${isFeatured ? 'text-white' : ''}`}>
+                      {ann.title}
+                    </h3>
+                    <p className={`font-medium mb-8 flex-1 ${isFeatured ? 'text-white/80' : 'text-muted-foreground'}`}>
+                      {ann.desc}
+                    </p>
+                    <button 
+                      onClick={() => setDetailOpen({ title: ann.title, desc: ann.desc })}
+                      className={`text-sm font-bold uppercase tracking-wider flex items-center gap-2 group w-max ${
+                        isFeatured ? 'text-white hover:text-white/80' : 'text-primary hover:text-primary/80'
+                      }`}
+                    >
+                      Read announcement <ArrowRight size={16} className="group-hover:translate-x-1 transition-transform" />
+                    </button>
+                  </motion.div>
+                );
+              })}
+            </div>
+          </div>
+        </section>
+
+        {/* Events */}
+        <section id="events" className="py-24 bg-background border-b border-border">
+          <div className="max-w-7xl mx-auto px-6">
+            <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-6 mb-12">
+              <div>
+                <div className="text-xs font-bold uppercase tracking-widest text-primary mb-4">WHAT'S COMING UP</div>
+                <h2 className="text-4xl md:text-5xl font-black uppercase italic tracking-tight">Community Events</h2>
+              </div>
+              <button 
+                onClick={() => setAddEventOpen(true)}
+                className="bg-primary text-primary-foreground px-6 py-3 rounded-xl font-black uppercase tracking-wider hover:brightness-110 transition-colors flex items-center gap-2"
+              >
+                <Plus size={18} /> Add Event
+              </button>
+            </div>
+
+            <div className="space-y-6">
+              {events.map((ev, i) => {
+                const isGoing = rsvps[ev.id];
+                return (
+                  <motion.div
+                    key={ev.id}
+                    initial={{ opacity: 0, x: -20 }}
+                    whileInView={{ opacity: 1, x: 0 }}
+                    viewport={{ once: true }}
+                    transition={{ delay: i * 0.1 }}
+                    className="bg-card border border-border p-6 md:p-8 rounded-3xl flex flex-col md:flex-row gap-6 md:gap-8 items-start md:items-center hover:border-primary/50 transition-colors"
+                  >
+                    <div className="bg-background border border-border rounded-2xl w-24 h-24 flex flex-col items-center justify-center shrink-0">
+                      <span className="text-xs font-bold uppercase tracking-widest text-primary">{ev.date.split(' ')[0]}</span>
+                      <span className="text-3xl font-black">{ev.date.split(' ')[1]}</span>
+                    </div>
+
+                    <div className="flex-1">
+                      <div className="flex flex-wrap items-center gap-3 mb-2">
+                        <span className="bg-secondary/20 text-secondary text-xs font-bold uppercase tracking-widest px-3 py-1 rounded-full">
+                          {ev.badge}
+                        </span>
+                        <span className="text-sm font-bold text-muted-foreground flex items-center gap-1">
+                          <Clock size={14} /> {ev.time}
+                        </span>
+                      </div>
+                      <h3 className="text-2xl font-black uppercase italic tracking-tight mb-2">{ev.title}</h3>
+                      <div className="text-muted-foreground font-medium flex items-center gap-1">
+                        📍 {ev.location}
+                      </div>
+                    </div>
+
+                    <div className="flex flex-row md:flex-col gap-3 w-full md:w-auto shrink-0">
+                      <button 
+                        onClick={() => handleRsvp(ev.id)}
+                        className={`px-8 py-3 rounded-xl font-black uppercase tracking-wider transition-all flex items-center justify-center gap-2 ${
+                          isGoing 
+                          ? 'bg-primary text-primary-foreground shadow-[0_0_15px_rgba(245,158,11,0.5)]' 
+                          : 'bg-background border-2 border-border hover:border-primary text-foreground'
+                        }`}
+                      >
+                        {isGoing ? <><Check size={18} /> Going</> : 'RSVP'}
+                      </button>
+                      <button 
+                        onClick={() => setDetailOpen({ title: ev.title, desc: ev.desc })}
+                        className="px-8 py-3 rounded-xl font-black uppercase tracking-wider text-muted-foreground hover:text-foreground transition-colors"
+                      >
+                        Details
+                      </button>
+                    </div>
+                  </motion.div>
+                );
+              })}
+            </div>
+          </div>
+        </section>
+
+        {/* Community Actions */}
+        <section id="actions" className="py-24 bg-card border-b border-border">
+          <div className="max-w-7xl mx-auto px-6">
+            <div className="mb-12">
+              <div className="text-xs font-bold uppercase tracking-widest text-primary mb-4">GROUP EFFORTS</div>
+              <h2 className="text-4xl md:text-5xl font-black uppercase italic tracking-tight">Big Actions Happening</h2>
+            </div>
+            
+            <div className="grid md:grid-cols-2 gap-6">
+              {actions.map((act, i) => (
+                <motion.div
+                  key={i}
+                  initial={{ opacity: 0, scale: 0.95 }}
+                  whileInView={{ opacity: 1, scale: 1 }}
+                  viewport={{ once: true }}
+                  transition={{ delay: i * 0.1 }}
+                  className="bg-background border border-border p-8 rounded-3xl"
+                >
+                  <div className="flex items-center justify-between mb-6">
+                    <div className="text-4xl">{act.icon}</div>
+                    <span className="text-xs font-bold uppercase tracking-widest text-muted-foreground border border-border px-3 py-1 rounded-full">
+                      {act.badge}
+                    </span>
+                  </div>
+                  
+                  <h3 className="text-2xl font-black uppercase italic tracking-tight mb-3">{act.title}</h3>
+                  <p className="text-muted-foreground font-medium mb-8">{act.desc}</p>
+                  
+                  <div className="mb-8">
+                    <div className="flex items-center justify-between text-sm font-bold mb-3">
+                      <span className="text-primary">{act.volunteers} volunteers</span>
+                      <span>{act.progress}% organized</span>
+                    </div>
+                    <div className="h-3 bg-card border border-border rounded-full overflow-hidden">
+                      <motion.div 
+                        initial={{ width: 0 }}
+                        whileInView={{ width: `${act.progress}%` }}
+                        viewport={{ once: true }}
+                        transition={{ duration: 1, delay: 0.2 }}
+                        className="h-full bg-primary"
+                      />
+                    </div>
+                  </div>
+                  
+                  <button 
+                    onClick={() => showToast(`You joined: ${act.title}`)}
+                    className="w-full bg-primary text-primary-foreground py-4 rounded-xl font-black uppercase tracking-wider hover:brightness-110 active:scale-[0.98] transition-all"
+                  >
+                    Join the Action
+                  </button>
+                </motion.div>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        {/* Email Signup */}
+        <section className="py-24 bg-background">
+          <div className="max-w-4xl mx-auto px-6">
+            <div className="bg-gradient-to-br from-secondary to-black border border-secondary/50 p-10 md:p-16 rounded-[3rem] text-center shadow-2xl relative overflow-hidden">
+              {/* Added opacity, disabled pointer events for abstract grain */}
+              <div className="absolute inset-0 opacity-20 pointer-events-none mix-blend-overlay"></div>
+              
+              <div className="relative z-10">
+                <div className="text-xs font-bold uppercase tracking-widest text-primary mb-4">STAY IN THE LOOP</div>
+                <h2 className="text-4xl md:text-5xl font-black uppercase italic tracking-tight text-white mb-8 drop-shadow-md">
+                  Never miss a major family update.
+                </h2>
+                
+                <form 
+                  onSubmit={(e) => {
+                    e.preventDefault();
+                    const input = e.currentTarget.elements.namedItem('email') as HTMLInputElement;
+                    if (input.value && input.value.includes('@')) {
+                      showToast("You're signed up!");
+                      input.value = '';
+                    } else {
+                      showToast("Please enter a valid email.");
+                    }
+                  }}
+                  className="flex flex-col sm:flex-row gap-4 max-w-xl mx-auto"
+                >
+                  <input 
+                    name="email"
+                    type="email" 
+                    placeholder="Enter your email" 
+                    className="flex-1 bg-black/50 border-2 border-white/10 focus:border-primary text-white rounded-xl py-4 px-6 outline-none transition-all font-bold placeholder:text-white/30"
+                  />
+                  <button 
+                    type="submit"
+                    className="bg-primary text-primary-foreground px-8 py-4 rounded-xl font-black uppercase tracking-wider hover:brightness-110 transition-all whitespace-nowrap"
+                  >
+                    Get Updates
+                  </button>
+                </form>
+              </div>
+            </div>
+          </div>
+        </section>
+      </main>
+
+      {/* Footer */}
+      <footer className="bg-black border-t border-border pt-16 pb-8 px-6 mt-auto">
+        <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-6 text-center md:text-left">
+          <div className="text-xl font-black tracking-tight uppercase italic text-foreground">
+            Family &amp; Friends
+          </div>
+          <p className="text-muted-foreground font-medium text-sm">
+            Events, announcements, and important moments in one place.
+          </p>
+          <div className="text-xs font-bold text-muted-foreground uppercase tracking-widest">
+            Private community demo
+          </div>
+        </div>
+      </footer>
+
+      {/* Modals */}
+      <AnimatePresence>
+        {detailOpen && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setDetailOpen(null)}
+              className="absolute inset-0 bg-black/80 backdrop-blur-sm"
+            />
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="relative w-full max-w-lg bg-card border border-border p-8 rounded-3xl shadow-2xl z-10"
+            >
+              <button 
+                onClick={() => setDetailOpen(null)}
+                className="absolute top-6 right-6 text-muted-foreground hover:text-foreground bg-background p-2 rounded-full border border-transparent hover:border-border transition-colors"
+              >
+                <X size={20} />
+              </button>
+              <h3 className="text-3xl font-black uppercase italic tracking-tight mb-4 pr-8">{detailOpen.title}</h3>
+              <p className="text-lg text-muted-foreground font-medium leading-relaxed">{detailOpen.desc}</p>
+            </motion.div>
+          </div>
+        )}
+
+        {addEventOpen && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setAddEventOpen(false)}
+              className="absolute inset-0 bg-black/80 backdrop-blur-sm"
+            />
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.95, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 20 }}
+              className="relative w-full max-w-md bg-card border border-border rounded-3xl shadow-2xl z-10 overflow-hidden"
+            >
+              <div className="p-6 border-b border-border flex justify-between items-center bg-background/50">
+                <h3 className="font-black text-2xl uppercase tracking-tight italic">
+                  Add Event
+                </h3>
+                <button 
+                  onClick={() => setAddEventOpen(false)}
+                  className="text-muted-foreground hover:text-foreground bg-card p-2 rounded-full border border-transparent hover:border-border transition-colors"
+                >
+                  <X size={20} />
+                </button>
+              </div>
+              
+              <form onSubmit={handleAddEvent} className="p-6 space-y-4">
+                <div>
+                  <label className="block text-xs font-bold uppercase tracking-widest text-muted-foreground mb-2">Event Name</label>
+                  <input 
+                    required
+                    value={newEventName}
+                    onChange={e => setNewEventName(e.target.value)}
+                    type="text" 
+                    placeholder="E.g., Family BBQ"
+                    className="w-full bg-background border-2 border-border focus:border-primary text-foreground rounded-xl py-3 px-4 outline-none transition-all font-bold"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold uppercase tracking-widest text-muted-foreground mb-2">Date</label>
+                  <input 
+                    required
+                    value={newEventDate}
+                    onChange={e => setNewEventDate(e.target.value)}
+                    type="date" 
+                    className="w-full bg-background border-2 border-border focus:border-primary text-foreground rounded-xl py-3 px-4 outline-none transition-all font-bold"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold uppercase tracking-widest text-muted-foreground mb-2">Time</label>
+                  <input 
+                    required
+                    value={newEventTime}
+                    onChange={e => setNewEventTime(e.target.value)}
+                    type="time" 
+                    className="w-full bg-background border-2 border-border focus:border-primary text-foreground rounded-xl py-3 px-4 outline-none transition-all font-bold"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold uppercase tracking-widest text-muted-foreground mb-2">Location</label>
+                  <input 
+                    required
+                    value={newEventLocation}
+                    onChange={e => setNewEventLocation(e.target.value)}
+                    type="text" 
+                    placeholder="E.g., 123 Main St"
+                    className="w-full bg-background border-2 border-border focus:border-primary text-foreground rounded-xl py-3 px-4 outline-none transition-all font-bold"
+                  />
+                </div>
+                
+                <div className="pt-4">
+                  <button 
+                    type="submit"
+                    className="w-full bg-primary text-primary-foreground py-4 rounded-xl font-black uppercase tracking-wider hover:brightness-110 active:scale-[0.98] transition-all"
+                  >
+                    Save Event
+                  </button>
+                </div>
+              </form>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* Toast */}
+      <AnimatePresence>
+        {toastMsg && (
+          <motion.div 
+            initial={{ opacity: 0, y: 50, scale: 0.9 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 20, scale: 0.9 }}
+            className="fixed bottom-8 left-1/2 -translate-x-1/2 z-50 bg-foreground text-background px-6 py-4 rounded-2xl font-black uppercase tracking-wider shadow-2xl flex items-center gap-3"
+          >
+            <Check size={20} className="text-primary" />
+            {toastMsg}
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+}
