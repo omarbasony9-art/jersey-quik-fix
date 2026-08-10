@@ -6,6 +6,7 @@ import {
 } from 'lucide-react';
 import { useSiteData } from '../context/SiteDataContext';
 import Footer from '../components/Footer';
+import phoneRepairImg from '../assets/phone-repair-hero.jpg';
 
 type RepairTicket = {
   id: string;
@@ -178,7 +179,7 @@ export default function RepairPage() {
                   Est. in your community
                 </div>
                 <img 
-                  src={repair.heroSideImage || 'https://images.unsplash.com/photo-1556742031-c6961e8560b0?auto=format&fit=crop&w=600&q=80'}
+                  src={repair.heroSideImage || phoneRepairImg}
                   alt="Phone repair technician" 
                   className="rounded-3xl border-l-4 border-primary shadow-2xl object-cover w-[400px] h-[500px]"
                 />
