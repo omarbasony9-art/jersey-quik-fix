@@ -458,57 +458,6 @@ export default function RepairPage() {
           </div>
         </section>
 
-        {/* Location Finder */}
-        <section id="locations" className="py-24 bg-background border-t border-border relative overflow-hidden">
-          <div className="absolute inset-0 z-0 bg-background">
-            <img src={repair.locationsBgImage} alt="Neighborhood view" className="w-full h-full object-cover opacity-10" />
-            <div className="absolute inset-0 bg-background/80" />
-          </div>
-          <div className="max-w-3xl mx-auto px-6 text-center relative z-10">
-            <MapPin size={48} className="mx-auto text-primary mb-6" />
-            <h2 className="text-4xl md:text-5xl font-black uppercase italic tracking-tight mb-6">
-              Find a <span className="text-primary">Store</span>
-            </h2>
-            <p className="text-lg text-muted-foreground font-medium mb-10">
-              Enter your ZIP code to find the nearest Jersey Quik Fix location.
-            </p>
-            
-            <div className="flex gap-2 max-w-md mx-auto mb-12">
-              <div className="relative flex-1">
-                <MapPin className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground" size={20} />
-                <input 
-                  type="text" 
-                  placeholder="Enter ZIP code" 
-                  value={zipCode}
-                  onChange={(e) => setZipCode(e.target.value)}
-                  className="w-full bg-card border-2 border-border focus:border-primary text-foreground rounded-xl py-4 px-5 pl-12 outline-none transition-all font-bold"
-                />
-              </div>
-              <button className="bg-primary text-primary-foreground px-8 py-4 rounded-xl font-black uppercase hover:brightness-110 transition-all">
-                Search
-              </button>
-            </div>
-
-            <div className="space-y-4 text-left">
-              {repair.locations.map((loc, i) => (
-                <div key={loc.id} className="bg-card/90 backdrop-blur-md border border-border p-6 rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-4 hover:border-primary/50 transition-colors">
-                  <div>
-                    <h4 className="font-black text-xl tracking-tight mb-1">{content.site.name} {loc.city}</h4>
-                    <p className="text-muted-foreground font-medium">{loc.address}</p>
-                    <p className="text-sm text-primary font-bold mt-2">{loc.open}</p>
-                  </div>
-                  <div className="flex flex-col items-end justify-between h-full">
-                    <span className="text-sm font-bold bg-background px-3 py-1 rounded-full border border-border mb-4">{loc.distance}</span>
-                    <button onClick={() => handleOpenModal()} className="font-bold text-sm uppercase tracking-wider text-accent hover:text-accent/80 transition-colors flex items-center gap-1">
-                      Book here <ChevronRight size={16} />
-                    </button>
-                  </div>
-                </div>
-              ))}
-            </div>
-            <p className="text-xs text-muted-foreground mt-8 uppercase font-bold tracking-widest">Demo Store Finder</p>
-          </div>
-        </section>
 
         {/* Services Grid */}
         <section className="py-20 bg-card border-t border-border">
