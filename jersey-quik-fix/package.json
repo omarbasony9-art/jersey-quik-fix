@@ -10,7 +10,12 @@
   },
   "private": true,
   "dependencies": {
-    "@replit/connectors-sdk": "^0.4.1"
+    "@clerk/express": "^2.1.52",
+    "@clerk/shared": "^4.27.1",
+    "@replit/connectors-sdk": "^0.4.1",
+    "http-proxy-middleware": "^4.2.0",
+    "stripe": "^22.4.0",
+    "stripe-replit-sync": "^1.0.0"
   },
   "devDependencies": {
     "prettier": "^3.9.6",
