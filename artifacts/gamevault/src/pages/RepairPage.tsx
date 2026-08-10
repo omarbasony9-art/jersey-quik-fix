@@ -7,6 +7,11 @@ import {
 import { useSiteData } from '../context/SiteDataContext';
 import Footer from '../components/Footer';
 import phoneRepairImg from '../assets/phone-repair-hero.jpg';
+import devicePhoneImg from '../assets/device-phone.jpg';
+
+const deviceImageFallbacks: Record<string, string> = {
+  phone: devicePhoneImg,
+};
 
 type RepairTicket = {
   id: string;
@@ -180,7 +185,7 @@ export default function RepairPage() {
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 auto-rows-[320px]">
               {repair.devices.map((device, i) => {
                 const Icon = deviceIconMap[device.id] ?? Wrench;
-                const imgSrc = device.image;
+                const imgSrc = device.image || deviceImageFallbacks[device.id] || '';
 
                 return (
                   <motion.button
