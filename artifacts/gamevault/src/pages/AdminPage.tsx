@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { Link } from 'wouter';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Gamepad2, Settings, Home, Megaphone, Calendar, 
@@ -221,6 +222,10 @@ export default function AdminPage() {
               Authorized staff only
             </p>
           </form>
+
+          <Link href="/" className="mt-4 flex items-center justify-center gap-2 text-xs font-bold uppercase tracking-wider text-muted-foreground hover:text-primary transition-colors">
+            <Home size={13} /> Back to Homepage
+          </Link>
         </motion.div>
       </div>
     );
@@ -277,9 +282,16 @@ export default function AdminPage() {
             <Upload size={14} /> Import Data
           </button>
 
+          <Link
+            href="/"
+            className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-primary/10 text-primary border border-primary/30 hover:bg-primary/20 rounded-xl font-bold text-xs uppercase tracking-wider transition-colors"
+          >
+            <Home size={14} /> Back to Site
+          </Link>
+
           <button 
             onClick={handleLogout}
-            className="w-full flex items-center justify-center gap-2 px-4 py-2 text-destructive hover:bg-destructive/10 rounded-xl font-bold text-xs uppercase tracking-wider transition-colors mt-4"
+            className="w-full flex items-center justify-center gap-2 px-4 py-2 text-destructive hover:bg-destructive/10 rounded-xl font-bold text-xs uppercase tracking-wider transition-colors mt-2"
           >
             <LogOut size={14} /> Logout
           </button>
