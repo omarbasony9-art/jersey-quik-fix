@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 
-const SITE_DATA_KEY = 'jqf_site_content_v10';
+const SITE_DATA_KEY = 'jqf_site_content_v12';
 
 const API_BASE = '/api';
 export type RepairDevice = { id: string; title: string; desc: string; image: string };
@@ -16,6 +16,9 @@ export type Employee = { id: string; name: string; email: string; role: string; 
 export type Photo = { id: string; album: string; featured: string; url: string; count: number };
 export type PromoCard = { id: string; eyebrow: string; headline: string; buttonText: string; image: string };
 
+export type RepairService = { id: string; title: string; desc: string };
+export type Membership = { headline: string; subtitle: string; price: number; perks: string[] };
+
 export type SiteContent = {
   site: { name: string; tagline: string };
   repair: {
@@ -29,6 +32,8 @@ export type SiteContent = {
     whyUsAccent: string; whyUsBgImage: string;
     whyUsPoints: { id: string; title: string; desc: string }[];
     formHeadline: string; formSubtitle: string;
+    servicesHeadline: string; servicesAccent: string;
+    services: RepairService[];
     devices: RepairDevice[];
     reviews: { id: string; name: string; device: string; text: string; avatar: string }[];
     faqs: { id: string; q: string; a: string }[];
@@ -40,6 +45,7 @@ export type SiteContent = {
     heroHeadline: string; heroAccent: string; heroSubtitle: string; heroImage: string;
     products: Product[];
     promoCards: PromoCard[];
+    membership: Membership;
   };
   community: {
     promoBanner: string;
@@ -56,7 +62,11 @@ export type SiteContent = {
   tradeins: TradeIn[];
   employees: Employee[];
   photos: Photo[];
-  settings: { storeName: string; contactEmail: string; phone: string; footer: string; visibility: string };
+  settings: {
+    storeName: string; contactEmail: string; phone: string; footer: string; visibility: string;
+    hours: string; address: string; footerTagline: string;
+    warrantyTitle: string; warrantyBody: string; warrantyBullets: string[];
+  };
 };
 
 const DEFAULT: SiteContent = {
@@ -81,6 +91,15 @@ const DEFAULT: SiteContent = {
       { id: '4', title: 'Upfront Pricing', desc: 'No hidden fees or surprise charges. Ever.' },
     ],
     formHeadline: 'Tell us what happened.', formSubtitle: "Fill out the form and we'll generate a repair ticket instantly.",
+    servicesHeadline: 'We fix what', servicesAccent: 'matters most.',
+    services: [
+      { id: '1', title: 'Phone Screen Repair', desc: 'OLED & LCD replacements for all brands' },
+      { id: '2', title: 'Battery Replacement', desc: 'Bring your device back to peak capacity' },
+      { id: '3', title: 'Computer Repair', desc: 'Hardware upgrades and OS fixes' },
+      { id: '4', title: 'Console Repair', desc: 'HDMI ports, cleaning, and thermal paste' },
+      { id: '5', title: 'Tablet Repair', desc: 'Screens, batteries, and charging ports' },
+      { id: '6', title: 'Data & Setup Help', desc: 'Data recovery, transfers, and new setups' },
+    ],
     devices: [
       { id: 'phone', title: 'Phone', desc: 'Apple, Samsung, Google and more.', image: '' },
       { id: 'computer', title: 'Computer', desc: 'Mac, Windows, laptops and desktops.', image: '' },
@@ -116,7 +135,7 @@ const DEFAULT: SiteContent = {
       { id: '3', name: 'MagSafe Phone Case', category: 'Cases', price: 24.99, rating: 4.6, badge: 'New', image: 'https://images.unsplash.com/photo-1523206489230-c012c64b2b48?auto=format&fit=crop&w=900&q=80', stock: 25, sku: 'CS-MS-001', active: true },
       { id: '4', name: 'Rugged Drop-Proof Case', category: 'Cases', price: 29.99, rating: 4.9, image: 'https://images.unsplash.com/photo-1574944985070-8f3ebc6b79d2?auto=format&fit=crop&w=900&q=80', stock: 18, sku: 'CS-RG-001', active: true },
       { id: '5', name: 'USB-C Fast Charger 65W', category: 'Chargers', price: 29.99, oldPrice: 39.99, rating: 4.8, badge: 'Sale', image: 'https://images.unsplash.com/photo-1583863788434-e58a36330cf0?auto=format&fit=crop&w=900&q=80', stock: 30, sku: 'CH-UC-001', active: true },
-      { id: '6', name: 'Wireless Charging Pad', category: 'Chargers', price: 34.99, rating: 4.5, image: 'https://images.unsplash.com/photo-1585771724684-38269d6639fd?auto=format&fit=crop&w=900&q=80', stock: 22, sku: 'CH-WL-001', active: true },
+      { id: '6', name: 'Wireless Charging Pad', category: 'Chargers', price: 34.99, rating: 4.5, image: 'https://images.unsplash.com/photo-1609091839311-d5365f9ff1c5?auto=format&fit=crop&w=900&q=80', stock: 22, sku: 'CH-WL-001', active: true },
       { id: '7', name: 'Bluetooth Earbuds Pro', category: 'Audio', price: 49.99, rating: 4.7, badge: 'Hot', image: 'https://images.unsplash.com/photo-1590658268037-6bf12165a8df?auto=format&fit=crop&w=900&q=80', stock: 14, sku: 'AU-EP-001', active: true },
       { id: '8', name: 'Lightning Cable 3-Pack', category: 'Cables', price: 19.99, rating: 4.6, image: 'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?auto=format&fit=crop&w=900&q=80', stock: 50, sku: 'CB-LT-001', active: true },
     ],
@@ -124,6 +143,17 @@ const DEFAULT: SiteContent = {
       { id: '1', eyebrow: 'Parts & Accessories', headline: 'Screen Protectors & Cases', buttonText: 'Shop Now', image: 'https://images.unsplash.com/photo-1601784551446-20c9e07cdbdb?auto=format&fit=crop&w=1000&q=80' },
       { id: '2', eyebrow: 'New Arrivals', headline: 'Premium Chargers & Cables', buttonText: 'Shop Now', image: 'https://images.unsplash.com/photo-1583863788434-e58a36330cf0?auto=format&fit=crop&w=1000&q=80' },
     ],
+    membership: {
+      headline: 'JQF+',
+      subtitle: 'The ultimate cheat code for gamers.',
+      price: 14.99,
+      perks: [
+        'Double reward points on all purchases',
+        '10% extra trade-in credit',
+        'Exclusive early access to restocks',
+        'Free expedited shipping',
+      ],
+    },
   },
   community: {
     promoBanner: 'PRIVATE COMMUNITY • FAMILY & FRIENDS HUB',
@@ -152,17 +182,55 @@ const DEFAULT: SiteContent = {
   tradeins: [],
   employees: [],
   photos: [],
-  settings: { storeName: 'Jersey Quik Fix', contactEmail: 'info@jerseyquikfix.com', phone: '1 (985) 228-2888', footer: '© 2026 Jersey Quik Fix. Phone Repairs • Sales and Accessories.', visibility: 'Public' },
+  settings: {
+    storeName: 'Jersey Quik Fix', contactEmail: 'info@jerseyquikfix.com', phone: '1 (985) 228-2888',
+    footer: '© 2026 Jersey Quik Fix. Phone Repairs • Sales and Accessories.', visibility: 'Public',
+    hours: 'Mon – Sat: 9am – 7pm\nSun: 11am – 5pm',
+    address: '',
+    footerTagline: 'Fast, professional repairs for phones, tablets, laptops, and gaming consoles.',
+    warrantyTitle: '1-Year Parts & Labor Warranty',
+    warrantyBody: 'Every repair at Jersey Quik Fix is covered by our 1-year warranty on both parts and labor. If the same issue returns within 12 months of your repair, we fix it free of charge. Warranty covers manufacturing defects and workmanship — it does not cover new physical damage, liquid damage, or issues unrelated to the original repair.',
+    warrantyBullets: ['Parts & labor covered', 'Free re-repair if issue returns', '12 months from repair date'],
+  },
 };
 
 function mergeWithDefaults(parsed: any): SiteContent {
+  const parsedRepair = parsed.repair ?? {};
+  const parsedShop = parsed.shop ?? {};
+  const parsedSettings = parsed.settings ?? {};
   return {
     ...DEFAULT,
     ...parsed,
-    repair: { ...DEFAULT.repair, ...(parsed.repair ?? {}) },
-    shop: { ...DEFAULT.shop, ...(parsed.shop ?? {}) },
-    community: { ...DEFAULT.community, ...(parsed.community ?? {}) },
-    settings: { ...DEFAULT.settings, ...(parsed.settings ?? {}) },
+    repair: {
+      ...DEFAULT.repair,
+      ...parsedRepair,
+      services: parsedRepair.services ?? DEFAULT.repair.services,
+      whyUsPoints: parsedRepair.whyUsPoints ?? DEFAULT.repair.whyUsPoints,
+      checklistItems: parsedRepair.checklistItems ?? DEFAULT.repair.checklistItems,
+      devices: parsedRepair.devices ?? DEFAULT.repair.devices,
+      reviews: parsedRepair.reviews ?? DEFAULT.repair.reviews,
+      faqs: parsedRepair.faqs ?? DEFAULT.repair.faqs,
+      locations: parsedRepair.locations ?? DEFAULT.repair.locations,
+    },
+    shop: {
+      ...DEFAULT.shop,
+      ...parsedShop,
+      products: parsedShop.products ?? DEFAULT.shop.products,
+      promoCards: parsedShop.promoCards ?? DEFAULT.shop.promoCards,
+      membership: { ...DEFAULT.shop.membership, ...(parsedShop.membership ?? {}) },
+    },
+    community: {
+      ...DEFAULT.community,
+      ...(parsed.community ?? {}),
+      announcements: (parsed.community ?? {}).announcements ?? DEFAULT.community.announcements,
+      events: (parsed.community ?? {}).events ?? DEFAULT.community.events,
+      actions: (parsed.community ?? {}).actions ?? DEFAULT.community.actions,
+    },
+    settings: {
+      ...DEFAULT.settings,
+      ...parsedSettings,
+      warrantyBullets: parsedSettings.warrantyBullets ?? DEFAULT.settings.warrantyBullets,
+    },
   };
 }
 type SiteDataContextType = {

@@ -184,7 +184,7 @@ export default function RepairPage() {
           <div className="max-w-7xl mx-auto px-6">
             <div className="text-center mb-12">
               <h2 className="text-3xl md:text-5xl font-black uppercase italic tracking-tight mb-4">
-                We fix what <span className="text-primary">matters most.</span>
+                {repair.servicesHeadline} <span className="text-primary">{repair.servicesAccent}</span>
               </h2>
             </div>
             
@@ -477,27 +477,29 @@ export default function RepairPage() {
               All <span className="text-accent">Services</span>
             </h2>
             <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {[
-                { t: 'Phone Screen Repair', d: 'OLED & LCD replacements for all brands', i: Phone },
-                { t: 'Battery Replacement', d: 'Bring your device back to peak capacity', i: DollarSign },
-                { t: 'Computer Repair', d: 'Hardware upgrades and OS fixes', i: Laptop },
-                { t: 'Console Repair', d: 'HDMI ports, cleaning, and thermal paste', i: Gamepad2 },
-                { t: 'Tablet Repair', d: 'Screens, batteries, and charging ports', i: Tablet },
-                { t: 'Data & Setup Help', d: 'Data recovery, transfers, and new setups', i: Shield },
-              ].map((svc, i) => (
-                <div key={i} className="bg-background border border-border p-6 rounded-3xl flex items-start gap-4">
-                  <div className="p-3 bg-secondary/20 rounded-xl text-secondary">
-                    <svc.i size={24} />
+              {repair.services.map((svc) => {
+                const t = svc.title.toLowerCase();
+                const Icon = t.includes('phone') || t.includes('screen') ? Phone
+                  : t.includes('battery') ? DollarSign
+                  : t.includes('computer') || t.includes('laptop') ? Laptop
+                  : t.includes('console') || t.includes('gaming') ? Gamepad2
+                  : t.includes('tablet') ? Tablet
+                  : Shield;
+                return (
+                  <div key={svc.id} className="bg-background border border-border p-6 rounded-3xl flex items-start gap-4">
+                    <div className="p-3 bg-secondary/20 rounded-xl text-secondary">
+                      <Icon size={24} />
+                    </div>
+                    <div>
+                      <h4 className="font-black text-lg tracking-tight mb-1">{svc.title}</h4>
+                      <p className="text-sm text-muted-foreground font-medium mb-3">{svc.desc}</p>
+                      <button onClick={() => handleOpenModal()} className="text-sm font-bold text-primary uppercase tracking-wider flex items-center gap-1 hover:gap-2 transition-all">
+                        Get started <ArrowRight size={14} />
+                      </button>
+                    </div>
                   </div>
-                  <div>
-                    <h4 className="font-black text-lg tracking-tight mb-1">{svc.t}</h4>
-                    <p className="text-sm text-muted-foreground font-medium mb-3">{svc.d}</p>
-                    <button onClick={() => handleOpenModal()} className="text-sm font-bold text-primary uppercase tracking-wider flex items-center gap-1 hover:gap-2 transition-all">
-                      Get started <ArrowRight size={14} />
-                    </button>
-                  </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </div>
         </section>

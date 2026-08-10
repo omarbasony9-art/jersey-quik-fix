@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Search, ShoppingCart, User, MapPin, ChevronRight, 
   Star, Menu, X, Gamepad2, RefreshCcw, BadgeDollarSign,
-  Plus, Minus, Trash2, Check
+  Plus, Minus, Trash2, Check, Copy, Printer, Tag
 } from 'lucide-react';
 import { useLocation } from 'wouter';
 import { useUser } from '@clerk/react';
@@ -40,7 +40,63 @@ export default function ShopPage() {
     if (params.get('checkout') === 'cancelled') return { type: 'error', text: 'Checkout cancelled — your cart is saved.' };
     return null;
   });
-  
+
+  // Promo code state
+  const [promoCode, setPromoCode] = useState('');
+  const [promoStatus, setPromoStatus] = useState<'idle' | 'checking' | 'valid' | 'invalid'>('idle');
+  const [promoDiscount, setPromoDiscount] = useState(0);
+  const [promoMessage, setPromoMessage] = useState('');
+
+  // Membership code modal state (shown after JQF+ purchase)
+  const [membershipModal, setMembershipModal] = useState<{ code: string; email: string } | null>(null);
+  const [codeCopied, setCodeCopied] = useState(false);
+
+  // After checkout success — try to activate membership code if session_id present
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('checkout') !== 'success') return;
+    const sessionId = params.get('session_id');
+    if (!sessionId) return;
+    fetch('/api/membership/activate', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ sessionId }),
+    })
+      .then(r => r.json())
+      .then(data => {
+        if (data.code) {
+          setMembershipModal({ code: data.code, email: data.email || '' });
+        }
+      })
+      .catch(() => {});
+  }, []);
+
+  const handleValidatePromo = async () => {
+    const trimmed = promoCode.trim().toUpperCase();
+    if (!trimmed) return;
+    setPromoStatus('checking');
+    try {
+      const res = await fetch('/api/membership/validate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ code: trimmed }),
+      });
+      const data = await res.json();
+      if (data.valid) {
+        setPromoStatus('valid');
+        setPromoDiscount(data.discountPercent);
+        setPromoMessage(data.message);
+      } else {
+        setPromoStatus('invalid');
+        setPromoDiscount(0);
+        setPromoMessage(data.message || 'Invalid code.');
+      }
+    } catch {
+      setPromoStatus('invalid');
+      setPromoMessage('Could not verify code. Try again.');
+    }
+  };
+
   // Trade inquiry form state
   const [tradeForm, setTradeForm] = useState({ name: '', email: '', phone: '', deviceType: '', deviceDescription: '', condition: '', notes: '' });
   const [tradeSubmitting, setTradeSubmitting] = useState(false);
@@ -84,6 +140,9 @@ export default function ShopPage() {
 
   const cartItemCount = cart.reduce((sum, item) => sum + item.quantity, 0);
   const cartTotal = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+  const discountedTotal = promoStatus === 'valid'
+    ? cartTotal * (1 - promoDiscount / 100)
+    : cartTotal;
 
   // ── Cart persistence ────────────────────────────────────────────────────
   const cartSyncTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -145,6 +204,7 @@ export default function ShopPage() {
     if (cart.length === 0) return;
     setCheckoutLoading(true);
     try {
+      const customerEmail = user?.emailAddresses?.[0]?.emailAddress || undefined;
       const res = await fetch('/api/stripe/checkout', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -156,6 +216,8 @@ export default function ShopPage() {
             image: item.image || undefined,
             category: item.category || undefined,
           })),
+          customerEmail,
+          promoCode: promoStatus === 'valid' ? promoCode.trim().toUpperCase() : undefined,
         }),
       });
       const data = await res.json();
@@ -198,9 +260,146 @@ export default function ShopPage() {
     }
   };
 
+  const handleCopyCode = () => {
+    if (!membershipModal) return;
+    navigator.clipboard.writeText(membershipModal.code).then(() => {
+      setCodeCopied(true);
+      setTimeout(() => setCodeCopied(false), 2500);
+    });
+  };
+
+  const handlePrintCard = () => {
+    if (!membershipModal) return;
+    const w = window.open('', '_blank');
+    if (!w) return;
+    w.document.write(`
+      <!DOCTYPE html><html><head><title>JQF+ Member Card</title>
+      <style>
+        body { margin: 0; background: #000; display: flex; align-items: center; justify-content: center; min-height: 100vh; font-family: 'Arial Black', Arial, sans-serif; }
+        .card { width: 3.5in; height: 2in; background: linear-gradient(135deg, #0a1628 0%, #0d1f3e 50%, #000 100%); border-radius: 12px; padding: 24px; box-sizing: border-box; color: white; display: flex; flex-direction: column; justify-content: space-between; border: 1px solid rgba(255,255,255,0.2); position: relative; overflow: hidden; }
+        .glow { position: absolute; top: -20px; right: -20px; width: 80px; height: 80px; background: rgba(0,120,255,0.3); border-radius: 50%; filter: blur(20px); }
+        .top { display: flex; justify-content: space-between; align-items: center; }
+        .logo { font-size: 20px; font-style: italic; font-weight: 900; letter-spacing: -1px; }
+        .logo span { color: #007BFF; }
+        .badge { font-size: 9px; letter-spacing: 3px; opacity: 0.5; text-transform: uppercase; }
+        .code-area { text-align: center; }
+        .code-label { font-size: 8px; letter-spacing: 3px; opacity: 0.5; text-transform: uppercase; margin-bottom: 6px; }
+        .code { font-size: 28px; font-weight: 900; letter-spacing: 6px; font-family: 'Courier New', monospace; }
+        .bottom { display: flex; justify-content: space-between; font-size: 8px; letter-spacing: 2px; opacity: 0.5; text-transform: uppercase; }
+        @media print { body { background: white; } }
+      </style></head><body>
+      <div class="card">
+        <div class="glow"></div>
+        <div class="top"><div class="logo">JQF<span>+</span></div><div class="badge">Member Card</div></div>
+        <div class="code-area"><div class="code-label">Your Discount Code</div><div class="code">${membershipModal.code}</div></div>
+        <div class="bottom"><span>10% Off All Purchases</span><span>Valid · Unlimited Uses</span></div>
+      </div>
+      <script>window.onload=()=>{window.print();}<\/script></body></html>
+    `);
+    w.document.close();
+  };
+
   return (
     <div className="min-h-[100dvh] flex flex-col font-sans overflow-x-hidden selection:bg-primary selection:text-primary-foreground">
-      
+
+      {/* JQF+ Membership Code Modal */}
+      <AnimatePresence>
+        {membershipModal && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4"
+            onClick={e => { if (e.target === e.currentTarget) setMembershipModal(null); }}
+          >
+            <motion.div
+              initial={{ scale: 0.85, y: 40 }}
+              animate={{ scale: 1, y: 0 }}
+              exit={{ scale: 0.85, y: 40 }}
+              transition={{ type: 'spring', stiffness: 300, damping: 25 }}
+              className="w-full max-w-md"
+            >
+              {/* Header */}
+              <div className="text-center mb-6">
+                <div className="inline-flex items-center gap-2 bg-primary/20 border border-primary/40 rounded-full px-4 py-1.5 text-primary text-sm font-bold mb-3">
+                  ✦ JQF+ MEMBERSHIP ACTIVATED
+                </div>
+                <h2 className="text-3xl font-black text-white">Your Member Code</h2>
+                <p className="text-white/60 text-sm mt-1">Use this code at checkout for <span className="text-primary font-bold">10% off</span> every purchase</p>
+              </div>
+
+              {/* Physical Card */}
+              <div className="relative rounded-2xl overflow-hidden shadow-2xl mb-4" style={{ background: 'linear-gradient(135deg, #0a1628 0%, #0d1f3e 55%, #000 100%)', border: '1px solid rgba(255,255,255,0.15)' }}>
+                {/* Decorative glows */}
+                <div className="absolute top-0 right-0 w-48 h-48 rounded-full opacity-30" style={{ background: 'radial-gradient(circle, #007BFF 0%, transparent 70%)', transform: 'translate(30%, -30%)' }} />
+                <div className="absolute bottom-0 left-0 w-32 h-32 rounded-full opacity-20" style={{ background: 'radial-gradient(circle, #0040FF 0%, transparent 70%)', transform: 'translate(-30%, 30%)' }} />
+                {/* Chip graphic */}
+                <div className="absolute top-6 left-6 w-10 h-7 rounded-md border border-yellow-400/40 bg-gradient-to-br from-yellow-400/20 to-yellow-600/20 grid grid-cols-2 gap-[2px] p-[3px]">
+                  {[...Array(4)].map((_, i) => <div key={i} className="rounded-[1px] bg-yellow-400/30" />)}
+                </div>
+
+                <div className="relative p-7 pt-14">
+                  {/* Card header */}
+                  <div className="flex justify-between items-start mb-8">
+                    <span className="text-2xl font-black italic text-white tracking-tight">JQF<span className="text-primary">+</span></span>
+                    <span className="text-[10px] tracking-[4px] text-white/40 uppercase">Member Card</span>
+                  </div>
+
+                  {/* Code */}
+                  <div className="text-center mb-8">
+                    <p className="text-[9px] tracking-[4px] text-white/40 uppercase mb-2">Your Discount Code</p>
+                    <p className="text-4xl font-black font-mono text-white tracking-widest select-all">
+                      {membershipModal.code}
+                    </p>
+                  </div>
+
+                  {/* Card footer */}
+                  <div className="flex justify-between items-end">
+                    <div>
+                      <p className="text-[8px] tracking-[3px] text-white/40 uppercase">Benefit</p>
+                      <p className="text-xs font-bold text-white/70 tracking-widest">10% OFF ALL PURCHASES</p>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-[8px] tracking-[3px] text-white/40 uppercase">Status</p>
+                      <p className="text-xs font-bold text-green-400 tracking-widest">● ACTIVE</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Member email */}
+              {membershipModal.email && (
+                <p className="text-center text-xs text-white/40 mb-4">Issued to <span className="text-white/70">{membershipModal.email}</span></p>
+              )}
+
+              {/* Actions */}
+              <div className="flex gap-3 mb-4">
+                <button
+                  onClick={handleCopyCode}
+                  className="flex-1 flex items-center justify-center gap-2 bg-primary text-primary-foreground py-3 rounded-xl font-bold hover:brightness-110 transition-all"
+                >
+                  {codeCopied ? <><Check size={16} /> Copied!</> : <><Copy size={16} /> Copy Code</>}
+                </button>
+                <button
+                  onClick={handlePrintCard}
+                  className="flex items-center justify-center gap-2 bg-white/10 border border-white/20 text-white px-4 py-3 rounded-xl font-bold hover:bg-white/20 transition-all"
+                >
+                  <Printer size={16} /> Print Card
+                </button>
+              </div>
+
+              <p className="text-center text-xs text-white/40 mb-4">
+                Screenshot or print this card — your code is always available at checkout.
+              </p>
+
+              <button onClick={() => setMembershipModal(null)} className="w-full text-white/40 hover:text-white/70 text-sm py-2 transition-colors">
+                Close
+              </button>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {/* Checkout Banner */}
       {checkoutBanner && (
         <div className={`flex items-center justify-between px-6 py-3 text-sm font-bold ${checkoutBanner.type === 'success' ? 'bg-green-600 text-white' : 'bg-destructive text-destructive-foreground'}`}>
@@ -321,11 +520,56 @@ export default function ShopPage() {
                     </div>
 
                     {cart.length > 0 && (
-                      <div className="p-4 border-t border-border bg-background/50">
-                        <div className="flex justify-between items-center mb-4 font-bold text-lg">
-                          <span>Subtotal</span>
-                          <span>${cartTotal.toFixed(2)}</span>
+                      <div className="p-4 border-t border-border bg-background/50 flex flex-col gap-3">
+                        {/* Promo Code Input */}
+                        <div>
+                          <div className="flex gap-2">
+                            <div className="relative flex-1">
+                              <Tag size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+                              <input
+                                type="text"
+                                placeholder="JQF+ member code"
+                                value={promoCode}
+                                onChange={e => { setPromoCode(e.target.value.toUpperCase()); setPromoStatus('idle'); setPromoDiscount(0); }}
+                                onKeyDown={e => e.key === 'Enter' && handleValidatePromo()}
+                                className="w-full bg-background border border-border rounded-lg py-2 pl-8 pr-3 text-sm font-mono focus:border-primary outline-none transition-colors"
+                              />
+                            </div>
+                            <button
+                              onClick={handleValidatePromo}
+                              disabled={!promoCode.trim() || promoStatus === 'checking'}
+                              className="px-3 py-2 bg-primary text-primary-foreground rounded-lg text-xs font-bold disabled:opacity-50 hover:brightness-110 transition-all"
+                            >
+                              {promoStatus === 'checking' ? '…' : 'Apply'}
+                            </button>
+                          </div>
+                          {promoStatus !== 'idle' && (
+                            <p className={`text-xs mt-1 font-medium ${promoStatus === 'valid' ? 'text-green-500' : 'text-destructive'}`}>
+                              {promoStatus === 'valid' ? '✓' : '✗'} {promoMessage}
+                            </p>
+                          )}
                         </div>
+
+                        {/* Totals */}
+                        <div className="flex flex-col gap-1">
+                          {promoStatus === 'valid' && (
+                            <>
+                              <div className="flex justify-between text-sm text-muted-foreground">
+                                <span>Original</span>
+                                <span className="line-through">${cartTotal.toFixed(2)}</span>
+                              </div>
+                              <div className="flex justify-between text-sm text-green-500 font-bold">
+                                <span>JQF+ {promoDiscount}% discount</span>
+                                <span>−${(cartTotal - discountedTotal).toFixed(2)}</span>
+                              </div>
+                            </>
+                          )}
+                          <div className="flex justify-between items-center font-bold text-lg">
+                            <span>Total</span>
+                            <span>${discountedTotal.toFixed(2)}</span>
+                          </div>
+                        </div>
+
                         <button
                           onClick={handleCheckout}
                           disabled={checkoutLoading}
@@ -778,53 +1022,59 @@ export default function ShopPage() {
             <div className="absolute -right-20 -top-20 w-96 h-96 bg-primary/20 blur-[100px] rounded-full pointer-events-none" />
             
             <div className="relative z-10 max-w-xl">
-              <div className="flex items-center gap-3 mb-6">
-                <Star className="text-primary" size={32} fill="currentColor" />
-                <h3 className="text-3xl md:text-4xl font-black uppercase italic tracking-tight">JQF<span className="text-primary">+</span></h3>
-              </div>
-              <h4 className="text-2xl font-bold mb-4">The ultimate cheat code for gamers.</h4>
-              <ul className="space-y-3 mb-8 text-foreground/80 font-medium">
-                <li className="flex items-center gap-3"><ChevronRight className="text-primary" size={20} /> Double reward points on all purchases</li>
-                <li className="flex items-center gap-3"><ChevronRight className="text-primary" size={20} /> 10% extra trade-in credit</li>
-                <li className="flex items-center gap-3"><ChevronRight className="text-primary" size={20} /> Exclusive early access to restocks</li>
-                <li className="flex items-center gap-3"><ChevronRight className="text-primary" size={20} /> Free expedited shipping</li>
-              </ul>
               {(() => {
+                const m = content.shop.membership;
                 const jqfInCart = cart.some(i => i.id === 'jqf-plus-membership');
                 return (
-                  <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
-                    <button
-                      onClick={() => {
-                        if (!jqfInCart) addToCart({
-                          id: 'jqf-plus-membership',
-                          name: 'JQF+ Membership (1 Year)',
-                          category: 'Membership',
-                          price: 14.99,
-                          rating: 5,
-                          badge: 'BEST VALUE',
-                          image: '',
-                          stock: 999,
-                          sku: 'JQF-PLUS-YR',
-                          active: true,
-                        });
-                      }}
-                      className={`px-8 py-4 rounded-xl font-black uppercase tracking-wider transition-all w-full sm:w-auto shadow-[0_0_20px_rgba(245,158,11,0.3)] ${
-                        jqfInCart
-                          ? 'bg-green-600 text-white cursor-default'
-                          : 'bg-primary text-primary-foreground hover:brightness-110'
-                      }`}
-                    >
-                      {jqfInCart ? '✓ Added to Cart' : 'Join for $14.99/yr'}
-                    </button>
-                    {jqfInCart && (
+                  <>
+                    <div className="flex items-center gap-3 mb-6">
+                      <Star className="text-primary" size={32} fill="currentColor" />
+                      <h3 className="text-3xl md:text-4xl font-black uppercase italic tracking-tight">
+                        {m.headline.replace('+', '')}<span className="text-primary">+</span>
+                      </h3>
+                    </div>
+                    <h4 className="text-2xl font-bold mb-4">{m.subtitle}</h4>
+                    <ul className="space-y-3 mb-8 text-foreground/80 font-medium">
+                      {m.perks.map((perk, i) => (
+                        <li key={i} className="flex items-center gap-3">
+                          <ChevronRight className="text-primary" size={20} /> {perk}
+                        </li>
+                      ))}
+                    </ul>
+                    <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
                       <button
-                        onClick={() => setCartOpen(true)}
-                        className="text-primary font-bold underline underline-offset-4 hover:brightness-110 transition-all text-sm"
+                        onClick={() => {
+                          if (!jqfInCart) addToCart({
+                            id: 'jqf-plus-membership',
+                            name: 'JQF+ Membership (1 Year)',
+                            category: 'Membership',
+                            price: m.price,
+                            rating: 5,
+                            badge: 'BEST VALUE',
+                            image: '',
+                            stock: 999,
+                            sku: 'JQF-PLUS-YR',
+                            active: true,
+                          });
+                        }}
+                        className={`px-8 py-4 rounded-xl font-black uppercase tracking-wider transition-all w-full sm:w-auto shadow-[0_0_20px_rgba(245,158,11,0.3)] ${
+                          jqfInCart
+                            ? 'bg-green-600 text-white cursor-default'
+                            : 'bg-primary text-primary-foreground hover:brightness-110'
+                        }`}
                       >
-                        View cart →
+                        {jqfInCart ? '✓ Added to Cart' : `Join for $${m.price.toFixed(2)}/yr`}
                       </button>
-                    )}
-                  </div>
+                      {jqfInCart && (
+                        <button
+                          onClick={() => setCartOpen(true)}
+                          className="text-primary font-bold underline underline-offset-4 hover:brightness-110 transition-all text-sm"
+                        >
+                          View cart →
+                        </button>
+                      )}
+                    </div>
+                  </>
                 );
               })()}
             </div>
