@@ -2,7 +2,7 @@ import React, { createContext, useContext, useState, useEffect, ReactNode } from
 
 const SITE_DATA_KEY = 'jqf_site_content_v12';
 
-const API_BASE = '/api';
+const API_BASE = import.meta.env.VITE_API_BASE_URL || '/api';
 export type RepairDevice = { id: string; title: string; desc: string; image: string };
 export type Product = { id: string; name: string; category: string; price: number; oldPrice?: number; rating: number; badge?: string; image: string; stock: number; sku: string; active: boolean };
 export type Announcement = { id: string; badge: string; date: string; title: string; desc: string; featured: boolean; image: string };

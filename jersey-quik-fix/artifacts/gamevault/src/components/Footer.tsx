@@ -4,7 +4,7 @@ import { Link } from 'wouter';
 import jerseyLogo from '../assets/jersey-quik-fix-logo.png';
 import { useSiteData } from '../context/SiteDataContext';
 
-const API_BASE = '/api';
+const API_BASE = import.meta.env.VITE_API_BASE_URL || '/api';
 
 export default function Footer() {
   const { content } = useSiteData();
