@@ -7,6 +7,7 @@ import emailsRouter from "./emails";
 import stripeCheckoutRouter from "./stripe-checkout";
 import cartRouter from "./cart";
 import tradeRouter from "./trade-inquiries";
+import membershipRouter from "./membership";
 
 const router: IRouter = Router();
 
@@ -18,5 +19,6 @@ router.use(emailsRouter);
 router.use(stripeCheckoutRouter);
 router.use(cartRouter);
 router.use(tradeRouter);
+router.use(membershipRouter);
 
 export default router;

@@ -475,6 +475,28 @@ export default function AdminPage() {
                           <label className={labelCls}>Promo Banner</label>
                           <input value={draft.repair.promoBanner} onChange={e => setRepairField('promoBanner', e.target.value)} className={inputCls} />
                         </div>
+                        <div>
+                          <label className={labelCls}>Hero Card Title</label>
+                          <input value={draft.repair.heroCardTitle} onChange={e => setRepairField('heroCardTitle', e.target.value)} className={inputCls} />
+                        </div>
+                        <div>
+                          <label className={labelCls}>Hero Card Description</label>
+                          <input value={draft.repair.heroCardDesc} onChange={e => setRepairField('heroCardDesc', e.target.value)} className={inputCls} />
+                        </div>
+                      </div>
+                    </div>
+
+                    <div>
+                      <h3 className={sectionHeadCls}>Booking Form</h3>
+                      <div className="grid md:grid-cols-2 gap-4">
+                        <div>
+                          <label className={labelCls}>Form Headline</label>
+                          <input value={draft.repair.formHeadline} onChange={e => setRepairField('formHeadline', e.target.value)} className={inputCls} />
+                        </div>
+                        <div>
+                          <label className={labelCls}>Form Subtitle</label>
+                          <input value={draft.repair.formSubtitle} onChange={e => setRepairField('formSubtitle', e.target.value)} className={inputCls} />
+                        </div>
                       </div>
                     </div>
 
@@ -575,6 +597,24 @@ export default function AdminPage() {
                     </div>
 
                     <div>
+                      <h3 className={sectionHeadCls}>Services Grid</h3>
+                      <div className="grid md:grid-cols-2 gap-4 mb-4">
+                        <div><label className={labelCls}>Section Headline</label><input value={(draft.repair as any).servicesHeadline ?? 'We fix what'} onChange={e => setRepairField('servicesHeadline' as any, e.target.value)} className={inputCls} /></div>
+                        <div><label className={labelCls}>Accent (colored) Word</label><input value={(draft.repair as any).servicesAccent ?? 'matters most.'} onChange={e => setRepairField('servicesAccent' as any, e.target.value)} className={inputCls} /></div>
+                      </div>
+                      {((draft.repair as any).services ?? []).map((svc: any) => (
+                        <div key={svc.id} className={cardCls + " flex gap-4"}>
+                          <div className="flex-1 grid md:grid-cols-2 gap-2">
+                            <input value={svc.title} onChange={e => updateRepairArray('services' as any, svc.id, 'title', e.target.value)} className={inputCls} placeholder="Service Name" />
+                            <input value={svc.desc} onChange={e => updateRepairArray('services' as any, svc.id, 'desc', e.target.value)} className={inputCls} placeholder="Short Description" />
+                          </div>
+                          <button onClick={() => deleteRepairArrayItem('services' as any, svc.id)} className={deleteBtnCls}><Trash2 size={16} /></button>
+                        </div>
+                      ))}
+                      <button onClick={() => addRepairArrayItem('services' as any, { id: crypto.randomUUID(), title: 'New Service', desc: '' })} className={addBtnCls}><Plus size={14} /> Add Service</button>
+                    </div>
+
+                    <div>
                       <h3 className={sectionHeadCls}>Locations</h3>
                       <div className="mb-4">
                         <ImageField label="Locations Background" value={draft.repair.locationsBgImage} onChange={v => setRepairField('locationsBgImage', v)} />
@@ -655,6 +695,42 @@ export default function AdminPage() {
                         </div>
                       ))}
                       <button onClick={() => setDraft(d => ({...d, shop: {...d.shop, promoCards: [...(d.shop.promoCards ?? []), { id: crypto.randomUUID(), eyebrow: 'New Section', headline: 'Promo Title', buttonText: 'Shop Now', image: '' }]}}))} className={addBtnCls}><Plus size={14} /> Add Promo Card</button>
+                    </div>
+
+                    <div>
+                      <h3 className={sectionHeadCls}>JQF+ Membership</h3>
+                      <div className="grid md:grid-cols-2 gap-4 mb-4">
+                        <div>
+                          <label className={labelCls}>Badge Name (e.g. JQF+)</label>
+                          <input value={(draft.shop as any).membership?.headline ?? 'JQF+'} onChange={e => setDraft(d => ({...d, shop: {...d.shop, membership: {...(d.shop as any).membership, headline: e.target.value}}}))} className={inputCls} />
+                        </div>
+                        <div>
+                          <label className={labelCls}>Price ($/year)</label>
+                          <input type="number" step="0.01" value={(draft.shop as any).membership?.price ?? 14.99} onChange={e => setDraft(d => ({...d, shop: {...d.shop, membership: {...(d.shop as any).membership, price: Number(e.target.value)}}}))} className={inputCls} />
+                        </div>
+                        <div className="md:col-span-2">
+                          <label className={labelCls}>Subtitle / Tagline</label>
+                          <input value={(draft.shop as any).membership?.subtitle ?? ''} onChange={e => setDraft(d => ({...d, shop: {...d.shop, membership: {...(d.shop as any).membership, subtitle: e.target.value}}}))} className={inputCls} />
+                        </div>
+                      </div>
+                      <h4 className="text-sm font-bold uppercase mb-2">Member Perks</h4>
+                      {((draft.shop as any).membership?.perks ?? []).map((perk: string, i: number) => (
+                        <div key={i} className="flex gap-2 mb-2">
+                          <input value={perk} onChange={e => {
+                            const perks = [...((draft.shop as any).membership?.perks ?? [])];
+                            perks[i] = e.target.value;
+                            setDraft(d => ({...d, shop: {...d.shop, membership: {...(d.shop as any).membership, perks}}}));
+                          }} className={inputCls} placeholder="Perk description" />
+                          <button onClick={() => {
+                            const perks = ((draft.shop as any).membership?.perks ?? []).filter((_: any, idx: number) => idx !== i);
+                            setDraft(d => ({...d, shop: {...d.shop, membership: {...(d.shop as any).membership, perks}}}));
+                          }} className={deleteBtnCls}><Trash2 size={16} /></button>
+                        </div>
+                      ))}
+                      <button onClick={() => {
+                        const perks = [...((draft.shop as any).membership?.perks ?? []), 'New perk'];
+                        setDraft(d => ({...d, shop: {...d.shop, membership: {...(d.shop as any).membership, perks}}}));
+                      }} className={addBtnCls}><Plus size={14} /> Add Perk</button>
                     </div>
                   </div>
                 )}
@@ -1122,7 +1198,51 @@ export default function AdminPage() {
                           <label className={labelCls}>Footer Text</label>
                           <textarea value={draft.settings.footer} onChange={e => setSettingsField('footer', e.target.value)} className={textareaCls} />
                         </div>
+                        <div className="md:col-span-2">
+                          <label className={labelCls}>Footer Tagline (under logo)</label>
+                          <textarea value={(draft.settings as any).footerTagline ?? ''} onChange={e => setSettingsField('footerTagline' as any, e.target.value)} className={textareaCls} />
+                        </div>
+                        <div className="md:col-span-2">
+                          <label className={labelCls}>Store Hours</label>
+                          <textarea value={(draft.settings as any).hours ?? ''} onChange={e => setSettingsField('hours' as any, e.target.value)} className={textareaCls} placeholder="Mon – Sat: 9am – 7pm&#10;Sun: 11am – 5pm" />
+                        </div>
+                        <div className="md:col-span-2">
+                          <label className={labelCls}>Store Address (optional)</label>
+                          <input value={(draft.settings as any).address ?? ''} onChange={e => setSettingsField('address' as any, e.target.value)} className={inputCls} placeholder="123 Main Street, City, State" />
+                        </div>
                       </div>
+                    </div>
+
+                    <div>
+                      <h3 className={sectionHeadCls}>Warranty Policy</h3>
+                      <div className="grid md:grid-cols-2 gap-4">
+                        <div className="md:col-span-2">
+                          <label className={labelCls}>Warranty Title</label>
+                          <input value={(draft.settings as any).warrantyTitle ?? ''} onChange={e => setSettingsField('warrantyTitle' as any, e.target.value)} className={inputCls} />
+                        </div>
+                        <div className="md:col-span-2">
+                          <label className={labelCls}>Warranty Body Text</label>
+                          <textarea value={(draft.settings as any).warrantyBody ?? ''} onChange={e => setSettingsField('warrantyBody' as any, e.target.value)} className={textareaCls} rows={4} />
+                        </div>
+                      </div>
+                      <h4 className="text-sm font-bold uppercase mt-4 mb-2">Warranty Bullets</h4>
+                      {((draft.settings as any).warrantyBullets ?? []).map((bullet: string, i: number) => (
+                        <div key={i} className="flex gap-2 mb-2">
+                          <input value={bullet} onChange={e => {
+                            const bullets = [...((draft.settings as any).warrantyBullets ?? [])];
+                            bullets[i] = e.target.value;
+                            setSettingsField('warrantyBullets' as any, bullets);
+                          }} className={inputCls} />
+                          <button onClick={() => {
+                            const bullets = ((draft.settings as any).warrantyBullets ?? []).filter((_: any, idx: number) => idx !== i);
+                            setSettingsField('warrantyBullets' as any, bullets);
+                          }} className={deleteBtnCls}><Trash2 size={16} /></button>
+                        </div>
+                      ))}
+                      <button onClick={() => {
+                        const bullets = [...((draft.settings as any).warrantyBullets ?? []), 'New bullet point'];
+                        setSettingsField('warrantyBullets' as any, bullets);
+                      }} className={addBtnCls}><Plus size={14} /> Add Bullet</button>
                     </div>
 
                     <div className="pt-6 border-t border-border">

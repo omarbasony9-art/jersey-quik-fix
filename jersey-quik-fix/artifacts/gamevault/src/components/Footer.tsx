@@ -1,13 +1,20 @@
 import React, { useState } from 'react';
-import { Mail, CheckCircle, Phone, MapPin, Clock, Search } from 'lucide-react';
+import { Mail, CheckCircle, Phone, Clock, Search } from 'lucide-react';
 import { Link } from 'wouter';
 import jerseyLogo from '../assets/jersey-quik-fix-logo.png';
+import { useSiteData } from '../context/SiteDataContext';
 
 const API_BASE = '/api';
 
 export default function Footer() {
+  const { content } = useSiteData();
+  const s = content.settings;
   const [signupEmail, setSignupEmail] = useState('');
   const [signupStatus, setSignupStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
+
+  // Convert display phone like "1 (985) 228-2888" to tel:+19852282888
+  const phoneHref = 'tel:+' + (s.phone || '').replace(/\D/g, '');
+  const emailHref = `mailto:${s.contactEmail}`;
 
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -69,23 +76,26 @@ export default function Footer() {
         {/* Brand */}
         <div className="col-span-1 md:col-span-1">
           <Link href="/" className="flex items-center gap-3 mb-5 group inline-flex no-underline">
-            <img src={jerseyLogo} alt="Jersey Quik Fix" className="w-10 h-10 object-contain" />
+            <img src={jerseyLogo} alt={content.site.name} className="w-10 h-10 object-contain" />
             <span className="text-lg font-black tracking-tight uppercase italic text-foreground group-hover:text-primary transition-colors leading-tight">
               Jersey<br/>Quik Fix
             </span>
           </Link>
           <p className="text-muted-foreground text-sm font-medium max-w-[220px] leading-relaxed mb-5">
-            Fast, professional repairs for phones, tablets, laptops, and gaming consoles.
+            {s.footerTagline}
           </p>
           <div className="space-y-2 text-sm">
-            <a href="tel:+19852282888" className="flex items-center gap-2 text-foreground font-bold hover:text-primary transition-colors group">
+            <a href={phoneHref} className="flex items-center gap-2 text-foreground font-bold hover:text-primary transition-colors group">
               <Phone size={15} className="text-primary flex-shrink-0" />
-              1&nbsp;(985)&nbsp;228-2888
+              {s.phone}
             </a>
             <div className="flex items-start gap-2 text-muted-foreground font-medium">
               <Clock size={15} className="text-primary flex-shrink-0 mt-0.5" />
-              <span>Mon – Sat: 9am – 7pm<br/>Sun: 11am – 5pm</span>
+              <span style={{ whiteSpace: 'pre-line' }}>{s.hours}</span>
             </div>
+            {s.address && (
+              <div className="text-xs text-muted-foreground font-medium pl-5">{s.address}</div>
+            )}
           </div>
         </div>
 
@@ -122,14 +132,14 @@ export default function Footer() {
           <div className="space-y-4 text-sm">
             <div>
               <div className="text-xs font-black uppercase tracking-wider text-muted-foreground mb-1">Phone</div>
-              <a href="tel:+19852282888" className="text-foreground font-black hover:text-primary transition-colors text-base">
-                1 (985) 228-2888
+              <a href={phoneHref} className="text-foreground font-black hover:text-primary transition-colors text-base">
+                {s.phone}
               </a>
             </div>
             <div>
               <div className="text-xs font-black uppercase tracking-wider text-muted-foreground mb-1">Email</div>
-              <a href="mailto:info@jerseyquikfix.com" className="text-muted-foreground hover:text-primary transition-colors font-medium">
-                info@jerseyquikfix.com
+              <a href={emailHref} className="text-muted-foreground hover:text-primary transition-colors font-medium">
+                {s.contactEmail}
               </a>
             </div>
             <div>
@@ -139,7 +149,7 @@ export default function Footer() {
               </div>
             </div>
             <a
-              href="tel:+19852282888"
+              href={phoneHref}
               className="inline-flex items-center gap-2 bg-primary text-primary-foreground font-black px-4 py-2.5 rounded-xl text-xs uppercase hover:brightness-110 transition-all mt-1"
             >
               <Phone size={14} /> Call Now
@@ -153,36 +163,29 @@ export default function Footer() {
         <div className="flex flex-col md:flex-row gap-6 items-start">
           <div className="flex-1">
             <div className="text-xs font-black uppercase tracking-wider text-primary mb-2">Warranty Policy</div>
-            <h4 className="font-black text-foreground text-lg mb-2">1-Year Parts &amp; Labor Warranty</h4>
+            <h4 className="font-black text-foreground text-lg mb-2">{s.warrantyTitle}</h4>
             <p className="text-sm text-muted-foreground font-medium leading-relaxed">
-              Every repair at Jersey Quik Fix is covered by our <strong className="text-foreground">1-year warranty</strong> on both parts and labor.
-              If the same issue returns within 12 months of your repair, we fix it <strong className="text-foreground">free of charge</strong>.
-              Warranty covers manufacturing defects and workmanship — it does not cover new physical damage, liquid damage,
-              or issues unrelated to the original repair.
+              {s.warrantyBody}
             </p>
           </div>
           <div className="flex flex-col gap-2 text-sm flex-shrink-0 md:text-right">
-            <div className="flex md:justify-end items-center gap-2 text-green-400 font-bold">
-              <CheckCircle size={15} /> Parts &amp; labor covered
-            </div>
-            <div className="flex md:justify-end items-center gap-2 text-green-400 font-bold">
-              <CheckCircle size={15} /> Free re-repair if issue returns
-            </div>
-            <div className="flex md:justify-end items-center gap-2 text-green-400 font-bold">
-              <CheckCircle size={15} /> 12 months from repair date
-            </div>
+            {(s.warrantyBullets || []).map((bullet, i) => (
+              <div key={i} className="flex md:justify-end items-center gap-2 text-green-400 font-bold">
+                <CheckCircle size={15} /> {bullet}
+              </div>
+            ))}
           </div>
         </div>
       </div>
 
       {/* Bottom bar */}
       <div className="max-w-7xl mx-auto border-t border-white/10 pt-8 flex flex-col md:flex-row items-center justify-between gap-4 text-xs text-muted-foreground font-medium">
-        <p>© {new Date().getFullYear()} Jersey Quik Fix. All rights reserved.</p>
+        <p>© {new Date().getFullYear()} {content.site.name}. All rights reserved.</p>
         <div className="flex gap-6 flex-wrap justify-center">
           <a href="#warranty" className="hover:text-foreground transition-colors">Warranty</a>
           <a href="#" className="hover:text-foreground transition-colors">Privacy</a>
           <a href="#" className="hover:text-foreground transition-colors">Terms</a>
-          <a href="tel:+19852282888" className="hover:text-foreground transition-colors font-bold text-foreground">1 (985) 228-2888</a>
+          <a href={phoneHref} className="hover:text-foreground transition-colors font-bold text-foreground">{s.phone}</a>
         </div>
       </div>
     </footer>
