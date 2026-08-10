@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 
-const SITE_DATA_KEY = 'jqf_site_content_v5';
+const SITE_DATA_KEY = 'jqf_site_content_v7';
 
 const API_BASE = '/api';
 export type RepairDevice = { id: string; title: string; desc: string; image: string };
@@ -81,9 +81,9 @@ const DEFAULT: SiteContent = {
     formHeadline: 'Tell us what happened.', formSubtitle: "Fill out the form and we'll generate a repair ticket instantly.",
     devices: [
       { id: 'phone', title: 'Phone', desc: 'Apple, Samsung, Google and more.', image: '' },
-      { id: 'computer', title: 'Computer', desc: 'Mac, Windows, laptops and desktops.', image: 'https://images.unsplash.com/photo-1484788984921-03950022c9ef?auto=format&fit=crop&w=900&q=80' },
-      { id: 'tablet', title: 'Tablet', desc: 'iPad, Galaxy Tab and more.', image: 'https://images.unsplash.com/photo-1544006659-f0b21884ce1d?auto=format&fit=crop&w=900&q=80' },
-      { id: 'console', title: 'Console', desc: 'PlayStation, Xbox and Nintendo.', image: 'https://images.unsplash.com/photo-1493711662062-fa541adb3fc8?auto=format&fit=crop&w=900&q=80' },
+      { id: 'computer', title: 'Computer', desc: 'Mac, Windows, laptops and desktops.', image: '' },
+      { id: 'tablet', title: 'Tablet', desc: 'iPad, Galaxy Tab and more.', image: '' },
+      { id: 'console', title: 'Console', desc: 'PlayStation, Xbox and Nintendo.', image: '' },
     ],
     reviews: [
       { id: '1', name: 'Alex M.', device: 'Phone screen repair', text: 'Booked in the morning and had my phone back before lunch. Fast, clear, and easy.', avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=100&q=80' },

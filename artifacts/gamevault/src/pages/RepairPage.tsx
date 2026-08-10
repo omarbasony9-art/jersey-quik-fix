@@ -8,9 +8,15 @@ import { useSiteData } from '../context/SiteDataContext';
 import Footer from '../components/Footer';
 import phoneRepairImg from '../assets/phone-repair-hero.jpg';
 import devicePhoneImg from '../assets/device-phone.jpg';
+import deviceTabletImg from '../assets/device-tablet.jpg';
+import deviceComputerImg from '../assets/device-computer.jpg';
+import deviceConsoleImg from '../assets/device-console.jpg';
 
 const deviceImageFallbacks: Record<string, string> = {
   phone: devicePhoneImg,
+  tablet: deviceTabletImg,
+  computer: deviceComputerImg,
+  console: deviceConsoleImg,
 };
 
 type RepairTicket = {
