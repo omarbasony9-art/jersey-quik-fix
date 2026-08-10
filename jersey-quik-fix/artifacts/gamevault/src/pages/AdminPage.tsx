@@ -6,7 +6,7 @@ import {
   Flame, BarChart, LogOut, Download, Upload, 
   Plus, Edit2, Trash2, X, RefreshCcw, Save, LayoutDashboard, Wrench,
   ShoppingBag, Users, ClipboardList, Package, Receipt, UserCheck, RefreshCcw as RefreshCcw2, Briefcase, Image as ImageIcon,
-  Check, Mail
+  Check, Mail, BadgePercent, Search, AlertTriangle, ShieldCheck, Clock
 } from 'lucide-react';
 import { useSiteData, DEFAULT_CONTENT, type SiteContent } from '../context/SiteDataContext';
 import jerseyLogo from '../assets/jersey-quik-fix-logo.png';
@@ -28,6 +28,12 @@ type TradeInquiry = {
   id: number; name: string; email: string; phone: string;
   deviceType: string; deviceDescription: string; condition: string;
   notes: string | null; status: string; createdAt: string;
+};
+
+type MembershipCode = {
+  id: string; email: string; userId: string | null; code: string;
+  stripeSessionId: string | null; discountPercent: number;
+  isActive: boolean; createdAt: string; expiresAt: string;
 };
 
 // Field helper component
@@ -60,6 +66,11 @@ export default function AdminPage() {
   const [emails, setEmails] = useState<EmailSubscriber[]>([]);
   const [tradeInquiries, setTradeInquiries] = useState<TradeInquiry[]>([]);
   
+  const [membershipCodes, setMembershipCodes] = useState<MembershipCode[]>([]);
+  const [membershipCheckCode, setMembershipCheckCode] = useState('');
+  const [membershipCheckResult, setMembershipCheckResult] = useState<{ valid: boolean; message: string; discountPercent?: number; expiresAt?: string; daysLeft?: number } | null>(null);
+  const [membershipCheckLoading, setMembershipCheckLoading] = useState(false);
+
   const [adminToken, setAdminToken] = useState<string | null>(null);
   const [toastMsg, setToastMsg] = useState<string | null>(null);
 
@@ -77,9 +88,9 @@ export default function AdminPage() {
     setDraft(content);
   }, [content]);
 
-  // Load repairs, emails, and trade inquiries when token is available
+  // Load repairs, emails, trade inquiries, and membership codes when token is available
   useEffect(() => {
-    if (adminToken) { loadRepairs(); loadEmails(); loadTradeInquiries(); }
+    if (adminToken) { loadRepairs(); loadEmails(); loadTradeInquiries(); loadMembershipCodes(); }
   }, [adminToken]);
 
   useEffect(() => {
@@ -123,6 +134,55 @@ export default function AdminPage() {
       .then(r => r.ok ? r.json() : [])
       .then(data => setTradeInquiries(Array.isArray(data) ? data : []))
       .catch(() => setTradeInquiries([]));
+  };
+
+  const loadMembershipCodes = () => {
+    const token = sessionStorage.getItem(SESSION_KEY);
+    if (!token) return;
+    fetch(`${API_BASE}/admin/membership-codes`, {
+      headers: { 'Authorization': `Bearer ${token}` },
+    })
+      .then(r => r.ok ? r.json() : [])
+      .then(data => setMembershipCodes(Array.isArray(data) ? data : []))
+      .catch(() => setMembershipCodes([]));
+  };
+
+  const handleCheckMembershipCode = async () => {
+    const code = membershipCheckCode.trim().toUpperCase();
+    if (!code) return;
+    setMembershipCheckLoading(true);
+    setMembershipCheckResult(null);
+    try {
+      const res = await fetch(`${API_BASE}/membership/validate`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ code }),
+      });
+      const data = await res.json();
+      setMembershipCheckResult(data);
+    } catch {
+      setMembershipCheckResult({ valid: false, message: 'Network error — please try again.' });
+    } finally {
+      setMembershipCheckLoading(false);
+    }
+  };
+
+  const handleToggleMembershipCode = async (id: string, currentActive: boolean) => {
+    const token = sessionStorage.getItem(SESSION_KEY);
+    if (!token) return;
+    try {
+      const res = await fetch(`${API_BASE}/admin/membership-codes/${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+        body: JSON.stringify({ isActive: !currentActive }),
+      });
+      if (res.ok) {
+        setMembershipCodes(prev => prev.map(c => c.id === id ? { ...c, isActive: !currentActive } : c));
+        showToast(currentActive ? 'Code deactivated.' : 'Code reactivated.');
+      }
+    } catch {
+      showToast('Failed to update code.');
+    }
   };
 
   const handleLogin = async (e: React.FormEvent) => {
@@ -260,6 +320,7 @@ export default function AdminPage() {
     { name: 'Trade-Ins', icon: <RefreshCcw2 size={18} /> },
     { name: 'Employees', icon: <Briefcase size={18} /> },
     { name: 'Email List', icon: <Mail size={18} /> },
+    { name: 'Memberships', icon: <BadgePercent size={18} /> },
     { name: 'Settings', icon: <Settings size={18} /> }
   ];
 
@@ -312,6 +373,11 @@ export default function AdminPage() {
       </div>
     );
   }
+
+  const membershipNow = new Date();
+  const membershipActive = membershipCodes.filter(c => c.isActive && new Date(c.expiresAt) > membershipNow);
+  const membershipExpired = membershipCodes.filter(c => new Date(c.expiresAt) <= membershipNow);
+  const membershipDeactivated = membershipCodes.filter(c => !c.isActive && new Date(c.expiresAt) > membershipNow);
 
   return (
     <div className="min-h-[100dvh] bg-background text-foreground flex font-sans selection:bg-primary selection:text-primary-foreground">
@@ -1161,6 +1227,171 @@ export default function AdminPage() {
                       </div>
                     )}
                   </div>
+                )}
+
+                {/* ── Memberships Panel ── */}
+                {activePanel === 'Memberships' && (
+                    <div className="space-y-6">
+                      {/* Stats row */}
+                      <div className="grid grid-cols-3 gap-4">
+                        {[
+                          { label: 'Active Codes', value: membershipActive.length, color: 'text-green-400', icon: <ShieldCheck size={18} /> },
+                          { label: 'Expired', value: membershipExpired.length, color: 'text-yellow-400', icon: <Clock size={18} /> },
+                          { label: 'Deactivated', value: membershipDeactivated.length, color: 'text-red-400', icon: <AlertTriangle size={18} /> },
+                        ].map(s => (
+                          <div key={s.label} className="bg-card border border-border rounded-2xl p-4 flex items-center gap-3">
+                            <div className={s.color}>{s.icon}</div>
+                            <div>
+                              <div className={`text-2xl font-black ${s.color}`}>{s.value}</div>
+                              <div className="text-xs text-muted-foreground font-medium">{s.label}</div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+
+                      {/* Discount Code Checker */}
+                      <div className="bg-card border border-border rounded-2xl p-6">
+                        <h3 className={sectionHeadCls}>Discount Code Checker</h3>
+                        <p className="text-xs text-muted-foreground mb-4">Enter any JQF+ code to instantly verify its status, discount %, and expiry date.</p>
+                        <div className="flex gap-3">
+                          <div className="relative flex-1">
+                            <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+                            <input
+                              type="text"
+                              value={membershipCheckCode}
+                              onChange={e => { setMembershipCheckCode(e.target.value.toUpperCase()); setMembershipCheckResult(null); }}
+                              onKeyDown={e => e.key === 'Enter' && handleCheckMembershipCode()}
+                              placeholder="JQF-XXXX-XXXX"
+                              className="w-full bg-background border border-border rounded-xl pl-9 pr-4 py-2.5 font-mono text-sm outline-none focus:border-primary transition-colors"
+                            />
+                          </div>
+                          <button
+                            onClick={handleCheckMembershipCode}
+                            disabled={!membershipCheckCode.trim() || membershipCheckLoading}
+                            className="px-5 py-2.5 bg-primary text-primary-foreground rounded-xl font-bold text-sm hover:brightness-110 transition-all disabled:opacity-50"
+                          >
+                            {membershipCheckLoading ? 'Checking…' : 'Check'}
+                          </button>
+                        </div>
+
+                        {/* Result card */}
+                        {membershipCheckResult && (
+                          <div className={`mt-4 rounded-xl border p-4 ${membershipCheckResult.valid ? 'border-green-500/40 bg-green-500/5' : 'border-red-500/40 bg-red-500/5'}`}>
+                            <div className="flex items-start gap-3">
+                              <div className={`mt-0.5 ${membershipCheckResult.valid ? 'text-green-400' : 'text-red-400'}`}>
+                                {membershipCheckResult.valid ? <ShieldCheck size={20} /> : <AlertTriangle size={20} />}
+                              </div>
+                              <div className="flex-1">
+                                <div className={`font-black text-sm ${membershipCheckResult.valid ? 'text-green-400' : 'text-red-400'}`}>
+                                  {membershipCheckResult.valid ? '✓ VALID CODE' : '✗ INVALID CODE'}
+                                </div>
+                                <div className="text-sm text-foreground mt-1">{membershipCheckResult.message}</div>
+                                {membershipCheckResult.valid && membershipCheckResult.expiresAt && (
+                                  <div className="grid grid-cols-3 gap-3 mt-3">
+                                    <div className="bg-background/60 rounded-lg p-2 text-center">
+                                      <div className="text-xs text-muted-foreground uppercase tracking-wide">Discount</div>
+                                      <div className="font-black text-primary">{membershipCheckResult.discountPercent}% OFF</div>
+                                    </div>
+                                    <div className="bg-background/60 rounded-lg p-2 text-center">
+                                      <div className="text-xs text-muted-foreground uppercase tracking-wide">Expires</div>
+                                      <div className="font-black text-sm">{new Date(membershipCheckResult.expiresAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</div>
+                                    </div>
+                                    <div className="bg-background/60 rounded-lg p-2 text-center">
+                                      <div className="text-xs text-muted-foreground uppercase tracking-wide">Days Left</div>
+                                      <div className={`font-black text-sm ${(membershipCheckResult.daysLeft ?? 0) < 30 ? 'text-yellow-400' : 'text-green-400'}`}>
+                                        {membershipCheckResult.daysLeft}
+                                      </div>
+                                    </div>
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* All Codes Table */}
+                      <div>
+                        <div className="flex items-center justify-between mb-4">
+                          <h3 className={sectionHeadCls}>All Membership Codes ({membershipCodes.length})</h3>
+                          <div className="flex gap-2">
+                            <button
+                              onClick={() => {
+                                const csv = ['Code,Email,Discount,Issued,Expires,Status',
+                                  ...membershipCodes.map(c => {
+                                    const exp = new Date(c.expiresAt);
+                                    const status = !c.isActive ? 'Deactivated' : exp <= now ? 'Expired' : 'Active';
+                                    return `${c.code},${c.email},${c.discountPercent}%,${new Date(c.createdAt).toLocaleDateString()},${exp.toLocaleDateString()},${status}`;
+                                  })
+                                ].join('\n');
+                                const blob = new Blob([csv], { type: 'text/csv' });
+                                const url = URL.createObjectURL(blob);
+                                const a = document.createElement('a'); a.href = url; a.download = 'jqf-membership-codes.csv'; a.click();
+                                URL.revokeObjectURL(url);
+                              }}
+                              className="flex items-center gap-2 px-3 py-2 bg-card border border-border text-foreground rounded-xl font-bold text-xs uppercase hover:bg-card/80 transition-colors"
+                            >
+                              <Download size={13} /> Export CSV
+                            </button>
+                            <button onClick={() => { loadMembershipCodes(); showToast('Refreshed.'); }} className="flex items-center gap-2 px-3 py-2 bg-card border border-border text-foreground rounded-xl font-bold text-xs uppercase hover:bg-card/80 transition-colors">
+                              <RefreshCcw size={13} /> Refresh
+                            </button>
+                          </div>
+                        </div>
+
+                        {membershipCodes.length === 0 ? (
+                          <div className="bg-card border border-dashed border-border rounded-3xl p-16 text-center">
+                            <BadgePercent size={40} className="mx-auto text-muted-foreground/30 mb-4" />
+                            <p className="text-muted-foreground font-medium">No membership codes issued yet.</p>
+                            <p className="text-xs text-muted-foreground/60 mt-1">Codes are generated automatically when customers purchase JQF+.</p>
+                          </div>
+                        ) : (
+                          <div className="space-y-2">
+                            {membershipCodes.map(c => {
+                              const exp = new Date(c.expiresAt);
+                              const isExpired = exp <= now;
+                              const daysLeft = isExpired ? 0 : Math.ceil((exp.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+                              const statusLabel = !c.isActive ? 'Deactivated' : isExpired ? 'Expired' : 'Active';
+                              const statusColor = !c.isActive ? 'text-red-400' : isExpired ? 'text-yellow-400' : 'text-green-400';
+                              return (
+                                <div key={c.id} className="bg-card border border-border rounded-2xl px-5 py-4 flex items-center gap-4">
+                                  {/* Status dot */}
+                                  <div className={`w-2 h-2 rounded-full flex-shrink-0 ${!c.isActive ? 'bg-red-400' : isExpired ? 'bg-yellow-400' : 'bg-green-400'}`} />
+                                  {/* Code */}
+                                  <div className="font-mono font-black text-sm tracking-widest min-w-[130px]">{c.code}</div>
+                                  {/* Email */}
+                                  <div className="flex-1 min-w-0">
+                                    <div className="text-sm font-medium truncate">{c.email}</div>
+                                    <div className="text-xs text-muted-foreground mt-0.5">
+                                      Issued {new Date(c.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                                    </div>
+                                  </div>
+                                  {/* Discount */}
+                                  <div className="text-center min-w-[56px]">
+                                    <div className="text-primary font-black">{c.discountPercent}%</div>
+                                    <div className="text-xs text-muted-foreground">off</div>
+                                  </div>
+                                  {/* Expiry */}
+                                  <div className="text-center min-w-[90px]">
+                                    <div className={`text-xs font-bold ${!c.isActive ? 'text-muted-foreground' : isExpired ? 'text-yellow-400' : daysLeft < 30 ? 'text-yellow-400' : 'text-foreground'}`}>
+                                      {exp.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                                    </div>
+                                    <div className={`text-xs ${statusColor} font-bold`}>{statusLabel}{c.isActive && !isExpired ? ` · ${daysLeft}d` : ''}</div>
+                                  </div>
+                                  {/* Toggle */}
+                                  <button
+                                    onClick={() => handleToggleMembershipCode(c.id, c.isActive)}
+                                    className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-colors flex-shrink-0 ${c.isActive ? 'bg-red-500/10 text-red-400 hover:bg-red-500/20' : 'bg-green-500/10 text-green-400 hover:bg-green-500/20'}`}
+                                  >
+                                    {c.isActive ? 'Deactivate' : 'Reactivate'}
+                                  </button>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        )}
+                      </div>
+                    </div>
                 )}
 
                 {activePanel === 'Settings' && (
