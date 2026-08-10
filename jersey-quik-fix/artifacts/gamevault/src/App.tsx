@@ -5,7 +5,6 @@ import {
   Switch,
   Link,
   useLocation,
-  Redirect,
 } from 'wouter';
 import { QueryClientProvider, QueryClient } from '@tanstack/react-query';
 import { TooltipProvider } from '@/components/ui/tooltip';
@@ -86,7 +85,8 @@ const clerkAppearance = {
     footerAction: '!bg-[#081629]',
     dividerLine: '!bg-[#1a2840]',
     alert: '!bg-[#1a2840]',
-    otpCodeFieldInput: '!bg-[#1a2840] !border-[#243350]',
+    otpCodeFieldInput:
+      '!bg-[#1a2840] !border-[#243350]',
     formFieldRow: '',
     main: '',
   },
@@ -102,6 +102,43 @@ function ScrollToTop() {
       behavior: 'instant',
     });
   }, [location]);
+
+  return null;
+}
+
+function BackNavigationGuard() {
+  const [, setLocation] = useLocation();
+
+  useEffect(() => {
+    const handlePopState = () => {
+      const path = window.location.pathname;
+
+      const allowedRoutes = [
+        '/',
+        '/shop',
+        '/community',
+        '/repair-status',
+        '/sign-in',
+        '/sign-up',
+        '/admin',
+      ];
+
+      const valid =
+        allowedRoutes.includes(path) ||
+        path.startsWith('/sign-in') ||
+        path.startsWith('/sign-up');
+
+      if (!valid) {
+        setLocation('/');
+      }
+    };
+
+    window.addEventListener('popstate', handlePopState);
+
+    return () => {
+      window.removeEventListener('popstate', handlePopState);
+    };
+  }, [setLocation]);
 
   return null;
 }
@@ -152,7 +189,11 @@ function SharedNav() {
                 location === href
                   ? 'bg-primary text-primary-foreground shadow-[0_0_15px_rgba(41,165,238,0.4)]'
                   : 'text-muted-foreground hover:text-foreground'
-              } ${href === '/repair-status' ? 'hidden sm:block' : ''}`}
+              } ${
+                href === '/repair-status'
+                  ? 'hidden sm:block'
+                  : ''
+              }`}
             >
               {label}
             </Link>
@@ -270,6 +311,7 @@ function ClerkProviderWithRoutes() {
     >
       <SiteDataProvider>
         <ScrollToTop />
+        <BackNavigationGuard />
 
         <SharedNav />
 
