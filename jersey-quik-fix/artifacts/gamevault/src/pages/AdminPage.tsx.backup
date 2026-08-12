@@ -37,100 +37,18 @@ type MembershipCode = {
 };
 
 // Field helper component
-const ACCEPTED_TYPES = ['image/png', 'image/jpeg', 'image/webp', 'image/gif'];
-const MAX_BYTES = 5 * 1024 * 1024;
-
 function ImageField({ label, value, onChange }: { label: string; value: string; onChange: (v: string) => void }) {
-  const [localPreview, setLocalPreview] = React.useState<string | null>(null);
-  const [fileError, setFileError] = React.useState<string | null>(null);
-  const [dragging, setDragging] = React.useState(false);
-  const inputRef = React.useRef<HTMLInputElement>(null);
-
-  function applyFile(file: File) {
-    setFileError(null);
-    if (!ACCEPTED_TYPES.includes(file.type)) {
-      setFileError('Only PNG, JPEG, WebP, or GIF images are accepted.');
-      return;
-    }
-    if (file.size > MAX_BYTES) {
-      setFileError('File must be under 5 MB.');
-      return;
-    }
-    const url = URL.createObjectURL(file);
-    setLocalPreview(prev => { if (prev) URL.revokeObjectURL(prev); return url; });
-  }
-
-  function clearLocal() {
-    if (localPreview) URL.revokeObjectURL(localPreview);
-    setLocalPreview(null);
-    setFileError(null);
-  }
-
-  function onDragOver(e: React.DragEvent) { e.preventDefault(); setDragging(true); }
-  function onDragLeave() { setDragging(false); }
-  function onDrop(e: React.DragEvent) {
-    e.preventDefault(); setDragging(false);
-    const file = e.dataTransfer.files[0];
-    if (file) applyFile(file);
-  }
-  function onFileChange(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0];
-    if (file) applyFile(file);
-    e.target.value = '';
-  }
-
-  const previewSrc = localPreview ?? (value || null);
-
   return (
     <div>
       <label className="block text-xs font-bold uppercase tracking-wider text-muted-foreground mb-1.5">{label}</label>
-
-      {/* Drop zone */}
-      <div
-        onDragOver={onDragOver}
-        onDragLeave={onDragLeave}
-        onDrop={onDrop}
-        onClick={() => inputRef.current?.click()}
-        className={`relative flex items-center justify-center gap-2 border-2 border-dashed rounded-xl px-4 py-3 mb-2 cursor-pointer transition-colors text-xs font-medium select-none
-          ${dragging ? 'border-primary bg-primary/10 text-primary' : 'border-border text-muted-foreground hover:border-primary/50 hover:text-foreground'}`}
-      >
-        <Upload size={14} />
-        <span>Click or drag &amp; drop an image</span>
-        <input ref={inputRef} type="file" accept={ACCEPTED_TYPES.join(',')} className="hidden" onChange={onFileChange} />
-      </div>
-
-      {/* Validation error */}
-      {fileError && (
-        <p className="text-xs text-red-400 font-medium mb-2">{fileError}</p>
-      )}
-
-      {/* Local-preview notice */}
-      {localPreview && (
-        <div className="flex items-start gap-2 bg-yellow-500/10 border border-yellow-500/30 rounded-xl px-3 py-2 mb-2">
-          <span className="text-yellow-400 mt-0.5 shrink-0"><AlertTriangle size={13} /></span>
-          <p className="text-xs text-yellow-300 leading-snug">
-            This is a <strong>local preview only</strong> — it won't be saved. Host the image (e.g. Unsplash, Imgur) and paste its URL below.
-          </p>
-          <button onClick={e => { e.stopPropagation(); clearLocal(); }} className="ml-auto text-yellow-400 hover:text-yellow-200 shrink-0" title="Dismiss preview"><X size={13} /></button>
-        </div>
-      )}
-
-      {/* URL input */}
       <input
         value={value}
         onChange={e => onChange(e.target.value)}
         placeholder="Paste image URL..."
         className="w-full bg-background border border-border rounded-xl px-4 py-2.5 text-foreground text-sm outline-none focus:border-primary transition-colors font-medium mb-2"
       />
-
-      {/* Preview */}
-      {previewSrc && (
-        <img
-          src={previewSrc}
-          alt={label}
-          className="w-full h-28 object-cover rounded-xl border border-border"
-          onError={e => (e.currentTarget.style.display = 'none')}
-        />
+      {value && (
+        <img src={value} alt={label} className="w-full h-28 object-cover rounded-xl border border-border" onError={e => (e.currentTarget.style.display='none')} />
       )}
     </div>
   );
@@ -315,32 +233,13 @@ export default function AdminPage() {
   const setSettingsField = (field: string, value: any) =>
     setDraft(p => ({ ...p, settings: { ...p.settings, [field]: value } }));
 
-  const updateArrayItem = (
-    section: keyof SiteContent,
-    id: string,
-    field: string,
-    value: any
-  ) =>
-    setDraft(p => {
-      if (section === 'shop') {
-        return {
-          ...p,
-          shop: {
-            ...p.shop,
-            products: (p.shop.products ?? []).map((item: any) =>
-              item.id === id ? { ...item, [field]: value } : item
-            ),
-          },
-        };
-      }
-
-      return {
-        ...p,
-        [section]: ((p[section] as any[]) ?? []).map((item: any) =>
-          item.id === id ? { ...item, [field]: value } : item
-        ),
-      };
-    });
+  const updateArrayItem = (section: keyof SiteContent, id: string, field: string, value: any) =>
+    setDraft(p => ({
+      ...p,
+      [section]: (p[section] as any[]).map((item: any) =>
+        item.id === id ? { ...item, [field]: value } : item
+      )
+    }));
 
   const deleteArrayItem = (section: keyof SiteContent, id: string) =>
     setDraft(p => ({
@@ -574,7 +473,7 @@ export default function AdminPage() {
                         <div className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Repair Tickets</div>
                       </div>
                       <div className="bg-card border border-border rounded-2xl p-6">
-                        <div className="text-3xl font-black text-primary mb-1">{(draft.shop.products ?? []).length}</div>
+                        <div className="text-3xl font-black text-primary mb-1">{draft.shop.products.length}</div>
                         <div className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Products</div>
                       </div>
                       <div className="bg-card border border-border rounded-2xl p-6">
@@ -818,7 +717,7 @@ export default function AdminPage() {
 
                     <div>
                       <h3 className={sectionHeadCls}>Products</h3>
-                      {(draft.shop.products ?? []).map(p => (
+                      {draft.shop.products.map(p => (
                         <div key={p.id} className={cardCls + " flex gap-4"}>
                           <div className="flex-1 space-y-2">
                             <div className="grid grid-cols-3 gap-2">
@@ -840,10 +739,10 @@ export default function AdminPage() {
                             </div>
                             <ImageField label="Image" value={p.image} onChange={v => updateArrayItem('shop', p.id, 'image', v)} />
                           </div>
-                          <button onClick={() => setDraft(d => ({...d, shop: {...d.shop, products: (d.shop.products ?? []).filter(x => x.id !== p.id)}}))} className={deleteBtnCls}><Trash2 size={16} /></button>
+                          <button onClick={() => setDraft(d => ({...d, shop: {...d.shop, products: d.shop.products.filter(x => x.id !== p.id)}}))} className={deleteBtnCls}><Trash2 size={16} /></button>
                         </div>
                       ))}
-                      <button onClick={() => setDraft(d => ({...d, shop: {...d.shop, products: [...(d.shop.products ?? []), { id: crypto.randomUUID(), name: 'New Product', category: 'Accessories', price: 0, rating: 4.5, badge: '', image: '', stock: 0, sku: '', active: true }]}}))} className={addBtnCls}><Plus size={14} /> Add Product</button>
+                      <button onClick={() => setDraft(d => ({...d, shop: {...d.shop, products: [...d.shop.products, { id: crypto.randomUUID(), name: 'New Product', category: 'Accessories', price: 0, rating: 4.5, badge: '', image: '', stock: 0, sku: '', active: true }]}}))} className={addBtnCls}><Plus size={14} /> Add Product</button>
                     </div>
 
                     <div>
