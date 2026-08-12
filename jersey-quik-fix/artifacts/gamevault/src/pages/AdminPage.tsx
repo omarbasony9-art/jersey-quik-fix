@@ -233,13 +233,32 @@ export default function AdminPage() {
   const setSettingsField = (field: string, value: any) =>
     setDraft(p => ({ ...p, settings: { ...p.settings, [field]: value } }));
 
-  const updateArrayItem = (section: keyof SiteContent, id: string, field: string, value: any) =>
-    setDraft(p => ({
-      ...p,
-      [section]: (p[section] as any[]).map((item: any) =>
-        item.id === id ? { ...item, [field]: value } : item
-      )
-    }));
+  const updateArrayItem = (
+    section: keyof SiteContent,
+    id: string,
+    field: string,
+    value: any
+  ) =>
+    setDraft(p => {
+      if (section === 'shop') {
+        return {
+          ...p,
+          shop: {
+            ...p.shop,
+            products: (p.shop.products ?? []).map((item: any) =>
+              item.id === id ? { ...item, [field]: value } : item
+            ),
+          },
+        };
+      }
+
+      return {
+        ...p,
+        [section]: ((p[section] as any[]) ?? []).map((item: any) =>
+          item.id === id ? { ...item, [field]: value } : item
+        ),
+      };
+    });
 
   const deleteArrayItem = (section: keyof SiteContent, id: string) =>
     setDraft(p => ({
@@ -473,7 +492,7 @@ export default function AdminPage() {
                         <div className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Repair Tickets</div>
                       </div>
                       <div className="bg-card border border-border rounded-2xl p-6">
-                        <div className="text-3xl font-black text-primary mb-1">{draft.shop.products.length}</div>
+                        <div className="text-3xl font-black text-primary mb-1">{(draft.shop.products ?? []).length}</div>
                         <div className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Products</div>
                       </div>
                       <div className="bg-card border border-border rounded-2xl p-6">
@@ -717,7 +736,7 @@ export default function AdminPage() {
 
                     <div>
                       <h3 className={sectionHeadCls}>Products</h3>
-                      {draft.shop.products.map(p => (
+                      {(draft.shop.products ?? []).map(p => (
                         <div key={p.id} className={cardCls + " flex gap-4"}>
                           <div className="flex-1 space-y-2">
                             <div className="grid grid-cols-3 gap-2">
@@ -739,10 +758,10 @@ export default function AdminPage() {
                             </div>
                             <ImageField label="Image" value={p.image} onChange={v => updateArrayItem('shop', p.id, 'image', v)} />
                           </div>
-                          <button onClick={() => setDraft(d => ({...d, shop: {...d.shop, products: d.shop.products.filter(x => x.id !== p.id)}}))} className={deleteBtnCls}><Trash2 size={16} /></button>
+                          <button onClick={() => setDraft(d => ({...d, shop: {...d.shop, products: (d.shop.products ?? []).filter(x => x.id !== p.id)}}))} className={deleteBtnCls}><Trash2 size={16} /></button>
                         </div>
                       ))}
-                      <button onClick={() => setDraft(d => ({...d, shop: {...d.shop, products: [...d.shop.products, { id: crypto.randomUUID(), name: 'New Product', category: 'Accessories', price: 0, rating: 4.5, badge: '', image: '', stock: 0, sku: '', active: true }]}}))} className={addBtnCls}><Plus size={14} /> Add Product</button>
+                      <button onClick={() => setDraft(d => ({...d, shop: {...d.shop, products: [...(d.shop.products ?? []), { id: crypto.randomUUID(), name: 'New Product', category: 'Accessories', price: 0, rating: 4.5, badge: '', image: '', stock: 0, sku: '', active: true }]}}))} className={addBtnCls}><Plus size={14} /> Add Product</button>
                     </div>
 
                     <div>
