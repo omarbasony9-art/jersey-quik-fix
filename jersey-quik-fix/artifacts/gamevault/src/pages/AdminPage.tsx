@@ -123,8 +123,9 @@ export default function AdminPage() {
   const [error, setError] = useState(false);
   const [activePanel, setActivePanel] = useState('Dashboard');
   
-  const { content, saveContent } = useSiteData();
+  const { content, loaded, saveContent } = useSiteData();
   const [draft, setDraft] = useState<SiteContent>(content);
+  const draftInitRef = React.useRef(false);
   const [repairs, setRepairs] = useState<RepairTicket[]>([]);
   const [emails, setEmails] = useState<EmailSubscriber[]>([]);
   const [tradeInquiries, setTradeInquiries] = useState<TradeInquiry[]>([]);
@@ -146,10 +147,14 @@ export default function AdminPage() {
     }
   }, []);
 
-  // Sync draft with content changes
+  // Initialize draft exactly once from the authoritative content (localStorage or API).
+  // Using a ref prevents the API fetch from resetting unsaved admin edits mid-session.
   useEffect(() => {
-    setDraft(content);
-  }, [content]);
+    if (loaded && !draftInitRef.current) {
+      draftInitRef.current = true;
+      setDraft(content);
+    }
+  }, [loaded, content]);
 
   // Load repairs, emails, trade inquiries, and membership codes when token is available
   useEffect(() => {

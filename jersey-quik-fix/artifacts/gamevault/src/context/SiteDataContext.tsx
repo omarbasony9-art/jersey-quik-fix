@@ -235,11 +235,16 @@ function mergeWithDefaults(parsed: any): SiteContent {
 }
 type SiteDataContextType = {
   content: SiteContent;
+  loaded: boolean;
   updateContent: (updater: (prev: SiteContent) => SiteContent, adminToken?: string) => void;
-  saveContent: (data: SiteContent, adminToken?: string) => void;
+  saveContent: (data: SiteContent) => void;
 };
 
 const SiteDataContext = createContext<SiteDataContextType | null>(null);
+
+function lsSet(data: SiteContent) {
+  try { localStorage.setItem(SITE_DATA_KEY, JSON.stringify(data)); } catch { /* quota — ignore */ }
+}
 
 export function SiteDataProvider({ children }: { children: ReactNode }) {
   const [content, setContent] = useState<SiteContent>(() => {
@@ -251,7 +256,12 @@ export function SiteDataProvider({ children }: { children: ReactNode }) {
     return DEFAULT;
   });
 
-  // On mount, try to load from the API (authoritative source)
+  // loaded = true once we have the authoritative content (from localStorage or API)
+  const [loaded, setLoaded] = useState<boolean>(() => {
+    try { return !!localStorage.getItem(SITE_DATA_KEY); } catch { return false; }
+  });
+
+  // On mount, fetch from the API (authoritative source — may differ from localStorage)
   useEffect(() => {
     fetch(`${API_BASE}/site-content`)
       .then(r => r.ok ? r.json() : null)
@@ -259,49 +269,39 @@ export function SiteDataProvider({ children }: { children: ReactNode }) {
         if (data && typeof data === 'object') {
           const merged = mergeWithDefaults(data);
           setContent(merged);
-          // Keep localStorage in sync as a fast-load cache
-          localStorage.setItem(SITE_DATA_KEY, JSON.stringify(merged));
+          lsSet(merged);
         }
+        setLoaded(true);
       })
       .catch(() => {
-        // API unavailable — fall back to localStorage (already loaded in useState)
+        // API unavailable — localStorage fallback already applied in useState
+        setLoaded(true);
       });
   }, []);
 
-  const saveContent = (data: SiteContent, adminToken?: string) => {
+  // saveContent: update context + localStorage. The caller handles the API PUT.
+  const saveContent = (data: SiteContent) => {
     setContent(data);
-    // Write to both localStorage (fast cache) and API (persistent)
-    localStorage.setItem(SITE_DATA_KEY, JSON.stringify(data));
-    if (adminToken) {
-      fetch(`${API_BASE}/site-content`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${adminToken}` },
-        body: JSON.stringify(data),
-      }).catch(() => {
-        console.error('Failed to persist site content to API');
-      });
-    }
+    lsSet(data);
   };
 
   const updateContent = (updater: (prev: SiteContent) => SiteContent, adminToken?: string) => {
     setContent(prev => {
       const next = updater(prev);
-      localStorage.setItem(SITE_DATA_KEY, JSON.stringify(next));
+      lsSet(next);
       if (adminToken) {
         fetch(`${API_BASE}/site-content`, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${adminToken}` },
           body: JSON.stringify(next),
-        }).catch(() => {
-          console.error('Failed to persist site content to API');
-        });
+        }).catch(() => console.error('Failed to persist site content to API'));
       }
       return next;
     });
   };
 
   return (
-    <SiteDataContext.Provider value={{ content, updateContent, saveContent }}>
+    <SiteDataContext.Provider value={{ content, loaded, updateContent, saveContent }}>
       {children}
     </SiteDataContext.Provider>
   );

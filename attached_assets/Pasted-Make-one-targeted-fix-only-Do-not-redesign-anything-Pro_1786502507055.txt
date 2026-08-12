@@ -1,0 +1,53 @@
+Make one targeted fix only. Do not redesign anything.
+
+Problem:
+The Admin editor now lets me change Shop/Community/site content fields, but the changes are not reflected on the actual live page after I click Save Changes.
+
+Goal:
+Fix the existing Admin → saveContent → backend `/api/site-content` → public page data flow so edits made in Admin actually persist and appear on the live site.
+
+Important constraints:
+
+* Do not change Stripe.
+* Do not change Clerk/auth.
+* Do not change repair tickets.
+* Do not change trade-ins.
+* Do not redesign Admin.
+* Do not replace the existing SiteDataContext architecture.
+* Do not create a second content system.
+* Reuse the current `useSiteData()` and `saveContent()` flow.
+* Keep existing default content as fallback only.
+
+Files to inspect first:
+
+* `jersey-quik-fix/artifacts/gamevault/src/context/SiteDataContext.tsx`
+* `jersey-quik-fix/artifacts/gamevault/src/pages/AdminPage.tsx`
+* `jersey-quik-fix/artifacts/gamevault/src/pages/ShopPage.tsx`
+* `jersey-quik-fix/artifacts/gamevault/src/pages/CommunityPage.tsx`
+* backend route that handles `/api/site-content`
+
+What to verify and fix:
+
+1. `SiteDataContext.tsx` must use:
+   `const API_BASE = import.meta.env.VITE_API_BASE_URL || '/api';`
+2. On load, public pages should fetch current saved content from:
+   `${API_BASE}/site-content`
+3. `saveContent()` must send the edited draft to the backend using the method the backend route expects.
+4. Admin must pass the full updated `draft` into `saveContent()`.
+5. The backend `/api/site-content` save route must actually persist the supplied JSON/content.
+6. After saving, SiteDataContext should update local state so the change appears immediately without requiring stale default content.
+7. ShopPage and CommunityPage must render from `useSiteData()` content, not hardcoded copies of old data.
+8. Do not overwrite newer fields when older stored content is missing them. Merge stored content with `DEFAULT_CONTENT` safely.
+9. Add concise error handling so a failed save does not falsely show “Live site updated.”
+10. Keep the existing admin UI and data structure intact.
+
+Very important:
+Do not make broad refactors. Fix only the broken save/load synchronization path.
+
+After fixing:
+
+* run the gamevault build
+* run the api-server build if backend code changed
+* report exactly which files changed
+* explain the root cause in 2-3 sentences
+* do not modify unrelated warnings or features
