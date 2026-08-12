@@ -1,0 +1,168 @@
+Do a final production-readiness verification for Jersey Quik Fix.
+
+The previous full audit and fixes are complete. Do NOT redo the entire audit and do NOT make broad changes.
+
+I want you to verify the remaining production items safely.
+
+IMPORTANT:
+
+* Do not delete, truncate, reset, or overwrite any production data.
+* Do not use `push-force`.
+* Do not run destructive migrations.
+* Do not change working code unless you find a confirmed problem.
+* Do not redesign anything.
+* Do not modify Stripe, Clerk, database schemas, or environment variables unless a confirmed issue requires it.
+* Never print secret values.
+
+### 1. Production database verification
+
+Using the production `DATABASE_URL`, check whether these tables already exist:
+
+* `trade_inquiries`
+* `membership_codes`
+* `cart_items`
+
+Also verify the other tables required by the current API exist.
+
+Compare the actual production database schema against the current Drizzle schema.
+
+If everything required already exists:
+DO NOTHING to the database.
+
+If something is missing or incompatible:
+STOP before applying anything and tell me:
+
+* exactly what is missing
+* what migration/change would be required
+* whether it is additive and safe
+* whether existing data would be affected
+
+Do NOT automatically run `push-force`.
+
+### 2. Site-content verification
+
+Verify:
+
+* `GET /api/site-content` returns HTTP 200
+* `site.name` is `Jersey Quik Fix`
+* existing Shop products are present
+* existing Community content is present
+* existing uploaded image URLs/data are present
+* content is coming from PostgreSQL, not only localStorage
+* no `{}` or test content remains in the database
+
+Do not modify the content during this verification.
+
+### 3. Admin/API verification
+
+Using safe/non-destructive requests, verify:
+
+* Admin login
+* Repairs load
+* Emails load
+* Trade inquiries load
+* Membership codes load
+* Site content loads
+
+Confirm authenticated routes correctly reject requests without authentication where appropriate.
+
+Do not delete or modify real records.
+
+### 4. Stripe verification
+
+Inspect the current production configuration/code and verify:
+
+* checkout uses `STRIPE_SECRET_KEY`
+* webhook verification uses `STRIPE_WEBHOOK_SECRET`
+* success URL uses `FRONTEND_URL`
+* cancel URL uses `FRONTEND_URL`
+* no `localhost:3000`
+* no `REPLIT_DOMAINS`
+* no Replit-specific Stripe initialization is required for checkout to function
+* checkout route can create a Stripe Checkout Session in test mode if the configured key is a test key
+
+Do NOT create a real charge.
+
+Also determine whether the production Stripe webhook must still be manually registered in the Stripe Dashboard.
+
+Do not expose secret values.
+
+### 5. Clerk verification
+
+Verify:
+
+* Sign In route works
+* Sign Up route works
+* Sign Out configuration works
+* frontend uses `VITE_CLERK_PUBLISHABLE_KEY`
+* backend uses the appropriate Clerk server credentials
+* no Clerk secret is exposed in frontend code
+* no Replit-specific Clerk dependency is required in production
+
+Determine whether the Render frontend domain still needs to be added/configured in Clerk.
+
+### 6. Frontend routing
+
+Verify these routes work with direct navigation AND refresh:
+
+* `/`
+* `/shop`
+* `/community`
+* `/repair-status`
+* `/sign-in`
+* `/sign-up`
+* `/admin`
+
+Confirm `public/_redirects` is included in the production build output and contains the SPA fallback.
+
+### 7. Builds
+
+Run:
+
+Frontend:
+`pnpm run build` inside `artifacts/gamevault`
+
+Backend:
+`pnpm run build` inside `artifacts/api-server`
+
+Both must pass.
+
+Do not fix harmless bundle-size or sourcemap warnings unless they cause an actual runtime failure.
+
+### 8. Git verification
+
+At the end run:
+
+`git status`
+`git diff --stat`
+`git log --oneline -5`
+
+Tell me whether there are uncommitted changes and whether the latest fixes have already been committed.
+
+Do NOT push anything automatically unless I explicitly tell you to.
+
+### Final report
+
+Give me a concise PASS / FAIL report for:
+
+* Database
+* Site Content
+* Admin
+* Repairs
+* Trade-ins
+* Memberships
+* Emails
+* Shop
+* Stripe
+* Clerk
+* Routing
+* Frontend Build
+* Backend Build
+
+For anything marked FAIL or UNVERIFIED, tell me exactly what I need to do next.
+
+If everything passes, explicitly say:
+
+`Jersey Quik Fix is ready for final production testing.`
+
+Do not claim something was verified unless you actually tested or inspected it.
