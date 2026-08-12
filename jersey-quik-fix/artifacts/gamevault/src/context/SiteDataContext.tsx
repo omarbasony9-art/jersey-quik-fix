@@ -194,7 +194,7 @@ const DEFAULT: SiteContent = {
   },
 };
 
-function mergeWithDefaults(parsed: any): SiteContent {
+export function mergeWithDefaults(parsed: any): SiteContent {
   const parsedRepair = parsed.repair ?? {};
   const parsedShop = parsed.shop ?? {};
   const parsedSettings = parsed.settings ?? {};

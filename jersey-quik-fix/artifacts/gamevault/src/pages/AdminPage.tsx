@@ -8,7 +8,7 @@ import {
   ShoppingBag, Users, ClipboardList, Package, Receipt, UserCheck, RefreshCcw as RefreshCcw2, Briefcase, Image as ImageIcon,
   Check, Mail, BadgePercent, Search, AlertTriangle, ShieldCheck, Clock
 } from 'lucide-react';
-import { useSiteData, DEFAULT_CONTENT, type SiteContent } from '../context/SiteDataContext';
+import { useSiteData, DEFAULT_CONTENT, mergeWithDefaults, type SiteContent } from '../context/SiteDataContext';
 import jerseyLogo from '../assets/jersey-quik-fix-logo.png';
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL || "/api";
@@ -284,22 +284,33 @@ export default function AdminPage() {
   };
 
   const handleSaveChanges = async () => {
-    // Update context + localStorage immediately so the live site reflects changes now
-    saveContent(draft);
-    // Persist to the database so changes survive refreshes and new tabs
-    if (adminToken) {
-      try {
-        const r = await fetch(`${API_BASE}/site-content`, {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${adminToken}` },
-          body: JSON.stringify(draft),
-        });
-        showToast(r.ok ? '✓ Changes saved to site!' : '⚠ Save failed — please try again.');
-      } catch {
-        showToast('⚠ Network error — changes saved locally only.');
+    if (!adminToken) {
+      showToast('⚠ Not logged in — changes not saved.');
+      return;
+    }
+    try {
+      // 1. Persist to DB
+      const r = await fetch(`${API_BASE}/site-content`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${adminToken}` },
+        body: JSON.stringify(draft),
+      });
+      if (!r.ok) {
+        showToast('⚠ Save failed — please try again.');
+        return;
       }
-    } else {
-      showToast('✓ Changes saved locally.');
+      // 2. Re-fetch confirmed data from DB → update context + localStorage so
+      //    ALL live pages immediately show exactly what was persisted
+      const freshResp = await fetch(`${API_BASE}/site-content`, { cache: 'no-store' });
+      if (freshResp.ok) {
+        const freshData = await freshResp.json();
+        if (freshData && typeof freshData === 'object') {
+          saveContent(mergeWithDefaults(freshData));
+        }
+      }
+      showToast('✓ Changes saved to site!');
+    } catch {
+      showToast('⚠ Network error — changes not saved.');
     }
   };
 
