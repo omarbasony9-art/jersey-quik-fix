@@ -41,7 +41,6 @@ const ACCEPTED_TYPES = ['image/png', 'image/jpeg', 'image/webp', 'image/gif'];
 const MAX_BYTES = 5 * 1024 * 1024;
 
 function ImageField({ label, value, onChange }: { label: string; value: string; onChange: (v: string) => void }) {
-  const [localPreview, setLocalPreview] = React.useState<string | null>(null);
   const [fileError, setFileError] = React.useState<string | null>(null);
   const [dragging, setDragging] = React.useState(false);
   const inputRef = React.useRef<HTMLInputElement>(null);
@@ -56,14 +55,9 @@ function ImageField({ label, value, onChange }: { label: string; value: string; 
       setFileError('File must be under 5 MB.');
       return;
     }
-    const url = URL.createObjectURL(file);
-    setLocalPreview(prev => { if (prev) URL.revokeObjectURL(prev); return url; });
-  }
-
-  function clearLocal() {
-    if (localPreview) URL.revokeObjectURL(localPreview);
-    setLocalPreview(null);
-    setFileError(null);
+    const reader = new FileReader();
+    reader.onload = e => { if (e.target?.result) onChange(e.target.result as string); };
+    reader.readAsDataURL(file);
   }
 
   function onDragOver(e: React.DragEvent) { e.preventDefault(); setDragging(true); }
@@ -78,8 +72,6 @@ function ImageField({ label, value, onChange }: { label: string; value: string; 
     if (file) applyFile(file);
     e.target.value = '';
   }
-
-  const previewSrc = localPreview ?? (value || null);
 
   return (
     <div>
@@ -104,29 +96,18 @@ function ImageField({ label, value, onChange }: { label: string; value: string; 
         <p className="text-xs text-red-400 font-medium mb-2">{fileError}</p>
       )}
 
-      {/* Local-preview notice */}
-      {localPreview && (
-        <div className="flex items-start gap-2 bg-yellow-500/10 border border-yellow-500/30 rounded-xl px-3 py-2 mb-2">
-          <span className="text-yellow-400 mt-0.5 shrink-0"><AlertTriangle size={13} /></span>
-          <p className="text-xs text-yellow-300 leading-snug">
-            This is a <strong>local preview only</strong> — it won't be saved. Host the image (e.g. Unsplash, Imgur) and paste its URL below.
-          </p>
-          <button onClick={e => { e.stopPropagation(); clearLocal(); }} className="ml-auto text-yellow-400 hover:text-yellow-200 shrink-0" title="Dismiss preview"><X size={13} /></button>
-        </div>
-      )}
-
       {/* URL input */}
       <input
         value={value}
         onChange={e => onChange(e.target.value)}
-        placeholder="Paste image URL..."
+        placeholder="Or paste an image URL..."
         className="w-full bg-background border border-border rounded-xl px-4 py-2.5 text-foreground text-sm outline-none focus:border-primary transition-colors font-medium mb-2"
       />
 
       {/* Preview */}
-      {previewSrc && (
+      {value && (
         <img
-          src={previewSrc}
+          src={value}
           alt={label}
           className="w-full h-28 object-cover rounded-xl border border-border"
           onError={e => (e.currentTarget.style.display = 'none')}
