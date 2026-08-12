@@ -330,8 +330,8 @@ export default function CommunityPage() {
         <section id="actions" className="py-24 bg-background border-b border-border">
           <div className="max-w-7xl mx-auto px-6">
             <div className="mb-12">
-              <div className="text-xs font-bold uppercase tracking-widest text-primary mb-4">GROUP EFFORTS</div>
-              <h2 className="text-4xl md:text-5xl font-black uppercase italic tracking-tight">Big Actions Happening</h2>
+              <div className="text-xs font-bold uppercase tracking-widest text-primary mb-4">{(community as any).actionsEyebrow || 'GROUP EFFORTS'}</div>
+              <h2 className="text-4xl md:text-5xl font-black uppercase italic tracking-tight">{(community as any).actionsHeadline || 'Big Actions Happening'}</h2>
             </div>
             
             <div className="grid md:grid-cols-2 gap-6">
@@ -346,9 +346,9 @@ export default function CommunityPage() {
                 >
                   <div className="h-40 overflow-hidden rounded-2xl mb-6 -mt-2 -mx-2 bg-card shrink-0">
                     <img 
-                      src={i === 0 
+                      src={act.image || (i === 0 
                         ? 'https://images.unsplash.com/photo-1469571486292-0ba58a3f068b?auto=format&fit=crop&w=900&q=80'
-                        : 'https://images.unsplash.com/photo-1513885535751-8b9238bd345a?auto=format&fit=crop&w=900&q=80'} 
+                        : 'https://images.unsplash.com/photo-1513885535751-8b9238bd345a?auto=format&fit=crop&w=900&q=80')} 
                       alt={act.title}
                       loading="lazy"
                       className="w-full h-full object-cover transition-transform duration-500 hover:scale-105"

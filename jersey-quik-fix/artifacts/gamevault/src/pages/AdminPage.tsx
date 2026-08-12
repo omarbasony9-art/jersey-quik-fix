@@ -975,7 +975,11 @@ export default function AdminPage() {
                     </div>
 
                     <div>
-                      <h3 className={sectionHeadCls}>Actions</h3>
+                      <h3 className={sectionHeadCls}>Actions Section</h3>
+                      <div className="grid md:grid-cols-2 gap-4 mb-4">
+                        <div><label className={labelCls}>Section Eyebrow</label><input value={(draft.community as any).actionsEyebrow ?? 'GROUP EFFORTS'} onChange={e => setCommunityField('actionsEyebrow', e.target.value)} className={inputCls} /></div>
+                        <div><label className={labelCls}>Section Headline</label><input value={(draft.community as any).actionsHeadline ?? 'Big Actions Happening'} onChange={e => setCommunityField('actionsHeadline', e.target.value)} className={inputCls} /></div>
+                      </div>
                       {draft.community.actions.map(act => (
                         <div key={act.id} className={cardCls + " flex gap-4"}>
                           <div className="flex-1 space-y-2">

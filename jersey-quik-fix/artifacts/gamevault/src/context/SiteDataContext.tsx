@@ -161,6 +161,8 @@ const DEFAULT: SiteContent = {
     countdownTarget: '2026-09-19T14:00:00',
     heroHeadline: 'Stay connected to the moments that matter.',
     heroSubtitle: 'One place for family events, announcements, plans, and community updates.',
+    actionsEyebrow: 'GROUP EFFORTS',
+    actionsHeadline: 'Big Actions Happening',
     announcements: [
       { id: '1', badge: 'Major Update', date: 'August 9', title: 'Family Weekend details are officially confirmed', desc: 'The date, location, food plan, and main activities are locked in. RSVP before September 5.', featured: true, image: 'https://images.unsplash.com/photo-1529156069898-49953e39b3ac?auto=format&fit=crop&w=900&q=80' },
       { id: '2', badge: 'Community', date: 'August 6', title: 'New shared photo archive is live', desc: 'We now have one central place for family photos, videos, old memories, and event albums.', featured: false, image: 'https://images.unsplash.com/photo-1501281668745-f7f57925c3b4?auto=format&fit=crop&w=900&q=80' },
