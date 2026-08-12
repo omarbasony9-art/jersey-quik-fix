@@ -278,9 +278,24 @@ export default function AdminPage() {
     setIsAuthenticated(false);
   };
 
-  const handleSaveChanges = () => {
-    saveContent(draft, adminToken ?? undefined);
-    showToast("Live site updated.");
+  const handleSaveChanges = async () => {
+    // Update context + localStorage immediately so the live site reflects changes now
+    saveContent(draft);
+    // Persist to the database so changes survive refreshes and new tabs
+    if (adminToken) {
+      try {
+        const r = await fetch(`${API_BASE}/site-content`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${adminToken}` },
+          body: JSON.stringify(draft),
+        });
+        showToast(r.ok ? '✓ Changes saved to site!' : '⚠ Save failed — please try again.');
+      } catch {
+        showToast('⚠ Network error — changes saved locally only.');
+      }
+    } else {
+      showToast('✓ Changes saved locally.');
+    }
   };
 
   // Helper Setters
