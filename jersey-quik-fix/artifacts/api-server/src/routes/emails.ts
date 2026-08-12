@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { db, emailSubscribersTable } from "@workspace/db";
-import { eq } from "drizzle-orm";
+import { eq, desc } from "drizzle-orm";
 import { requireAdminAuth } from "../middleware/adminAuth";
 import { randomUUID } from "crypto";
 
@@ -43,7 +43,7 @@ emailsRouter.get("/emails", requireAdminAuth, async (_req, res): Promise<void> =
     const subscribers = await db
       .select()
       .from(emailSubscribersTable)
-      .orderBy(emailSubscribersTable.createdAt);
+      .orderBy(desc(emailSubscribersTable.createdAt));
     res.json(subscribers);
   } catch (_err) {
     res.status(500).json({ error: "Failed to load subscribers" });

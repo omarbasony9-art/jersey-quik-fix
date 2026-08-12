@@ -1,0 +1,266 @@
+Do a full audit of the entire Jersey Quik Fix program and fix every confirmed bug, broken connection, runtime error, bad API path, stale Replit-only dependency, database mismatch, and save/load issue you find.
+
+Main goal:
+When you are done, every existing feature should work end-to-end in the current production architecture:
+
+* frontend on Render static site
+* backend/API on Render web service
+* PostgreSQL database
+* Clerk authentication
+* Stripe checkout/webhooks
+* Admin portal
+* site-content editing
+* repairs
+* repair tracking
+* trade-ins
+* shop/cart
+* memberships
+* email subscribers
+* community page
+* inventory/customers/employees/orders sections
+
+Important rules:
+
+* Do NOT redesign the site.
+* Do NOT remove working features.
+* Do NOT change styling unless required to fix a confirmed rendering bug.
+* Do NOT create duplicate systems or duplicate routes.
+* Do NOT broadly refactor working code.
+* Do NOT replace the current architecture.
+* Prefer the smallest targeted fix for each confirmed problem.
+* Preserve all existing user content and database data.
+* Do not wipe, reset, truncate, or overwrite production data during testing.
+* Do not use destructive database operations.
+* Do not silently replace production data with defaults.
+* Back up any file before a major edit.
+* If something is working, leave it alone.
+
+Audit the production files under:
+`jersey-quik-fix/`
+
+Ignore duplicate/mockup copies outside the production `jersey-quik-fix` folder unless they directly affect the production build.
+
+Audit these areas carefully:
+
+1. Frontend API connections
+
+* Search the entire production frontend for hardcoded:
+
+  * `fetch('/api/...')`
+  * `fetch("/api/...")`
+  * `const API_BASE = '/api'`
+  * `const API_BASE = "/api"`
+* Production frontend API calls should consistently use:
+  `import.meta.env.VITE_API_BASE_URL || '/api'`
+* Verify AdminPage, RepairPage, RepairStatusPage, ShopPage, Footer, SiteDataContext, and any other component all call the production API correctly.
+
+2. Admin portal
+   Verify:
+
+* admin login works
+* token storage works
+* authenticated requests include Bearer token
+* repair tickets load/update/delete
+* trade-ins load/update/delete
+* email subscribers load/delete
+* membership codes load/validate/activate/deactivate
+* Shop editor opens without crashing
+* product add/edit/delete works
+* image URL input works
+* image drag/drop and click upload work
+* inventory/customer/employee/order panels do not crash
+* Save Changes truly persists
+* success toast appears only after a successful save
+* failed save shows an error, not a fake success
+
+3. Site content persistence
+   Audit the full chain:
+   Admin draft
+   → `saveContent`
+   → `/api/site-content`
+   → PostgreSQL
+   → public page reload
+
+Verify:
+
+* Express body size supports the actual site-content payload
+* API save method matches frontend method
+* database content is not being accidentally replaced with `{}` or partial objects
+* stored content merges safely with `DEFAULT_CONTENT`
+* newer fields are not lost when older stored content is missing them
+* Admin draft is not reset while the user is editing
+* public pages read live saved content instead of stale hardcoded data
+* changes persist in a brand-new incognito/private browser session, not just localStorage
+
+4. Shop
+   Verify:
+
+* products render
+* products can be added from Admin
+* price, old price, stock, SKU, category, badge, rating and active status work
+* cart works
+* cart sync does not crash if user is signed out
+* trade-in form submits
+* membership discount logic works
+* no `.map is not a function` / undefined-array crashes
+* missing optional shop fields safely fall back
+
+5. Stripe
+   Remove or disable any remaining Replit-only Stripe behavior that is incompatible with Render.
+
+Verify:
+
+* no dependency on `REPLIT_DOMAINS` for production redirect URLs
+* no redirect to `localhost:3000`
+* checkout success URL uses `FRONTEND_URL`
+* checkout cancel URL uses `FRONTEND_URL`
+* `STRIPE_SECRET_KEY` is used for checkout
+* `STRIPE_WEBHOOK_SECRET` is used for webhook verification
+* manually configured Stripe webhook remains supported
+* no startup dependency on missing `stripe.accounts` tables
+* no `stripe-replit-sync` startup error blocks payments
+* creating a checkout session succeeds
+* cancel returns to the live Shop page
+* successful payment returns to the live Shop page
+* existing membership/payment metadata is preserved
+
+6. Clerk authentication
+   Verify:
+
+* Sign In renders
+* Sign Up renders
+* frontend gets a Clerk publishable key
+* no secret Clerk key is exposed to the frontend
+* Clerk does not depend on broken Replit-only proxy behavior
+* browser console has no Clerk initialization errors
+* sign-in/sign-up navigation works
+* sign-out works
+* browser back/forward navigation does not leave a blank page
+
+7. Repairs
+   Verify:
+
+* public repair submission returns 201
+* repair ticket is stored
+* generated ticket number displays to the customer
+* Admin sees the repair
+* status updates persist
+* public repair lookup works using ticket code
+* delete works
+* production frontend calls production API
+
+8. Trade-ins
+   Verify:
+
+* public form submits
+* database table/schema matches inserted fields
+* Admin receives submissions
+* status update works
+* delete works
+
+9. Database/schema
+   Compare Drizzle schemas against actual queries for:
+
+* repair_tickets
+* trade_inquiries
+* email subscribers
+* membership codes
+* cart items
+* site content
+* any other production tables
+
+Check for:
+
+* missing tables
+* missing columns
+* incompatible types
+* wrong defaults
+* incorrect nullability
+* duplicate schemas
+* routes importing the wrong schema copy
+
+Do not run destructive migrations automatically.
+If a schema change is required:
+
+* report the exact required migration
+* make it additive/safe
+* preserve existing data
+
+10. Routing
+    Verify direct navigation and browser refresh for:
+
+* `/`
+* `/shop`
+* `/community`
+* `/repair-status`
+* `/sign-in`
+* `/sign-up`
+* `/admin`
+
+Verify the Render SPA rewrite setup expected by the app is compatible with Wouter.
+Check browser back/forward behavior.
+Do not add route guards unless they are actually required.
+
+11. Error handling
+    Search for:
+
+* swallowed exceptions
+* fake success messages
+* generic “network error” where a useful backend response exists
+* unhandled promises
+* frontend crashes from undefined values
+* array methods called on possibly undefined/non-array objects
+
+Add safe fallbacks only where necessary.
+
+12. Production build audit
+    Run:
+
+* frontend build
+* backend build
+* TypeScript/typecheck if available
+
+Fix all build errors.
+Do not spend time fixing harmless bundle-size or sourcemap warnings unless they indicate a real runtime problem.
+
+13. Production configuration audit
+    Report which environment variables are actually required on:
+
+Frontend (`jersey-quik-fix-2`)
+and
+Backend (`jersey-quik-fix-1`)
+
+Clearly separate public Vite variables from private backend secrets.
+
+Do not print secret values.
+
+14. Runtime verification
+    Where possible, test production endpoints with safe non-destructive requests.
+
+At minimum verify:
+
+* site-content GET
+* repair creation/lookup using test data only if safe
+* admin login only if credentials are available in environment
+* trade-in creation only if safe
+* Stripe checkout session creation in test mode only
+* Clerk frontend initialization
+
+Do not delete real production records during testing.
+
+Final deliverable:
+When done, give me a concise completion report with:
+
+1. Every confirmed bug found
+2. Root cause of each
+3. Exact files changed
+4. Exact behavior fixed
+5. Builds/tests run and whether they passed
+6. Any remaining issue that requires my action
+7. Required frontend environment variables
+8. Required backend environment variables
+9. Confirmation that no unrelated feature was intentionally changed
+10. Confirmation whether the program is now clean enough to deploy
+
+Important:
+Do not claim “everything is fixed” unless you actually verified the relevant code paths and builds. If anything could not be verified, clearly mark it as unverified instead of guessing.

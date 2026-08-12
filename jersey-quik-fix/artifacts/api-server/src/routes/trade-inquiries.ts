@@ -66,6 +66,10 @@ tradeRouter.patch("/trade-inquiries/:id", requireAdminAuth, async (req, res): Pr
       .set({ status })
       .where(eq(tradeInquiries.id, id))
       .returning();
+    if (!updated) {
+      res.status(404).json({ error: "Trade inquiry not found." });
+      return;
+    }
     res.json(updated);
   } catch (err: any) {
     res.status(500).json({ error: err.message });

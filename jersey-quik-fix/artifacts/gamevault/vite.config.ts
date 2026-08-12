@@ -6,13 +6,15 @@ import runtimeErrorOverlay from '@replit/vite-plugin-runtime-error-modal';
 
 const port = Number(process.env.PORT || 10000);
 const basePath = process.env.BASE_PATH || '/';
+const isDev = process.env.NODE_ENV !== 'production';
 
 export default defineConfig({
   base: basePath,
   plugins: [
     react(),
     tailwindcss({ optimize: false }),
-    runtimeErrorOverlay(),
+    // Only include the Replit dev overlay in development — not in production builds
+    ...(isDev ? [runtimeErrorOverlay()] : []),
   ],
   resolve: {
     alias: {

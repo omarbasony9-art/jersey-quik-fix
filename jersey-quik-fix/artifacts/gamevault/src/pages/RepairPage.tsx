@@ -6,6 +6,9 @@ import {
 } from 'lucide-react';
 import { useSiteData } from '../context/SiteDataContext';
 import Footer from '../components/Footer';
+
+const API_BASE = import.meta.env.VITE_API_BASE_URL || '/api';
+
 import phoneRepairImg from '../assets/phone-repair-hero.jpg';
 import devicePhoneImg from '../assets/device-phone.jpg';
 import deviceTabletImg from '../assets/device-tablet.jpg';
@@ -703,5 +706,3 @@ export default function RepairPage() {
     </div>
   );
 }
-
-const API_BASE = import.meta.env.VITE_API_BASE_URL || '/api';
