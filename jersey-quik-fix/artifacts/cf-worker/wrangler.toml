@@ -1,0 +1,37 @@
+name = "jersey-quik-fix"
+main = "src/index.ts"
+compatibility_date = "2024-09-23"
+compatibility_flags = ["nodejs_compat"]
+
+# ── Static Frontend Assets ──────────────────────────────────────────────────
+# Point at the built gamevault frontend.
+# Run `pnpm --filter @workspace/gamevault run build` first.
+# The SPA fallback means any path not matching a real file serves index.html.
+[assets]
+directory = "../gamevault/dist/public"
+not_found_handling = "single-page-application"
+
+# ── D1 Database ─────────────────────────────────────────────────────────────
+# Replace database_id with the real ID from:
+#   wrangler d1 create jersey-quik-fix-d1
+[[d1_databases]]
+binding = "DB"
+database_name = "jersey-quik-fix-d1"
+database_id = "REPLACE_WITH_YOUR_D1_DATABASE_ID"
+
+# ── Migrations directory ─────────────────────────────────────────────────────
+[migrations]
+migrations_dir = "migrations"
+
+# ── Worker Secrets (set via `wrangler secret put <NAME>`) ───────────────────
+# SESSION_SECRET        — admin JWT signing secret (same as Render backend)
+# ADMIN_PASSWORD        — admin login password
+# STRIPE_SECRET_KEY     — Stripe secret key (sk_live_... or sk_test_...)
+# STRIPE_WEBHOOK_SECRET — Stripe webhook signing secret (whsec_...)
+# CLERK_SECRET_KEY      — Clerk secret key (sk_live_... or sk_test_...)
+
+# ── Non-secret vars (set in wrangler.toml or via dashboard) ─────────────────
+# Uncomment and fill in after you know the deployed Cloudflare URL:
+# [vars]
+# FRONTEND_URL = "https://jersey-quik-fix.your-subdomain.workers.dev"
+# CLERK_PUBLISHABLE_KEY = "pk_live_..."

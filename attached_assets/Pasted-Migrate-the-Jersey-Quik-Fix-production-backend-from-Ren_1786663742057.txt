@@ -1,0 +1,122 @@
+Migrate the Jersey Quik Fix production backend from Render/PostgreSQL to Cloudflare Workers + D1.
+
+IMPORTANT:
+- Do not break or modify the currently working Render production deployment.
+- Do not delete or alter production PostgreSQL data.
+- Build the Cloudflare version alongside the existing Render version first.
+- Preserve every API endpoint and current behavior.
+- Do not redesign the frontend.
+- Do not change Clerk or Stripe functionality except where required for Cloudflare compatibility.
+
+Production source is under:
+jersey-quik-fix/
+
+Goal architecture:
+Frontend + API: Cloudflare Workers
+Database: Cloudflare D1
+Auth: Clerk
+Payments: Stripe
+
+Tasks:
+
+1. Audit the existing API routes under:
+jersey-quik-fix/artifacts/api-server/src
+
+Preserve all current endpoints including:
+- /api/site-content
+- /api/admin/login
+- /api/repairs
+- /api/repairs/lookup/:ticket
+- /api/emails
+- /api/trade-inquiries
+- /api/cart
+- /api/cart/sync
+- /api/membership/*
+- /api/admin/membership-codes
+- /api/stripe/checkout
+- /api/stripe/webhook
+
+2. Create a Cloudflare Worker backend compatible with the existing frontend.
+
+Use:
+- TypeScript
+- ES module Worker format
+- nodejs_compat only where required
+- Cloudflare D1 binding named DB
+
+Do not require a traditional Node server or app.listen().
+
+3. Migrate the PostgreSQL schema to D1/SQLite-compatible SQL.
+
+Required tables:
+- repair_tickets
+- trade_inquiries
+- email_subscribers
+- membership_codes
+- cart_items
+- site_content
+
+Preserve field names and API JSON shapes expected by the frontend.
+
+4. Create D1 migration SQL files.
+
+Do not execute destructive operations automatically.
+
+5. Create a safe PostgreSQL → D1 data migration/export process.
+
+Do not delete source data.
+Do not overwrite D1 blindly.
+Provide commands to export and import the existing records safely.
+
+6. Replace PostgreSQL-specific Drizzle usage with D1-compatible queries/Drizzle only in the Cloudflare backend implementation.
+
+Do not break the existing Render backend.
+
+7. Stripe:
+- Use standard Stripe SDK
+- STRIPE_SECRET_KEY from Worker secret
+- STRIPE_WEBHOOK_SECRET from Worker secret
+- Use stripe.webhooks.constructEvent for webhook verification
+- Remove stripe-replit-sync from the Cloudflare implementation
+- Preserve checkout metadata, promo code logic, memberships, success URL and cancel URL behavior
+
+8. Clerk:
+- Keep VITE_CLERK_PUBLISHABLE_KEY frontend behavior
+- Use Cloudflare-compatible Clerk verification on protected API routes
+- Preserve existing Admin JWT/password auth separately
+
+9. Configure Wrangler with:
+- frontend static assets from dist/public
+- SPA fallback
+- Worker entrypoint
+- D1 binding DB
+- nodejs_compat if necessary
+
+10. The final Cloudflare deployment should serve:
+- the frontend
+- /api/* from the Worker
+from the same Cloudflare domain if practical.
+
+11. Update frontend API configuration so it can use the same-origin /api path once Cloudflare backend is active.
+
+Do not switch it away from Render until the Cloudflare API is verified.
+
+12. Run:
+- frontend build
+- Cloudflare Worker typecheck/build
+- backend tests where possible
+
+13. Give me a report with:
+- exact files created
+- exact files modified
+- D1 schema
+- required Worker secrets
+- required Cloudflare variables
+- commands I need to run manually
+- migration steps
+- what remains on Render until cutover
+
+DO NOT deploy or delete Render automatically.
+DO NOT modify production database data.
+DO NOT run destructive migrations.
+Stop and report before any production cutover.
