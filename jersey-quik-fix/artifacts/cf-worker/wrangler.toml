@@ -17,11 +17,9 @@ not_found_handling = "single-page-application"
 [[d1_databases]]
 binding = "DB"
 database_name = "jersey-quik-fix-d1"
-database_id = "REPLACE_WITH_YOUR_D1_DATABASE_ID"
+database_id = "1e526c4e-aa64-4efb-9e52-b8028af7fba0"
 
 # ── Migrations directory ─────────────────────────────────────────────────────
-[migrations]
-migrations_dir = "migrations"
 
 # ── Worker Secrets (set via `wrangler secret put <NAME>`) ───────────────────
 # SESSION_SECRET        — admin JWT signing secret (same as Render backend)
@@ -32,6 +30,6 @@ migrations_dir = "migrations"
 
 # ── Non-secret vars (set in wrangler.toml or via dashboard) ─────────────────
 # Uncomment and fill in after you know the deployed Cloudflare URL:
-# [vars]
-# FRONTEND_URL = "https://jersey-quik-fix.your-subdomain.workers.dev"
-# CLERK_PUBLISHABLE_KEY = "pk_live_..."
+[vars]
+FRONTEND_URL = "https://jersey-quik-fix.jersey-quik-fix.workers.dev"
+CLERK_PUBLISHABLE_KEY = "pk_test_aW50ZWdyYWwtcHJpbWF0ZS03NS5jbGVyay5hY2NvdW50cy5kZXYk"
