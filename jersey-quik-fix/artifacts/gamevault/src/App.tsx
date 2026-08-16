@@ -176,6 +176,14 @@ function SharedNav() {
         </Link>
 
         <div className="flex gap-1 rounded-full border border-border bg-card p-1 sm:gap-2">
+          <Link
+            href="/admin"
+            aria-label="Open admin"
+            title="Admin"
+            className="flex h-8 w-8 items-center justify-center rounded-full text-muted-foreground transition-colors hover:text-primary"
+          >
+            <Wrench size={15} />
+          </Link>
           {[
             ['/', 'Repair'],
             ['/shop', 'Shop'],
@@ -229,16 +237,6 @@ function SharedNav() {
             </Link>
           )}
 
-          <div className="flex w-[60px] justify-end">
-            <Link
-              href="/admin"
-              aria-label="Open admin"
-              title="Admin"
-              className="flex h-10 w-10 items-center justify-center rounded-full border border-border text-muted-foreground transition-colors hover:border-primary hover:text-primary"
-            >
-              <Wrench size={18} />
-            </Link>
-          </div>
         </div>
 
       </div>
