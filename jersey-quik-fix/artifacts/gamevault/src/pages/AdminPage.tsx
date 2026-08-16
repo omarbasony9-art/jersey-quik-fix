@@ -6,7 +6,7 @@ import {
   Flame, BarChart, LogOut, Download, Upload, 
   Plus, Edit2, Trash2, X, RefreshCcw, Save, LayoutDashboard, Wrench,
   ShoppingBag, Users, ClipboardList, Package, Receipt, UserCheck, RefreshCcw as RefreshCcw2, Briefcase, Image as ImageIcon,
-  Check, Mail, BadgePercent, Search, AlertTriangle, ShieldCheck, Clock
+  Check, Mail, BadgePercent, Search, AlertTriangle, ShieldCheck, Clock, Menu
 } from 'lucide-react';
 import { useSiteData, DEFAULT_CONTENT, mergeWithDefaults, type SiteContent } from '../context/SiteDataContext';
 import jerseyLogo from '../assets/jersey-quik-fix-logo.png';
@@ -122,6 +122,7 @@ export default function AdminPage() {
   const [password, setPassword] = useState('');
   const [error, setError] = useState(false);
   const [activePanel, setActivePanel] = useState('Dashboard');
+  const [sidebarOpen, setSidebarOpen] = useState(false);
   
   const { content, loaded, saveContent } = useSiteData();
   const [draft, setDraft] = useState<SiteContent>(content);
@@ -494,22 +495,42 @@ export default function AdminPage() {
 
   return (
     <div className="min-h-[100dvh] bg-background text-foreground flex font-sans selection:bg-primary selection:text-primary-foreground">
-      {/* Sidebar */}
-      <aside className="w-64 bg-secondary flex-shrink-0 border-r border-border flex flex-col hidden md:flex">
-        <div className="h-16 flex items-center px-6 border-b border-border shrink-0">
+
+      {/* Mobile backdrop */}
+      {sidebarOpen && (
+        <div
+          className="fixed inset-0 bg-black/60 z-30 md:hidden"
+          onClick={() => setSidebarOpen(false)}
+        />
+      )}
+
+      {/* Sidebar — drawer on mobile, fixed column on desktop */}
+      <aside className={`
+        fixed inset-y-0 left-0 z-40 w-64 bg-secondary flex-shrink-0 border-r border-border flex flex-col
+        transition-transform duration-300
+        ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}
+        md:relative md:translate-x-0 md:z-auto
+      `}>
+        <div className="h-16 flex items-center justify-between px-6 border-b border-border shrink-0">
           <div className="flex items-center gap-2">
             <img src={jerseyLogo} alt="JQF" className="h-8 w-8 object-contain bg-primary text-primary-foreground p-1 rounded-lg" />
             <span className="text-xl font-black tracking-tight uppercase italic text-secondary-foreground">
               JQF Admin
             </span>
           </div>
+          <button
+            className="md:hidden text-secondary-foreground/70 hover:text-secondary-foreground"
+            onClick={() => setSidebarOpen(false)}
+          >
+            <X size={20} />
+          </button>
         </div>
         
         <div className="flex-1 overflow-y-auto p-4 space-y-1">
           {panels.map(panel => (
             <button
               key={panel.name}
-              onClick={() => setActivePanel(panel.name)}
+              onClick={() => { setActivePanel(panel.name); setSidebarOpen(false); }}
               className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl font-bold text-sm transition-all ${
                 activePanel === panel.name 
                   ? 'bg-primary/20 text-primary border-l-2 border-primary' 
@@ -541,21 +562,29 @@ export default function AdminPage() {
       {/* Main Content */}
       <main className="flex-1 flex flex-col h-[100dvh] overflow-hidden">
         {/* Topbar */}
-        <header className="h-16 bg-background border-b border-border flex items-center justify-between px-6 shrink-0">
-          <div>
-            <div className="text-[10px] font-bold uppercase tracking-widest text-primary leading-none mb-1">
-              ADMIN CONTROL PANEL
+        <header className="h-16 bg-background border-b border-border flex items-center justify-between px-4 md:px-6 shrink-0">
+          <div className="flex items-center gap-3">
+            <button
+              className="md:hidden flex items-center justify-center text-muted-foreground hover:text-foreground"
+              onClick={() => setSidebarOpen(true)}
+            >
+              <Menu size={22} />
+            </button>
+            <div>
+              <div className="text-[10px] font-bold uppercase tracking-widest text-primary leading-none mb-1">
+                ADMIN CONTROL PANEL
+              </div>
+              <h2 className="text-xl font-black uppercase italic tracking-tight leading-none">
+                {activePanel}
+              </h2>
             </div>
-            <h2 className="text-xl font-black uppercase italic tracking-tight leading-none">
-              {activePanel}
-            </h2>
           </div>
           <div className="flex gap-3">
             <button 
               onClick={handleSaveChanges}
-              className="flex items-center gap-2 px-6 py-2 bg-primary text-primary-foreground rounded-xl font-black text-sm uppercase tracking-wider hover:brightness-110 active:scale-[0.98] transition-all shadow-[0_0_15px_rgba(245,158,11,0.3)]"
+              className="flex items-center gap-2 px-4 md:px-6 py-2 bg-primary text-primary-foreground rounded-xl font-black text-sm uppercase tracking-wider hover:brightness-110 active:scale-[0.98] transition-all shadow-[0_0_15px_rgba(245,158,11,0.3)]"
             >
-              <Save size={16} /> Save Changes
+              <Save size={16} /> <span className="hidden sm:inline">Save Changes</span><span className="sm:hidden">Save</span>
             </button>
           </div>
         </header>
