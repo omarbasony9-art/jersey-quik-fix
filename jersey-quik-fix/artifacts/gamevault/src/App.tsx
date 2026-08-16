@@ -229,7 +229,7 @@ function SharedNav() {
             </Link>
           )}
 
-          <div className="hidden w-[60px] justify-end sm:flex">
+          <div className="flex w-[60px] justify-end">
             <Link
               href="/admin"
               aria-label="Open admin"
