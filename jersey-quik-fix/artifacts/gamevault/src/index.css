@@ -77,3 +77,13 @@
     @apply font-sans antialiased bg-background text-foreground;
   }
 }
+
+@layer clerk {
+  .cl-badge,
+  [data-localization-key="badge__devMode"],
+  [class*="cl-badge"] {
+    color: #29a5ee !important;
+    border-color: #29a5ee !important;
+    background-color: transparent !important;
+  }
+}

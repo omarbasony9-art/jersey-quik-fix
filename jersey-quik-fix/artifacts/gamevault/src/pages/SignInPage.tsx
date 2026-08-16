@@ -10,6 +10,11 @@ export default function SignInPage() {
         path={`${base}/sign-in`}
         signUpUrl={`${base}/sign-up`}
         fallbackRedirectUrl={`${base}/shop`}
+        appearance={{
+          elements: {
+            badge: { color: '#29a5ee' },
+          },
+        }}
       />
     </div>
   );
