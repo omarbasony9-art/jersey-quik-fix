@@ -180,7 +180,7 @@ function SharedNav() {
             href="/admin"
             aria-label="Open admin"
             title="Admin"
-            className="flex h-8 w-8 items-center justify-center rounded-full text-muted-foreground transition-colors hover:text-primary"
+            className="flex sm:hidden h-8 w-8 items-center justify-center rounded-full text-muted-foreground transition-colors hover:text-primary"
           >
             <Wrench size={15} />
           </Link>
@@ -209,6 +209,14 @@ function SharedNav() {
         </div>
 
         <div className="flex items-center gap-2">
+          <Link
+            href="/admin"
+            aria-label="Open admin"
+            title="Admin"
+            className="hidden sm:flex h-10 w-10 items-center justify-center rounded-full border border-border text-muted-foreground transition-colors hover:border-primary hover:text-primary"
+          >
+            <Wrench size={18} />
+          </Link>
           {isLoaded && user ? (
             <div className="flex items-center gap-2">
               <span className="hidden sm:block text-xs text-muted-foreground font-medium">
