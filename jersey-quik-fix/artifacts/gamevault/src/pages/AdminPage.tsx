@@ -567,16 +567,25 @@ export default function AdminPage() {
         body: JSON.stringify({ name: 'New Product', sku: `PROD-${Date.now()}`, category: 'Accessories', price: 0, active: false }),
       });
       if (res.ok) {
-        const data = await res.json() as { product: any };
-        const np: NormProduct = { ...data.product, price: Number(data.product.price) / 100, oldPrice: undefined, images: [] };
+        // Both Express api-server and CF Worker return the product directly,
+        // not wrapped in { product: ... }, so read from the top-level object.
+        const prod = await res.json() as any;
+        const np: NormProduct = {
+          ...prod,
+          price: Number(prod.price) / 100,
+          oldPrice: undefined,
+          images: prod.images ?? [],
+        };
         setNormProds(prev => [np, ...prev]);
         setExpandedProdId(np.id);
         showToast('✓ New product created — edit and save to publish.');
       } else {
-        showToast('⚠ Failed to create product.');
+        const err = await res.json().catch(() => ({})) as any;
+        showToast(`⚠ ${err.error || 'Failed to create product.'}`);
       }
-    } catch {
-      showToast('⚠ Network error.');
+    } catch (err) {
+      console.error('createNormProd error:', err);
+      showToast('⚠ Network error — please try again.');
     }
   };
 
