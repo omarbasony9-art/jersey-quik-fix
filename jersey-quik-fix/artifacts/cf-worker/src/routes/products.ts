@@ -1,8 +1,10 @@
 /**
  * Public product routes (no auth required).
  *
- * GET /api/products            — list all products (prices in dollars)
+ * GET /api/products            — list active products (prices in dollars)
  * GET /api/products/:id        — single product by id or sku
+ *
+ * Response shape mirrors the Express API so ShopPage works unchanged.
  */
 
 import type { Hono } from "hono";
@@ -13,11 +15,20 @@ interface ProductRow {
   name: string;
   sku: string;
   category: string;
+  subcategory: string | null;
   description: string;
-  price: number;        // dollars
-  images: string;       // JSON
-  in_stock: number;     // 0 | 1
-  featured: number;     // 0 | 1
+  price: number;          // dollars
+  old_price: number | null;
+  price_note: string | null;
+  condition: string | null;
+  stock: number;
+  images: string;         // JSON array
+  badge: string | null;
+  rating: number | null;
+  active: number;         // 0 | 1
+  featured: number;       // 0 | 1
+  verified: number;       // 0 | 1
+  verification_note: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -28,11 +39,20 @@ function formatPublic(row: ProductRow) {
     name: row.name,
     sku: row.sku,
     category: row.category,
+    subcategory: row.subcategory ?? undefined,
     description: row.description,
-    price: row.price,                           // dollars
+    price: row.price,                                 // dollars — matches ShopPage parseFloat
+    old_price: row.old_price ?? undefined,
+    price_note: row.price_note ?? undefined,
+    condition: row.condition ?? undefined,
+    stock: row.stock,
     images: JSON.parse(row.images || "[]"),
-    inStock: row.in_stock === 1,
+    badge: row.badge ?? undefined,
+    rating: row.rating ?? undefined,
+    active: row.active === 1,
     featured: row.featured === 1,
+    verified: row.verified === 1,
+    verification_note: row.verification_note ?? undefined,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   };
@@ -43,21 +63,28 @@ export function registerProducts(app: Hono<{ Bindings: Env }>) {
   app.get("/api/products", async (c) => {
     try {
       const url = new URL(c.req.url);
-      const limit = Math.min(Number(url.searchParams.get("limit") || "200"), 1000);
+      const limit = Math.min(
+        Number(url.searchParams.get("limit") || "200"),
+        1000,
+      );
       const category = url.searchParams.get("category");
 
       let query: string;
       let params: unknown[];
 
       if (category) {
-        query = "SELECT * FROM products WHERE category = ? ORDER BY name ASC LIMIT ?";
+        query =
+          "SELECT * FROM products WHERE active = 1 AND category = ? ORDER BY name ASC LIMIT ?";
         params = [category, limit];
       } else {
-        query = "SELECT * FROM products ORDER BY name ASC LIMIT ?";
+        query =
+          "SELECT * FROM products WHERE active = 1 ORDER BY name ASC LIMIT ?";
         params = [limit];
       }
 
-      const result = await c.env.DB.prepare(query).bind(...params).all<ProductRow>();
+      const result = await c.env.DB.prepare(query)
+        .bind(...params)
+        .all<ProductRow>();
       const products = (result.results || []).map(formatPublic);
 
       return c.json({ products });
@@ -71,9 +98,8 @@ export function registerProducts(app: Hono<{ Bindings: Env }>) {
   app.get("/api/products/:id", async (c) => {
     try {
       const id = c.req.param("id");
-      // Accept either UUID or SKU
       const row = await c.env.DB.prepare(
-        "SELECT * FROM products WHERE id = ? OR sku = ? LIMIT 1"
+        "SELECT * FROM products WHERE id = ? OR sku = ? LIMIT 1",
       )
         .bind(id, id)
         .first<ProductRow>();

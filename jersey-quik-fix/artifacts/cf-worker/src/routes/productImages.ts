@@ -1,11 +1,17 @@
 /**
  * Public product-image serving route (no auth required).
  *
- * GET /api/product-images/:filename — serve image bytes from R2
+ * GET /api/product-images/:filename
  *
- * Returns the raw image with the correct Content-Type and aggressive caching
- * headers (1 year, immutable).  If the object is not found in R2 a 404 is
- * returned so the browser does not cache a bad response.
+ * Lookup order:
+ *   1. R2 (PRODUCT_IMAGES bucket) — images uploaded via admin
+ *   2. Worker ASSETS fallback     — SVG files bundled as static assets
+ *                                   at /api/product-images/<filename>
+ *
+ * This dual strategy means:
+ *   • Seed images (SVG files shipped in gamevault/public/api/product-images/)
+ *     are served immediately without any R2 uploads.
+ *   • Images uploaded via the admin are stored in R2 and take priority.
  */
 
 import type { Hono } from "hono";
@@ -18,22 +24,47 @@ export function registerProductImages(app: Hono<{ Bindings: Env }>) {
       // Sanitise — prevent path traversal
       const safe = filename.replace(/[^a-zA-Z0-9._-]/g, "_");
 
+      // ── 1. Try R2 first (admin-uploaded images) ─────────────────────────────
       const object = await c.env.PRODUCT_IMAGES.get(safe);
-      if (!object) {
-        return c.json({ error: "Image not found" }, 404);
+      if (object) {
+        const contentType =
+          object.httpMetadata?.contentType || "application/octet-stream";
+        const headers = new Headers();
+        headers.set("Content-Type", contentType);
+        headers.set("Cache-Control", "public, max-age=31536000, immutable");
+        headers.set("Access-Control-Allow-Origin", "*");
+        return new Response(object.body, { headers });
       }
 
-      const contentType =
-        object.httpMetadata?.contentType || "application/octet-stream";
+      // ── 2. Fall back to ASSETS (bundled SVG seed images) ────────────────────
+      // The file lives at /api/product-images/<safe> in the static asset bundle
+      // (source: jersey-quik-fix/artifacts/gamevault/public/api/product-images/)
+      const assetUrl = new URL(
+        `/api/product-images/${safe}`,
+        c.req.url,
+      );
+      // We can't use the normal ASSETS fetcher here because we're already inside
+      // an /api/* route that has intercepted the request. Instead we reconstruct
+      // the asset URL and let the ASSETS Fetcher handle it.
+      const assetReq = new Request(assetUrl.toString(), {
+        method: "GET",
+        headers: { "Accept": c.req.header("accept") || "*/*" },
+      });
+      const assetRes = await c.env.ASSETS.fetch(assetReq);
+      const assetCt = assetRes.headers.get("content-type") || "";
+      // In SPA mode a missing file returns index.html (200, text/html) — skip it.
+      // Only forward the response if it's an actual image/media file.
+      if (assetRes.ok && !assetCt.startsWith("text/html")) {
+        const respHeaders = new Headers(assetRes.headers);
+        respHeaders.set("Cache-Control", "public, max-age=31536000, immutable");
+        respHeaders.set("Access-Control-Allow-Origin", "*");
+        return new Response(assetRes.body, {
+          status: assetRes.status,
+          headers: respHeaders,
+        });
+      }
 
-      const headers = new Headers();
-      headers.set("Content-Type", contentType);
-      // Cache aggressively — filenames are content-addressed (UUID prefix)
-      headers.set("Cache-Control", "public, max-age=31536000, immutable");
-      // Allow cross-origin image loads from the admin dashboard
-      headers.set("Access-Control-Allow-Origin", "*");
-
-      return new Response(object.body, { headers });
+      return c.json({ error: "Image not found" }, 404);
     } catch (err) {
       console.error("GET /api/product-images/:filename error:", err);
       return c.json({ error: "Failed to serve image" }, 500);
