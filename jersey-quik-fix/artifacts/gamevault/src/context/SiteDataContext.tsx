@@ -4,7 +4,31 @@ const SITE_DATA_KEY = 'jqf_site_content_v12';
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL || '/api';
 export type RepairDevice = { id: string; title: string; desc: string; image: string };
-export type Product = { id: string; name: string; category: string; price: number; oldPrice?: number; rating: number; badge?: string; image: string; stock: number; sku: string; active: boolean };
+export type ProductSpec = { key: string; value: string };
+export type Product = {
+  id: string;
+  name: string;
+  description?: string;
+  category: string;
+  subcategory?: string;
+  brand?: string;
+  model?: string;
+  condition?: string;
+  price: number;
+  oldPrice?: number;
+  salePrice?: number;
+  rating: number;
+  badge?: string;
+  image: string;          // primary image — kept for backward compat
+  images?: string[];      // full image gallery
+  stock: number;
+  stockStatus?: string;   // 'In Stock' | 'Low Stock' | 'Out of Stock' | 'Pre-Order'
+  sku: string;
+  active: boolean;
+  sortOrder?: number;
+  specifications?: ProductSpec[];
+  tags?: string;          // comma-separated search keywords
+};
 export type Announcement = { id: string; badge: string; date: string; title: string; desc: string; featured: boolean; image: string };
 export type CommunityEvent = { id: string; date: string; badge: string; time: string; endTime: string; title: string; location: string; desc: string };
 export type CommunityAction = { id: string; icon: string; badge: string; title: string; desc: string; progress: number; volunteers: number; image: string };
@@ -52,6 +76,8 @@ export type SiteContent = {
     heroBgImage: string;
     countdownTarget: string;
     heroHeadline: string; heroSubtitle: string;
+    actionsEyebrow?: string;
+    actionsHeadline?: string;
     announcements: Announcement[];
     events: CommunityEvent[];
     actions: CommunityAction[];

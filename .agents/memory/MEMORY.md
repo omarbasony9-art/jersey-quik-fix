@@ -1,0 +1,1 @@
+- [Apple CDN URL formats](apple-cdn-urls.md) — "select" format works; "finish" format 404s; Node.js fetch cannot reach Apple CDN at all, use curl to verify

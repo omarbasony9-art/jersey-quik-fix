@@ -117,6 +117,140 @@ function ImageField({ label, value, onChange }: { label: string; value: string; 
   );
 }
 
+// ── Multi-image gallery field for admin product editor ─────────────────────
+function ImageGalleryField({
+  images,
+  onChange,
+}: {
+  images: string[];
+  onChange: (images: string[]) => void;
+}) {
+  const [urlInput, setUrlInput] = React.useState('');
+  const fileInputRef = React.useRef<HTMLInputElement>(null);
+
+  function addUrl() {
+    const trimmed = urlInput.trim();
+    if (!trimmed) return;
+    onChange([...images, trimmed]);
+    setUrlInput('');
+  }
+
+  function applyFile(file: File) {
+    if (!ACCEPTED_TYPES.includes(file.type)) return;
+    if (file.size > MAX_BYTES) return;
+    const reader = new FileReader();
+    reader.onload = e => {
+      if (e.target?.result) onChange([...images, e.target.result as string]);
+    };
+    reader.readAsDataURL(file);
+    if (fileInputRef.current) fileInputRef.current.value = '';
+  }
+
+  function remove(idx: number) {
+    onChange(images.filter((_, i) => i !== idx));
+  }
+
+  function moveUp(idx: number) {
+    if (idx === 0) return;
+    const next = [...images];
+    [next[idx - 1], next[idx]] = [next[idx], next[idx - 1]];
+    onChange(next);
+  }
+
+  function moveDown(idx: number) {
+    if (idx === images.length - 1) return;
+    const next = [...images];
+    [next[idx], next[idx + 1]] = [next[idx + 1], next[idx]];
+    onChange(next);
+  }
+
+  return (
+    <div className="space-y-3">
+      <label className="block text-xs font-bold uppercase tracking-wider text-muted-foreground">
+        Product Images <span className="normal-case font-normal">(first = primary display)</span>
+      </label>
+
+      {/* Existing images */}
+      {images.length > 0 && (
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+          {images.map((src, idx) => (
+            <div key={idx} className="relative group rounded-xl overflow-hidden border border-border bg-background">
+              <img
+                src={src}
+                alt={`Image ${idx + 1}`}
+                className="w-full h-24 object-cover"
+                onError={e => (e.currentTarget.style.opacity = '0.3')}
+              />
+              {idx === 0 && (
+                <div className="absolute top-1 left-1 bg-primary text-primary-foreground text-[9px] font-black px-1.5 py-0.5 rounded-md uppercase tracking-wider">
+                  Primary
+                </div>
+              )}
+              <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-1">
+                <button
+                  type="button"
+                  onClick={() => moveUp(idx)}
+                  disabled={idx === 0}
+                  className="bg-white/20 hover:bg-white/40 text-white rounded px-2 py-1 text-xs font-bold disabled:opacity-30"
+                  title="Move left"
+                >←</button>
+                <button
+                  type="button"
+                  onClick={() => remove(idx)}
+                  className="bg-red-500/80 hover:bg-red-500 text-white rounded px-2 py-1 text-xs font-bold"
+                  title="Remove"
+                >✕</button>
+                <button
+                  type="button"
+                  onClick={() => moveDown(idx)}
+                  disabled={idx === images.length - 1}
+                  className="bg-white/20 hover:bg-white/40 text-white rounded px-2 py-1 text-xs font-bold disabled:opacity-30"
+                  title="Move right"
+                >→</button>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Add by file */}
+      <div
+        onClick={() => fileInputRef.current?.click()}
+        className="flex items-center justify-center gap-2 border-2 border-dashed border-border rounded-xl px-4 py-3 cursor-pointer text-xs font-medium text-muted-foreground hover:border-primary/50 hover:text-foreground transition-colors select-none"
+      >
+        <Upload size={14} />
+        <span>Upload image (PNG/JPEG/WebP, max 5 MB)</span>
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept={ACCEPTED_TYPES.join(',')}
+          className="hidden"
+          onChange={e => { const f = e.target.files?.[0]; if (f) applyFile(f); }}
+        />
+      </div>
+
+      {/* Add by URL */}
+      <div className="flex gap-2">
+        <input
+          value={urlInput}
+          onChange={e => setUrlInput(e.target.value)}
+          onKeyDown={e => e.key === 'Enter' && (e.preventDefault(), addUrl())}
+          placeholder="Paste image URL and press Add…"
+          className="flex-1 bg-background border border-border rounded-xl px-4 py-2.5 text-foreground text-sm outline-none focus:border-primary transition-colors font-medium"
+        />
+        <button
+          type="button"
+          onClick={addUrl}
+          disabled={!urlInput.trim()}
+          className="px-4 py-2.5 bg-primary/10 text-primary border border-primary/30 hover:bg-primary/20 rounded-xl font-black text-xs uppercase tracking-wider transition-colors disabled:opacity-40"
+        >
+          Add
+        </button>
+      </div>
+    </div>
+  );
+}
+
 export default function AdminPage() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [password, setPassword] = useState('');
@@ -859,32 +993,218 @@ export default function AdminPage() {
 
                     <div>
                       <h3 className={sectionHeadCls}>Products</h3>
-                      {(draft.shop.products ?? []).map(p => (
-                        <div key={p.id} className={cardCls + " flex gap-4"}>
-                          <div className="flex-1 space-y-2">
-                            <div className="grid grid-cols-3 gap-2">
-                              <input value={p.name} onChange={e => updateArrayItem('shop', p.id, 'name', e.target.value)} className={inputCls} placeholder="Name" />
-                              <input value={p.category} onChange={e => updateArrayItem('shop', p.id, 'category', e.target.value)} className={inputCls} placeholder="Category" />
-                              <input value={p.sku} onChange={e => updateArrayItem('shop', p.id, 'sku', e.target.value)} className={inputCls} placeholder="SKU" />
-                            </div>
-                            <div className="grid grid-cols-3 gap-2">
-                              <input type="number" value={p.price} onChange={e => updateArrayItem('shop', p.id, 'price', Number(e.target.value))} className={inputCls} placeholder="Price" />
-                              <input type="number" value={p.oldPrice || ''} onChange={e => updateArrayItem('shop', p.id, 'oldPrice', Number(e.target.value))} className={inputCls} placeholder="Old Price" />
-                              <input type="number" value={p.stock} onChange={e => updateArrayItem('shop', p.id, 'stock', Number(e.target.value))} className={inputCls} placeholder="Stock" />
-                            </div>
-                            <div className="grid grid-cols-3 gap-2">
-                              <input value={p.badge || ''} onChange={e => updateArrayItem('shop', p.id, 'badge', e.target.value)} className={inputCls} placeholder="Badge" />
-                              <input type="number" step="0.1" value={p.rating} onChange={e => updateArrayItem('shop', p.id, 'rating', Number(e.target.value))} className={inputCls} placeholder="Rating" />
-                              <select value={p.active ? 'Yes' : 'No'} onChange={e => updateArrayItem('shop', p.id, 'active', e.target.value === 'Yes')} className={inputCls}>
-                                <option>Yes</option><option>No</option>
-                              </select>
-                            </div>
-                            <ImageField label="Image" value={p.image} onChange={v => updateArrayItem('shop', p.id, 'image', v)} />
+                      <p className="text-xs text-muted-foreground mb-4 font-medium">All edits save to the live shop. Category determines which tab the product appears under (Phones / Computers / Gaming / Apple / Accessories).</p>
+                      {(draft.shop.products ?? []).map((p, pIdx) => (
+                        <div key={p.id} className={cardCls + " space-y-4"}>
+                          {/* Header row: name + publish toggle + reorder + delete */}
+                          <div className="flex items-center gap-3">
+                            <div className="flex-1 font-black text-sm truncate">{p.name || 'Unnamed Product'}</div>
+                            {/* Publish / Unpublish */}
+                            <button
+                              type="button"
+                              onClick={() => updateArrayItem('shop', p.id, 'active', !p.active)}
+                              className={`px-3 py-1.5 rounded-full text-xs font-black uppercase tracking-wider border transition-all ${p.active ? 'bg-green-500/10 text-green-400 border-green-500/30 hover:bg-green-500/20' : 'bg-muted text-muted-foreground border-border hover:border-primary/50'}`}
+                            >
+                              {p.active ? '● Published' : '○ Unpublished'}
+                            </button>
+                            {/* Reorder up/down */}
+                            <button
+                              type="button"
+                              onClick={() => setDraft(d => {
+                                const prods = [...(d.shop.products ?? [])];
+                                if (pIdx === 0) return d;
+                                [prods[pIdx - 1], prods[pIdx]] = [prods[pIdx], prods[pIdx - 1]];
+                                return { ...d, shop: { ...d.shop, products: prods } };
+                              })}
+                              disabled={pIdx === 0}
+                              className="p-1.5 rounded-lg border border-border text-muted-foreground hover:text-foreground disabled:opacity-30 transition-colors"
+                              title="Move up"
+                            >↑</button>
+                            <button
+                              type="button"
+                              onClick={() => setDraft(d => {
+                                const prods = [...(d.shop.products ?? [])];
+                                if (pIdx === prods.length - 1) return d;
+                                [prods[pIdx], prods[pIdx + 1]] = [prods[pIdx + 1], prods[pIdx]];
+                                return { ...d, shop: { ...d.shop, products: prods } };
+                              })}
+                              disabled={pIdx === (draft.shop.products ?? []).length - 1}
+                              className="p-1.5 rounded-lg border border-border text-muted-foreground hover:text-foreground disabled:opacity-30 transition-colors"
+                              title="Move down"
+                            >↓</button>
+                            <button onClick={() => setDraft(d => ({...d, shop: {...d.shop, products: (d.shop.products ?? []).filter(x => x.id !== p.id)}}))} className={deleteBtnCls}><Trash2 size={16} /></button>
                           </div>
-                          <button onClick={() => setDraft(d => ({...d, shop: {...d.shop, products: (d.shop.products ?? []).filter(x => x.id !== p.id)}}))} className={deleteBtnCls}><Trash2 size={16} /></button>
+
+                          {/* Row 1: Name, SKU */}
+                          <div className="grid grid-cols-2 gap-2">
+                            <div><label className={labelCls}>Product Name</label>
+                              <input value={p.name} onChange={e => updateArrayItem('shop', p.id, 'name', e.target.value)} className={inputCls} placeholder="e.g. iPhone 15 Pro — Space Black 256GB" /></div>
+                            <div><label className={labelCls}>SKU</label>
+                              <input value={p.sku} onChange={e => updateArrayItem('shop', p.id, 'sku', e.target.value)} className={inputCls} placeholder="e.g. IP15P-BLK-256" /></div>
+                          </div>
+
+                          {/* Row 2: Description */}
+                          <div><label className={labelCls}>Description</label>
+                            <textarea
+                              value={(p as any).description ?? ''}
+                              onChange={e => updateArrayItem('shop', p.id, 'description', e.target.value)}
+                              className={textareaCls}
+                              placeholder="Full product description shown in search results and product details…"
+                              rows={3}
+                            /></div>
+
+                          {/* Row 3: Category, Subcategory, Brand, Model */}
+                          <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+                            <div><label className={labelCls}>Category</label>
+                              <select value={p.category} onChange={e => updateArrayItem('shop', p.id, 'category', e.target.value)} className={inputCls}>
+                                <option>Phones</option>
+                                <option>Computers</option>
+                                <option>Gaming</option>
+                                <option>Apple</option>
+                                <option>Accessories</option>
+                              </select></div>
+                            <div><label className={labelCls}>Subcategory</label>
+                              <input value={(p as any).subcategory ?? ''} onChange={e => updateArrayItem('shop', p.id, 'subcategory', e.target.value)} className={inputCls} placeholder="e.g. Cases, Cables" /></div>
+                            <div><label className={labelCls}>Brand</label>
+                              <input value={(p as any).brand ?? ''} onChange={e => updateArrayItem('shop', p.id, 'brand', e.target.value)} className={inputCls} placeholder="e.g. Apple, Samsung" /></div>
+                            <div><label className={labelCls}>Model</label>
+                              <input value={(p as any).model ?? ''} onChange={e => updateArrayItem('shop', p.id, 'model', e.target.value)} className={inputCls} placeholder="e.g. iPhone 15 Pro" /></div>
+                          </div>
+
+                          {/* Row 4: Condition */}
+                          <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+                            <div><label className={labelCls}>Condition</label>
+                              <select value={(p as any).condition ?? ''} onChange={e => updateArrayItem('shop', p.id, 'condition', e.target.value)} className={inputCls}>
+                                <option value="">Not specified</option>
+                                <option>New</option>
+                                <option>Like New</option>
+                                <option>Excellent</option>
+                                <option>Good</option>
+                                <option>Fair</option>
+                                <option>Refurbished</option>
+                              </select></div>
+                            <div><label className={labelCls}>Stock Qty</label>
+                              <input type="number" min="0" value={p.stock} onChange={e => updateArrayItem('shop', p.id, 'stock', Number(e.target.value))} className={inputCls} /></div>
+                            <div><label className={labelCls}>Stock Status</label>
+                              <select value={(p as any).stockStatus ?? ''} onChange={e => updateArrayItem('shop', p.id, 'stockStatus', e.target.value)} className={inputCls}>
+                                <option value="">Auto from qty</option>
+                                <option>In Stock</option>
+                                <option>Low Stock</option>
+                                <option>Out of Stock</option>
+                                <option>Pre-Order</option>
+                              </select></div>
+                            <div><label className={labelCls}>Sort Order</label>
+                              <input type="number" min="0" value={(p as any).sortOrder ?? ''} onChange={e => updateArrayItem('shop', p.id, 'sortOrder', Number(e.target.value))} className={inputCls} placeholder="0 = first" /></div>
+                          </div>
+
+                          {/* Row 5: Price, Sale Price, Badge, Rating */}
+                          <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+                            <div><label className={labelCls}>Price ($)</label>
+                              <input type="number" step="0.01" min="0" value={p.price} onChange={e => updateArrayItem('shop', p.id, 'price', Number(e.target.value))} className={inputCls} /></div>
+                            <div><label className={labelCls}>Original / Sale Price ($)</label>
+                              <input type="number" step="0.01" min="0" value={p.oldPrice || (p as any).salePrice || ''} onChange={e => { const v = Number(e.target.value); updateArrayItem('shop', p.id, 'oldPrice', v || undefined); updateArrayItem('shop', p.id, 'salePrice', v || undefined); }} className={inputCls} placeholder="Struck-through price" /></div>
+                            <div><label className={labelCls}>Badge Label</label>
+                              <input value={p.badge ?? ''} onChange={e => updateArrayItem('shop', p.id, 'badge', e.target.value)} className={inputCls} placeholder="e.g. Best Seller, Sale, New" /></div>
+                            <div><label className={labelCls}>Rating (0–5)</label>
+                              <input type="number" step="0.1" min="0" max="5" value={p.rating} onChange={e => updateArrayItem('shop', p.id, 'rating', Number(e.target.value))} className={inputCls} /></div>
+                          </div>
+
+                          {/* Row 6: Tags / Keywords */}
+                          <div><label className={labelCls}>Search Keywords / Tags <span className="font-normal normal-case">(comma-separated)</span></label>
+                            <input value={(p as any).tags ?? ''} onChange={e => updateArrayItem('shop', p.id, 'tags', e.target.value)} className={inputCls} placeholder="e.g. iphone, phone, apple, smartphone, 256gb" /></div>
+
+                          {/* Row 7: Specifications */}
+                          <div>
+                            <label className={labelCls}>Specifications</label>
+                            {((p as any).specifications ?? []).map((spec: any, si: number) => (
+                              <div key={si} className="flex gap-2 mb-2">
+                                <input
+                                  value={spec.key}
+                                  onChange={e => {
+                                    const specs = [...((p as any).specifications ?? [])];
+                                    specs[si] = { ...specs[si], key: e.target.value };
+                                    updateArrayItem('shop', p.id, 'specifications', specs);
+                                  }}
+                                  className={inputCls}
+                                  placeholder="Label (e.g. Storage)"
+                                />
+                                <input
+                                  value={spec.value}
+                                  onChange={e => {
+                                    const specs = [...((p as any).specifications ?? [])];
+                                    specs[si] = { ...specs[si], value: e.target.value };
+                                    updateArrayItem('shop', p.id, 'specifications', specs);
+                                  }}
+                                  className={inputCls}
+                                  placeholder="Value (e.g. 256 GB)"
+                                />
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    const specs = ((p as any).specifications ?? []).filter((_: any, i: number) => i !== si);
+                                    updateArrayItem('shop', p.id, 'specifications', specs);
+                                  }}
+                                  className={deleteBtnCls}
+                                ><Trash2 size={14} /></button>
+                              </div>
+                            ))}
+                            <button
+                              type="button"
+                              onClick={() => {
+                                const specs = [...((p as any).specifications ?? []), { key: '', value: '' }];
+                                updateArrayItem('shop', p.id, 'specifications', specs);
+                              }}
+                              className={addBtnCls}
+                            ><Plus size={12} /> Add Spec</button>
+                          </div>
+
+                          {/* Row 8: Images gallery */}
+                          <ImageGalleryField
+                            images={(p as any).images ?? (p.image ? [p.image] : [])}
+                            onChange={imgs => {
+                              // Keep legacy image field in sync with first image
+                              updateArrayItem('shop', p.id, 'images', imgs);
+                              updateArrayItem('shop', p.id, 'image', imgs[0] ?? '');
+                            }}
+                          />
                         </div>
                       ))}
-                      <button onClick={() => setDraft(d => ({...d, shop: {...d.shop, products: [...(d.shop.products ?? []), { id: crypto.randomUUID(), name: 'New Product', category: 'Accessories', price: 0, rating: 4.5, badge: '', image: '', stock: 0, sku: '', active: true }]}}))} className={addBtnCls}><Plus size={14} /> Add Product</button>
+                      <button
+                        onClick={() => setDraft(d => ({
+                          ...d,
+                          shop: {
+                            ...d.shop,
+                            products: [
+                              ...(d.shop.products ?? []),
+                              {
+                                id: crypto.randomUUID(),
+                                name: 'New Product',
+                                description: '',
+                                category: 'Accessories',
+                                subcategory: '',
+                                brand: '',
+                                model: '',
+                                condition: '',
+                                price: 0,
+                                oldPrice: undefined,
+                                salePrice: undefined,
+                                rating: 4.5,
+                                badge: '',
+                                image: '',
+                                images: [],
+                                stock: 0,
+                                stockStatus: '',
+                                sku: '',
+                                active: false,
+                                sortOrder: (d.shop.products ?? []).length,
+                                specifications: [],
+                                tags: '',
+                              },
+                            ],
+                          },
+                        }))}
+                        className={addBtnCls}
+                      ><Plus size={14} /> Add Product</button>
                     </div>
 
                     <div>
@@ -1466,7 +1786,8 @@ export default function AdminPage() {
                                 const csv = ['Code,Email,Discount,Issued,Expires,Status',
                                   ...membershipCodes.map(c => {
                                     const exp = new Date(c.expiresAt);
-                                    const status = !c.isActive ? 'Deactivated' : exp <= now ? 'Expired' : 'Active';
+                                    const _now = new Date();
+                                    const status = !c.isActive ? 'Deactivated' : exp <= _now ? 'Expired' : 'Active';
                                     return `${c.code},${c.email},${c.discountPercent}%,${new Date(c.createdAt).toLocaleDateString()},${exp.toLocaleDateString()},${status}`;
                                   })
                                 ].join('\n');
@@ -1495,8 +1816,9 @@ export default function AdminPage() {
                           <div className="space-y-2">
                             {membershipCodes.map(c => {
                               const exp = new Date(c.expiresAt);
-                              const isExpired = exp <= now;
-                              const daysLeft = isExpired ? 0 : Math.ceil((exp.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+                              const _now = new Date();
+                              const isExpired = exp <= _now;
+                              const daysLeft = isExpired ? 0 : Math.ceil((exp.getTime() - _now.getTime()) / (1000 * 60 * 60 * 24));
                               const statusLabel = !c.isActive ? 'Deactivated' : isExpired ? 'Expired' : 'Active';
                               const statusColor = !c.isActive ? 'text-red-400' : isExpired ? 'text-yellow-400' : 'text-green-400';
                               return (

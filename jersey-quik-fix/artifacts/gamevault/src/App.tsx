@@ -185,14 +185,10 @@ function SharedNav() {
             <Link
               key={href}
               href={href}
-              className={`rounded-full px-3 py-2 text-xs font-bold uppercase tracking-wider transition-all sm:px-4 sm:text-sm ${
+              className={`rounded-full px-2.5 py-1.5 text-[10px] font-bold uppercase tracking-wider transition-all sm:px-4 sm:py-2 sm:text-sm ${
                 location === href
                   ? 'bg-primary text-primary-foreground shadow-[0_0_15px_rgba(41,165,238,0.4)]'
                   : 'text-muted-foreground hover:text-foreground'
-              } ${
-                href === '/repair-status'
-                  ? 'hidden sm:block'
-                  : ''
               }`}
             >
               {label}
@@ -229,12 +225,20 @@ function SharedNav() {
               </button>
             </div>
           ) : (
-            <Link
-              href="/sign-in"
-              className="text-xs font-bold text-muted-foreground hover:text-foreground border border-border rounded-full px-3 py-1.5 transition-all hover:border-primary/50"
-            >
-              Sign in
-            </Link>
+            <div className="flex items-center gap-1.5">
+              <Link
+                href="/sign-in"
+                className="text-xs font-bold text-muted-foreground hover:text-foreground border border-border rounded-full px-3 py-1.5 transition-all hover:border-primary/50"
+              >
+                Sign in
+              </Link>
+              <Link
+                href="/sign-up"
+                className="text-xs font-bold bg-primary text-primary-foreground rounded-full px-3 py-1.5 transition-all hover:brightness-110"
+              >
+                Sign up
+              </Link>
+            </div>
           )}
 
         </div>

@@ -35,12 +35,15 @@ export default defineConfig({
   },
   server: {
     port,
-    strictPort: true,
+    // Allow Vite to use the next available port when the configured port is occupied
+    // (needed when the main gamevault app is also running on PORT)
+    strictPort: false,
     host: '0.0.0.0',
     allowedHosts: true,
   },
   preview: {
     port,
+    strictPort: false,
     host: '0.0.0.0',
     allowedHosts: true,
   },
