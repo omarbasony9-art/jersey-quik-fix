@@ -1,6 +1,7 @@
 export interface Env {
   DB: D1Database;
   ASSETS: Fetcher;
+  PRODUCT_IMAGES: R2Bucket;
 
   // Secrets (set via `wrangler secret put`)
   SESSION_SECRET: string;

@@ -19,6 +19,13 @@ binding = "DB"
 database_name = "jersey-quik-fix-d1"
 database_id = "1e526c4e-aa64-4efb-9e52-b8028af7fba0"
 
+# ── R2 Object Storage ────────────────────────────────────────────────────────
+# Stores product images uploaded via the admin dashboard.
+# Create the bucket first: wrangler r2 bucket create jqf-product-images
+[[r2_buckets]]
+binding = "PRODUCT_IMAGES"
+bucket_name = "jqf-product-images"
+
 # ── Migrations directory ─────────────────────────────────────────────────────
 
 # ── Worker Secrets (set via `wrangler secret put <NAME>`) ───────────────────

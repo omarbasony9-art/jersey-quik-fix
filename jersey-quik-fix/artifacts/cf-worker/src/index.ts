@@ -23,6 +23,10 @@ import { registerCart } from "./routes/cart";
 import { registerTradeInquiries } from "./routes/tradeInquiries";
 import { registerMembership } from "./routes/membership";
 import { registerStripe } from "./routes/stripe";
+import { registerProducts } from "./routes/products";
+import { registerAdminProducts } from "./routes/adminProducts";
+import { registerAdminProductImages } from "./routes/adminProductImages";
+import { registerProductImages } from "./routes/productImages";
 
 const app = new Hono<{ Bindings: Env }>();
 
@@ -50,6 +54,10 @@ registerCart(app);
 registerTradeInquiries(app);
 registerMembership(app);
 registerStripe(app);
+registerProducts(app);
+registerAdminProducts(app);
+registerAdminProductImages(app);
+registerProductImages(app);
 
 // ── SPA / Static asset fallback ───────────────────────────────────────────────
 // For any request that isn't an /api/* route, try to serve a static asset.
