@@ -1,0 +1,1068 @@
+I want you to make **ONE comprehensive update** to my EXISTING Vibe-Tribe website.
+
+## IMPORTANT — READ THIS FIRST
+
+Do **NOT** create a new website.
+
+Do **NOT** redesign or replace the rest of my existing website.
+
+Work primarily inside my existing **Shop section** and only modify shared components/backend/data when required for the Shop to function correctly.
+
+Do this in **one large batch** instead of repeatedly stopping and asking questions. I want to minimize Replit Agent usage and keep this as cheap as possible.
+
+### Cost rules
+
+* Do not add paid APIs.
+* Do not add paid databases or services.
+* Do not add unnecessary third-party services.
+* Do not use an external product API that charges per request.
+* Do not add live price-scraping services.
+* Do not use AI image generation.
+* Do not generate fake product pictures.
+* Reuse the existing stack and dependencies whenever possible.
+* Avoid unnecessary packages.
+* Store the product catalog locally/in the existing database depending on how this project is already built.
+* Do not create unnecessary background jobs.
+* Do not make expensive API calls when somebody opens the Shop.
+* Optimize product images and lazy-load them.
+* Preserve the existing deployment setup.
+* Preserve the existing checkout/cart/payment implementation if one already exists.
+* Do NOT add Stripe or another payment provider if the website does not already use one.
+* Before changing anything, inspect how the current Shop, products, cart, routes, database and styling currently work and integrate with that architecture instead of rebuilding everything.
+
+## MAIN GOAL
+
+Turn my existing Shop into a large, professional electronics/gaming store containing:
+
+1. iPhones
+2. MacBooks
+3. PlayStation consoles
+4. Xbox consoles
+5. Nintendo consoles and handhelds
+6. Sega/retro systems
+7. Arcade machines
+8. Video games
+9. Apple products
+10. Tablets
+11. Accessories
+12. Chargers/cables/power banks
+13. Controllers
+14. Phone cases
+15. My existing physical inventory
+
+The Shop should look like a legitimate electronics retailer, not an AI-generated demo.
+
+---
+
+# SHOP DESIGN
+
+Keep the visual identity of my existing website, but make the Shop itself polished and professional.
+
+I want:
+
+* Clean responsive product grid
+* Professional spacing
+* Desktop and mobile layouts
+* Large clean product images
+* Consistent image aspect ratios
+* Product name
+* Short subtitle
+* Price
+* Optional original/compare-at price
+* Availability
+* Condition
+* Storage when applicable
+* Color when applicable
+* Product badges only when useful
+* Product-detail pages/modal
+* Search
+* Sorting
+* Filters
+* Category navigation
+* Related products
+* Cart compatibility if cart already exists
+
+Do not overload the product cards with text.
+
+Product cards should display the most important information and the product-detail view can contain the complete information.
+
+---
+
+# SHOP CATEGORIES
+
+Create clear categories such as:
+
+### Phones
+
+* iPhone
+
+### Computers
+
+* MacBook Air
+* MacBook Pro
+* MacBook
+
+### Gaming
+
+* PlayStation
+* Xbox
+* Nintendo
+* Sega / Retro
+* Arcade Machines
+* Video Games
+* Controllers
+
+### Apple
+
+* Apple Watch
+* iPad
+* AirPods
+* Chargers
+
+### Accessories
+
+* Phone Cases
+* Chargers & Cables
+* Power Banks
+* Gaming Accessories
+* Other Accessories
+
+Make category URLs/filtering clean.
+
+---
+
+# FILTERS
+
+Add useful Shop filters:
+
+* Category
+* Brand
+* Model
+* Price
+* Condition
+* Storage
+* Color
+* Console generation
+* Availability
+
+Conditions should support:
+
+* New / Sealed
+* Open Box
+* Excellent
+* Good
+* Fair
+
+Do not display condition options that don't make sense for a particular item.
+
+---
+
+# SORTING
+
+Allow:
+
+* Featured
+* Price: Low to High
+* Price: High to Low
+* Newest
+* Model: Newest to Oldest
+* Model: Oldest to Newest
+
+---
+
+# SEARCH
+
+Search should find products using:
+
+* Product name
+* Brand
+* Model
+* Generation
+* Storage
+* Category
+* Keywords
+
+Examples:
+
+Searching:
+
+"13 pro"
+
+should find iPhone 13 Pro.
+
+Searching:
+
+"PS5"
+
+should find the PS5 models.
+
+Searching:
+
+"2019 MacBook Pro"
+
+should find the correct MacBook.
+
+Searching:
+
+"Simpsons"
+
+should find the Simpsons Arcade1Up cabinet and stool.
+
+---
+
+# PRODUCT IMAGES — VERY IMPORTANT
+
+I want **professional pictures**, but DO NOT generate AI pictures.
+
+Use legitimate high-quality product imagery such as:
+
+* Manufacturer product renders
+* Manufacturer press/media assets
+* Existing legitimate product images already available in the project
+* Clean professional product photography when an appropriate legal/reliable source is available
+
+Prefer clean product renders with:
+
+* White or transparent background
+* Product centered
+* High resolution
+* No random people's hands
+* No ugly screenshots
+* No watermarks
+* No marketplace seller text
+* No price graphics embedded into the image
+
+For products such as Apple, PlayStation, Xbox and Nintendo, prefer official manufacturer imagery when practical.
+
+For my Arcade1Up cabinets, use professional product pictures of the **exact arcade model**.
+
+DO NOT substitute a different arcade game just because it looks similar.
+
+If a professional image cannot confidently be matched to the exact product, use a clean placeholder and make the product image easy for me to replace later.
+
+Do not hotlink unreliable images that constantly break.
+
+Use local optimized copies where practical.
+
+Use lazy loading.
+
+---
+
+# IPHONE CATALOG
+
+I want the Shop to contain **every actual iPhone model from the iPhone 6 generation through the iPhone 17 generation**.
+
+Do not invent models that Apple never made.
+
+Include:
+
+## iPhone 6 generation
+
+* iPhone 6
+* iPhone 6 Plus
+* iPhone 6s
+* iPhone 6s Plus
+
+## iPhone SE
+
+* iPhone SE 1st Generation
+* iPhone SE 2nd Generation
+* iPhone SE 3rd Generation
+
+## iPhone 7
+
+* iPhone 7
+* iPhone 7 Plus
+
+## iPhone 8 / X
+
+* iPhone 8
+* iPhone 8 Plus
+* iPhone X
+
+## XS/XR
+
+* iPhone XR
+* iPhone XS
+* iPhone XS Max
+
+## iPhone 11
+
+* iPhone 11
+* iPhone 11 Pro
+* iPhone 11 Pro Max
+
+## iPhone 12
+
+* iPhone 12 mini
+* iPhone 12
+* iPhone 12 Pro
+* iPhone 12 Pro Max
+
+## iPhone 13
+
+* iPhone 13 mini
+* iPhone 13
+* iPhone 13 Pro
+* iPhone 13 Pro Max
+
+## iPhone 14
+
+* iPhone 14
+* iPhone 14 Plus
+* iPhone 14 Pro
+* iPhone 14 Pro Max
+
+## iPhone 15
+
+* iPhone 15
+* iPhone 15 Plus
+* iPhone 15 Pro
+* iPhone 15 Pro Max
+
+## iPhone 16
+
+* iPhone 16
+* iPhone 16 Plus
+* iPhone 16 Pro
+* iPhone 16 Pro Max
+* iPhone 16e
+
+## Current 17-generation models
+
+Include only legitimate released models and verify the model names before adding them.
+
+At minimum include:
+
+* iPhone 17
+* iPhone 17 Pro
+* iPhone 17 Pro Max
+* iPhone Air
+* iPhone 17e
+
+Do not create an iPhone 17 Plus or any other nonexistent model unless it is actually a real released model.
+
+---
+
+# IPHONE VARIANTS
+
+Do NOT create hundreds of nearly identical cards.
+
+Make ONE primary product listing per phone model and support appropriate variants such as:
+
+* Storage
+* Color
+* Condition
+
+Only display storage capacities that were actually offered for that generation.
+
+Examples may include:
+
+* 16GB
+* 32GB
+* 64GB
+* 128GB
+* 256GB
+* 512GB
+* 1TB
+
+depending on the actual model.
+
+Do not claim every storage capacity was available on every iPhone.
+
+---
+
+# IPHONE PRICING
+
+I want **competitive but believable prices**, not absurdly high prices and not fake $1 teaser pricing.
+
+Older phones should be priced as used/refurbished electronics.
+
+Newer phones should be priced appropriately based on:
+
+* Model
+* Age
+* Storage
+* Condition
+* Current new-device pricing
+* Typical refurbished/used value
+
+Use a centralized pricing structure so I can easily change prices later.
+
+DO NOT spread hard-coded prices all across UI components.
+
+Have one source of truth for catalog prices.
+
+A larger storage option should generally cost more.
+
+Condition adjustments should make sense.
+
+Example:
+
+Excellent > Good > Fair
+
+New/Sealed should cost more than used when available.
+
+The Shop can display:
+
+"Starting at $___"
+
+when a model has multiple configurations.
+
+Do not falsely label a used product as brand new.
+
+---
+
+# MACBOOK CATALOG
+
+Add MacBooks from **2015 through the current generation**.
+
+Organize them cleanly by model and year rather than making confusing generic listings.
+
+Include the major legitimate Apple notebook families/configurations from each year.
+
+## 2015
+
+Include major:
+
+* MacBook Air 11-inch
+* MacBook Air 13-inch
+* MacBook Pro 13-inch
+* MacBook Pro 15-inch
+* 12-inch MacBook
+
+## 2016
+
+Include applicable:
+
+* 12-inch MacBook
+* MacBook Pro 13-inch
+* MacBook Pro 15-inch
+
+## 2017
+
+Include applicable:
+
+* 12-inch MacBook
+* MacBook Air
+* MacBook Pro 13-inch
+* MacBook Pro 15-inch
+
+## 2018
+
+Include:
+
+* MacBook Air Retina 13-inch
+* MacBook Pro 13-inch
+* MacBook Pro 15-inch
+
+## 2019
+
+Include:
+
+* MacBook Air
+* MacBook Pro 13-inch
+* MacBook Pro 15-inch where applicable
+* MacBook Pro 16-inch
+
+## 2020
+
+Include Intel and Apple Silicon models separately where appropriate:
+
+* MacBook Air Intel
+* MacBook Air M1
+* MacBook Pro 13-inch Intel
+* MacBook Pro 13-inch M1
+
+## 2021
+
+Include:
+
+* MacBook Pro 14-inch M1 Pro / M1 Max
+* MacBook Pro 16-inch M1 Pro / M1 Max
+
+## 2022
+
+Include:
+
+* MacBook Air M2 13-inch
+* MacBook Pro 13-inch M2
+
+## 2023
+
+Include legitimate:
+
+* MacBook Air 13-inch
+* MacBook Air 15-inch
+* MacBook Pro 14-inch
+* MacBook Pro 16-inch
+  with the correct M-series chip families for that generation.
+
+## 2024 and newer
+
+Continue through the currently released MacBook generations.
+
+Verify:
+
+* Year
+* Display size
+* Processor/chip family
+* Model family
+
+Do not invent future chips or model years.
+
+If there are multiple processor generations released during the same calendar year, distinguish them clearly.
+
+---
+
+# MACBOOK VARIANTS
+
+Support appropriate options such as:
+
+* RAM
+* Storage
+* Color
+* Processor/chip
+* Condition
+
+But keep the UI manageable.
+
+Do not make 30 separate cards for one MacBook when variants can handle the differences.
+
+Examples of storage:
+
+* 128GB
+* 256GB
+* 512GB
+* 1TB
+* 2TB
+
+depending on the actual model.
+
+---
+
+# MACBOOK PRICING
+
+Price older Intel MacBooks competitively as used/refurbished products.
+
+M-series MacBooks should generally command higher prices.
+
+Price should take into account:
+
+* Year
+* Processor
+* RAM
+* Storage
+* Condition
+* Screen size
+
+Use good realistic sale prices.
+
+Again, prices need to be editable from one central catalog/data source.
+
+---
+
+# PLAYSTATION PRODUCTS
+
+Add these products to the Shop:
+
+* PlayStation 5 Disc Edition
+* PlayStation 5 Digital Edition
+* PlayStation 4
+* PlayStation 3 Fat
+* PlayStation 2 Slim
+* Original PlayStation / PS1
+* DualSense PS5 Controller
+* Backbone One PlayStation Edition for iPhone
+
+Where applicable support:
+
+* Condition
+* Storage
+* Color
+
+Do not claim an accessory is included unless it actually is.
+
+---
+
+# XBOX PRODUCTS
+
+Add:
+
+* Xbox Series X
+* Xbox Series S 512GB
+* Xbox Series S 1TB where appropriate
+* Original Microsoft Xbox
+* Xbox Wireless Controller
+* Original Xbox Controller
+
+You may also include major legitimate Xbox console generations in the catalog if appropriate:
+
+* Xbox 360
+* Xbox One
+* Xbox One S
+* Xbox One X
+
+Do not invent Xbox models.
+
+Give each appropriate realistic pricing based on generation and condition.
+
+---
+
+# NINTENDO PRODUCTS
+
+Add:
+
+* Nintendo Switch 2
+* Nintendo Switch 2 Mario Kart World Bundle
+* Nintendo Switch
+* Nintendo Switch OLED
+* Nintendo Switch Lite
+* Black Nintendo Wii
+* Nintendo Wii U
+* Nintendo DS Lite
+* Nintendo 3DS XL
+* Zelda-themed Nintendo 3DS XL
+* Nintendo Game Boy
+* Clear-shell Game Boy
+* Nintendo Entertainment System / NES
+* NES Power Set
+
+For Switch/handheld products, allow relevant:
+
+* Color
+* Storage
+* Condition
+
+---
+
+# SEGA / RETRO
+
+Add:
+
+* Sega Dreamcast
+* Dreamcast controller
+
+Also allow Sega/Retro as a category so additional retro inventory can be added later.
+
+---
+
+# MY ARCADE MACHINES
+
+These are especially important.
+
+Add professional product listings for the exact Arcade1Up machines I have:
+
+1. Arcade1Up The Simpsons 4-Player Arcade Cabinet
+2. Matching The Simpsons Arcade Stool
+3. Arcade1Up NBA Jam 4-Player Arcade Cabinet
+4. Arcade1Up Teenage Mutant Ninja Turtles / Turtles in Time 4-Player Cabinet
+5. Arcade1Up Dragon's Lair Cabinet
+6. Arcade1Up Street Fighter II Champion Edition Cabinet
+7. Arcade1Up Mortal Kombat II / Midway Cabinet
+8. Arcade1Up NFL Blitz Legends 4-Player Cabinet
+
+Use professional pictures of the exact cabinet.
+
+The arcade listing should show useful information such as:
+
+* Brand
+* Game/title
+* Player count
+* Condition
+* Cabinet type
+* Availability
+* Price
+
+Do not put shipping promises on arcade cabinets unless shipping is actually configured.
+
+For large arcade machines, allow an availability message such as:
+
+"Contact for pickup/delivery options"
+
+if the existing store does not already support freight shipping.
+
+There was another unidentified full-size/older arcade cabinet visible in my photos.
+
+DO NOT list that unidentified cabinet until its identity is confirmed.
+
+---
+
+# VIDEO GAMES I HAVE
+
+Add the following identifiable games.
+
+## PlayStation 2
+
+* Silent Hill 2
+* Persona 4
+* Persona 3 FES
+* Ar tonelico II
+* Grand Theft Auto: San Andreas
+* Fight Night Round 3
+* Need for Speed: Undercover
+
+## PlayStation 4
+
+* Middle-earth: Shadow of Mordor
+* Wolfenstein II: The New Colossus
+* NieR: Automata Day One Edition
+* Red Dead Redemption II
+* FIFA 15
+* EA Sports UFC
+
+Also add my Street Fighter V collector/signature-style PS4 package only if it can be confidently matched to the exact edition.
+
+Do not guess the edition.
+
+## Nintendo Wii
+
+* Guitar Hero 5
+* Resident Evil: The Umbrella Chronicles
+* Pokémon Battle Revolution
+
+## Wii U
+
+* The Legend of Zelda: The Wind Waker HD
+
+## Nintendo DS
+
+* Pokémon Platinum Version
+
+## Nintendo 3DS
+
+* The Legend of Zelda: A Link Between Worlds
+* Fire Emblem Awakening
+* Pokémon Moon
+* The Legend of Zelda: Ocarina of Time 3D
+
+## Nintendo Switch
+
+* The Legend of Zelda: Breath of the Wild
+* Pokémon Shining Pearl
+
+Do not automatically add unidentified loose cartridges until their titles are verified.
+
+---
+
+# ACCESSORIES I HAVE
+
+Add:
+
+* T-WOLF T16 Metal Luminous Wired Gaming Keyboard
+* Onten HDMI 2.1 1.5m Cable / OTN-HD181
+* USB-A to USB-C 27W 3-foot charging cable
+* White braided charging cable
+* Apple USB-C 61W Power Adapter
+* Apple USB-C 20W Power Adapter
+* 20W magnetic wireless power bank with battery display
+* Slim magnetic/bidirectional wireless power bank
+* OtterBox Symmetry Series clear case for iPhone 13 Pro Max
+* OtterBox Symmetry Series clear case for iPhone 13 Pro
+* Additional controllers and phone accessories should be easy to add later.
+
+Do not create model names for phone cases if the specific phone compatibility has not been verified.
+
+---
+
+# ADDITIONAL APPLE / TABLET INVENTORY
+
+I also have a written inventory note containing Apple Watches/tablets/accessories.
+
+The following should be supported in the Shop, but if a model name looks inconsistent or impossible, place it into an internal NEEDS REVIEW state rather than showing incorrect information publicly.
+
+Known/likely products include:
+
+* Apple Watch Series 11 GPS + Cellular/LTE 42mm, rose/pink-type finish
+* Apple Watch SE 2nd Generation 44mm GPS + Cellular, black
+* Apple Watch SE 3rd Generation 40mm, white/light band
+* Apple Watch SE 3rd Generation 44mm
+* Samsung Galaxy Tab S10 FE 5G, black
+* iPad Air 4th Generation, Space Gray
+* AirPods Pro item from my inventory note
+
+Some handwritten inventory names may have been interpreted incorrectly.
+
+DO NOT publish incorrect Apple models simply because the note was unclear.
+
+Create a clean internal `needsVerification` flag for questionable products.
+
+---
+
+# INVENTORY / AVAILABILITY LOGIC
+
+Very important:
+
+Just because something exists in the overall Shop catalog does NOT mean I physically have every model sitting in inventory right now.
+
+Use two concepts:
+
+### Catalog product
+
+A product the Shop can display.
+
+### Physical inventory
+
+A product I actually currently have.
+
+For catalog items that I have not confirmed in stock, use something professional such as:
+
+* Check Availability
+* Contact for Availability
+* Out of Stock
+
+Do NOT falsely tell customers:
+
+"Only 1 left!"
+
+unless stock data actually says that.
+
+For items from my physical photos/list that I have confirmed, the catalog should allow me to mark them In Stock.
+
+---
+
+# PRODUCT DATA STRUCTURE
+
+Set this up professionally so adding/editing products later is EASY.
+
+Every product should support fields similar to:
+
+* id
+* slug
+* name
+* brand
+* category
+* subcategory
+* model
+* generation
+* year
+* description
+* shortDescription
+* price
+* compareAtPrice
+* condition
+* image
+* gallery images
+* storage options
+* RAM options
+* color options
+* processor options
+* stock
+* availability
+* featured
+* tags
+* specifications
+* needsVerification
+
+Use the existing app's architecture/database conventions rather than forcing a new stack.
+
+---
+
+# PRODUCT DETAILS
+
+Product-detail pages should display:
+
+* Large main image
+* Additional images if available
+* Product title
+* Brand
+* Price
+* Condition
+* Availability
+* Storage selector if applicable
+* Color selector if applicable
+* RAM selector for MacBooks if applicable
+* Processor selector for MacBooks if applicable
+* Add to cart if my existing Shop has cart functionality
+* Description
+* Key specifications
+* What's included
+* Related products
+
+Do not display empty sections.
+
+---
+
+# PRODUCT DESCRIPTIONS
+
+Descriptions should sound like a real electronics store.
+
+Keep them factual and concise.
+
+Do NOT use excessive AI-style phrases such as:
+
+* "Elevate your experience"
+* "Unleash unparalleled performance"
+* "Game-changing innovation"
+* "Revolutionize your lifestyle"
+
+Avoid hype.
+
+Use clear descriptions such as:
+
+"Pre-owned iPhone 13 Pro with 6.1-inch display. Available in multiple storage capacities and conditions. Unlocked options available depending on inventory."
+
+Only say "Unlocked" when that variant is actually unlocked.
+
+---
+
+# PRICING DISPLAY
+
+Use normal professional formatting:
+
+$299.99
+
+or
+
+$299
+
+depending on the current site's style.
+
+Use one consistent format.
+
+For configurable products, display:
+
+Starting at $___
+
+Do not show fake discount percentages.
+
+Only display compare-at pricing when there is a legitimate comparison.
+
+---
+
+# FEATURED COLLECTIONS
+
+Create useful sections such as:
+
+* Featured Products
+* iPhones
+* MacBooks
+* Gaming Consoles
+* Arcade Machines
+* Retro Gaming
+* Accessories
+
+Do not create a giant homepage section that slows down the entire site.
+
+This work should stay mainly in the Shop.
+
+---
+
+# RESPONSIVE DESIGN
+
+Test:
+
+* Desktop
+* Tablet
+* iPhone/mobile widths
+
+Make sure:
+
+* Product cards don't overflow
+* Filter menus work on mobile
+* Images don't stretch
+* Buttons remain clickable
+* Product names wrap correctly
+* Cart UI works
+* No horizontal scrolling
+* Shop remains fast with a large catalog
+
+---
+
+# PERFORMANCE
+
+Because there will be many products:
+
+* Lazy-load images
+* Optimize image size
+* Don't load every full-resolution gallery image immediately
+* Avoid expensive animations
+* Avoid huge libraries
+* Use pagination or efficient client-side rendering if necessary
+* Keep the site fast
+* Avoid duplicate image downloads
+* Use existing caching behavior where appropriate
+
+---
+
+# ADMIN / EASY EDITING
+
+If my existing website already has an admin area/product manager, integrate these products into it.
+
+If it does not, do NOT build an enormous new admin system just for this update.
+
+At minimum, organize the product data so prices, stock, descriptions and images can be changed easily from one central place later.
+
+Do not make me hunt through dozens of components to change one price.
+
+---
+
+# DO NOT BREAK EXISTING WEBSITE
+
+After completing the Shop work:
+
+* Make sure the existing homepage still works.
+* Make sure existing pages still work.
+* Make sure navigation still works.
+* Make sure existing login works if present.
+* Make sure existing cart works if present.
+* Make sure existing checkout works if present.
+* Make sure existing APIs still work.
+* Make sure the app builds successfully.
+* Run the project's existing typecheck/build/tests if available.
+* Fix any errors caused by this work.
+
+Do not delete existing content unless it is clearly obsolete Shop placeholder data.
+
+---
+
+# DO NOT DO THESE THINGS
+
+Do NOT:
+
+* Create a new Replit
+* Replace my entire website
+* Change my business name
+* Generate AI product pictures
+* Use fake products
+* Invent Apple models
+* Invent console models
+* Invent arcade cabinets
+* Add paid APIs
+* Add recurring paid services
+* Scrape prices every time a customer visits
+* Put giant API costs on the site
+* Hard-code the same product in several different components
+* Duplicate the same product for every storage capacity when variants can handle it
+* Break checkout
+* Publish/deploy automatically unless I specifically tell you to
+* Stop halfway just to ask whether you should continue
+
+---
+
+# FINAL CHECK
+
+I want this handled as **one consolidated Shop upgrade** to reduce Replit Agent usage.
+
+Complete as much as possible in this single pass.
+
+When finished, give me a concise report showing:
+
+1. What was added
+2. Number of products added
+3. Categories added
+4. iPhone models added
+5. MacBook models added
+6. Gaming systems added
+7. Arcade machines added
+8. Games/accessories added
+9. How product pricing is stored
+10. How I can change prices later
+11. How I can change product images later
+12. Any products marked Needs Verification
+13. Build/typecheck/test results
+14. Anything that still genuinely requires my input
+
+Do not deploy/publish yet.
+
+Make the Shop functional first and let me inspect it before anything is pushed live.

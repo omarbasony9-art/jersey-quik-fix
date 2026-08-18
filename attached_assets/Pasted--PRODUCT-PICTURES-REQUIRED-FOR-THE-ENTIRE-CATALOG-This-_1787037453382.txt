@@ -1,0 +1,436 @@
+# PRODUCT PICTURES — REQUIRED FOR THE ENTIRE CATALOG
+
+This is extremely important.
+
+I do **NOT** want a Shop full of products with blank image boxes, generic icons, random placeholders, or repeated pictures.
+
+Every public product listing needs an appropriate professional product image.
+
+This applies to **EVERY category**, including:
+
+* Every iPhone model
+* Every MacBook model/year
+* Every PlayStation console
+* Every Xbox console
+* Every Nintendo console
+* Every Nintendo handheld
+* Sega / retro consoles
+* Every Arcade1Up machine
+* Video games
+* Controllers
+* Apple Watches
+* iPads
+* AirPods
+* Keyboards
+* Chargers
+* Cables
+* Power banks
+* Phone cases
+* Gaming accessories
+* Other products being added to the Shop
+
+## USE THE CORRECT IMAGE FOR THE EXACT PRODUCT
+
+Do not use one generic iPhone picture for every iPhone.
+
+For example:
+
+* iPhone 6 must show an iPhone 6
+* iPhone 8 Plus must show an iPhone 8 Plus
+* iPhone X must show an iPhone X
+* iPhone 11 Pro Max must show an iPhone 11 Pro Max
+* iPhone 13 Pro must show an iPhone 13 Pro
+* iPhone 15 Pro Max must show an iPhone 15 Pro Max
+* iPhone 16 Pro must show an iPhone 16 Pro
+* iPhone 17 must show an iPhone 17
+* iPhone 17 Pro must show an iPhone 17 Pro
+* iPhone Air must show an iPhone Air
+* iPhone 17e must show an iPhone 17e
+
+The same rule applies to MacBooks and gaming systems.
+
+Do not show a 2020 MacBook Air picture on a 2015 MacBook Air listing.
+
+Do not show a PS5 Digital Edition picture on the PS5 Disc Edition listing.
+
+Do not show an Xbox Series S picture on an Xbox Series X listing.
+
+Do not show a normal Nintendo Switch picture for Nintendo Switch 2.
+
+The picture must match the actual listed model.
+
+---
+
+# IMAGE SOURCES
+
+Prefer legitimate, professional sources in this order:
+
+1. Official manufacturer product images
+2. Official manufacturer press/media assets
+3. Existing product assets already included in my project
+4. Reliable product images that are clearly matched to the exact model and appropriate for website use
+
+Examples of preferred manufacturers:
+
+* Apple
+* Microsoft / Xbox
+* Sony / PlayStation
+* Nintendo
+* Sega
+* Arcade1Up
+* OtterBox
+* Backbone
+* Other actual product manufacturers
+
+DO NOT use AI-generated product images.
+
+DO NOT generate fake versions of real products.
+
+DO NOT use blurry marketplace screenshots.
+
+DO NOT use photos containing:
+
+* Seller usernames
+* eBay graphics
+* Facebook Marketplace graphics
+* Amazon pricing
+* Watermarks
+* Random store logos
+* Price labels
+* Review stars
+* Promotional text burned into the photo
+* People's hands unless absolutely unavoidable
+
+The product itself should be the focus.
+
+---
+
+# DOWNLOAD AND STORE THE IMAGES PROPERLY
+
+Do not make the Shop depend on dozens of fragile external image URLs that may disappear.
+
+Where allowed and practical:
+
+* Download the appropriate product image
+* Store an optimized copy with the project assets
+* Use clear filenames
+* Use compressed web-friendly formats
+* Keep good visual quality
+* Do not unnecessarily store enormous 10MB images
+
+Use proper caching.
+
+Use lazy loading.
+
+Use responsive image sizing where appropriate.
+
+Do not load full-size 4K product photography into every small product card.
+
+---
+
+# IMAGE FILE ORGANIZATION
+
+Keep the images organized by product/category so they are easy to replace later.
+
+For example, there should be a clear organizational structure for:
+
+* iPhones
+* MacBooks
+* PlayStation
+* Xbox
+* Nintendo
+* Sega
+* Arcades
+* Games
+* Apple accessories
+* Other accessories
+
+Use descriptive filenames rather than random filenames.
+
+Examples:
+
+* iphone-13-pro-main
+* iphone-13-pro-back
+* iphone-15-pro-max-main
+* macbook-pro-2021-14-main
+* xbox-series-x-main
+* ps5-disc-main
+* arcade1up-simpsons-main
+
+Follow the existing project's asset conventions if it already has one.
+
+---
+
+# PRODUCT IMAGE GALLERIES
+
+Important products should have more than one image when suitable.
+
+Product-detail pages should support a gallery such as:
+
+* Front
+* Back
+* Side
+* Alternate angle
+* Box/package image when useful
+
+Do not add five copies of essentially the exact same picture.
+
+Aim for approximately:
+
+* 1–3 images for ordinary accessories
+* 2–4 images for phones
+* 2–4 images for MacBooks
+* 2–4 images for consoles
+* 2–5 images for arcade machines
+
+Only use useful additional pictures.
+
+---
+
+# IPHONE COLORS
+
+When practical, include professional images representing the major factory colors available for each iPhone generation.
+
+If the product has a color selector:
+
+Selecting a color should preferably update the primary image to that color when corresponding images are available.
+
+Example:
+
+If someone chooses a black iPhone, show the black model.
+
+If someone chooses blue, show the blue model.
+
+Do not claim a color existed for a model when Apple never sold that color.
+
+---
+
+# MACBOOK COLORS
+
+Where applicable, associate the correct product images with actual finishes such as:
+
+* Silver
+* Space Gray
+* Midnight
+* Starlight
+* Space Black
+* Other legitimate finishes for that generation
+
+Do not show modern MacBook colors on an older MacBook that was never sold in that finish.
+
+---
+
+# CONSOLE COLORS / EDITIONS
+
+Use the proper image when a console has multiple versions.
+
+Examples:
+
+### PS5
+
+Differentiate:
+
+* PS5 Disc
+* PS5 Digital
+
+### Xbox
+
+Differentiate:
+
+* Series X
+* Series S
+* Black/white models when applicable
+* Storage versions where appearance differs
+
+### Nintendo
+
+Differentiate:
+
+* Switch
+* Switch OLED
+* Switch Lite
+* Switch 2
+
+Use the proper controller/Joy-Con colors where the listing specifies them.
+
+---
+
+# ARCADE MACHINE PICTURES — HIGHEST PRIORITY
+
+I specifically want excellent professional pictures for every Arcade1Up cabinet I told you I own.
+
+Find the correct official/professional product images for:
+
+1. Arcade1Up The Simpsons 4-Player Arcade Cabinet
+2. The Simpsons matching arcade stool
+3. Arcade1Up NBA Jam 4-Player Arcade Cabinet
+4. Arcade1Up Teenage Mutant Ninja Turtles / Turtles in Time 4-Player Cabinet
+5. Arcade1Up Dragon's Lair Cabinet
+6. Arcade1Up Street Fighter II Champion Edition Cabinet
+7. Arcade1Up Mortal Kombat II / Midway Cabinet
+8. Arcade1Up NFL Blitz Legends 4-Player Cabinet
+
+I want these listings to visually show the **actual cabinet artwork**.
+
+Do not use a generic arcade cabinet.
+
+Do not use a different Street Fighter cabinet.
+
+Do not use a different Mortal Kombat cabinet.
+
+Do not use a different TMNT cabinet.
+
+Match the exact models as closely as possible.
+
+Include multiple professional angles where available.
+
+---
+
+# MY OWN PHOTOS
+
+I have also taken real photos of my inventory.
+
+If those inventory photos are already uploaded into this Replit project, use them appropriately as additional gallery photos for the products I physically own.
+
+Professional manufacturer images should generally remain the clean main product-card image.
+
+My actual inventory photo can then be used in the gallery with a clear purpose such as showing the real item's current condition.
+
+For example:
+
+MAIN IMAGE:
+Professional Arcade1Up Simpsons cabinet image.
+
+ADDITIONAL IMAGE:
+Photo of the actual Simpsons cabinet I own.
+
+This gives the Shop a professional appearance while still showing customers the actual inventory.
+
+Do NOT distort, heavily edit or falsely enhance my real inventory photos.
+
+---
+
+# IMPORTANT ABOUT MY CHATGPT PHOTOS
+
+If you cannot access the inventory pictures I previously sent through ChatGPT because they are not physically present in this Replit project, DO NOT pretend you have them.
+
+Instead:
+
+1. Complete the professional manufacturer/product images.
+2. Build the gallery support.
+3. Leave clearly named spots for my real inventory photos.
+4. Tell me exactly which real inventory photos I still need to upload into Replit.
+
+Do not let missing personal photos prevent the rest of the Shop from being completed.
+
+---
+
+# VIDEO GAME COVER ART
+
+For games, use the correct cover art for:
+
+* Platform
+* Region/edition where identifiable
+* Actual game edition
+
+Examples:
+
+PS2 Silent Hill 2 should not show a PS5 or modern remake cover.
+
+Persona 3 FES should show the correct PS2 edition.
+
+Wind Waker HD should show the Wii U edition.
+
+Pokémon Platinum should show the Nintendo DS version.
+
+Do not substitute remakes, remasters or other platform releases unless that is the actual product being sold.
+
+---
+
+# ACCESSORY IMAGES
+
+Also add appropriate images for:
+
+* DualSense controller
+* Xbox controllers
+* Dreamcast controller
+* Backbone One PlayStation Edition
+* T-WOLF keyboard
+* Apple 20W adapter
+* Apple 61W adapter
+* HDMI cable
+* USB cables
+* Power banks
+* OtterBox cases
+
+For generic accessories where an exact professional photo cannot be confidently matched, use the real inventory photo once I upload it rather than showing a misleading product.
+
+---
+
+# IMAGE FALLBACK RULE
+
+Never silently use the wrong product image.
+
+If the exact image cannot be located confidently:
+
+Use a clean temporary placeholder clearly associated with that product internally and mark:
+
+`imageNeedsVerification: true`
+
+Do not show an unrelated product.
+
+---
+
+# IMAGE DATABASE / CATALOG FIELDS
+
+Each product should support:
+
+* primary image
+* gallery images
+* variant/color images where appropriate
+* image alt text
+* image verification status
+
+Product image information should be stored alongside the central product catalog so I can easily replace pictures later.
+
+Do not hard-code image paths throughout dozens of UI components.
+
+---
+
+# ACCESSIBILITY / SEO
+
+Every product image needs useful alt text.
+
+Examples:
+
+`Apple iPhone 15 Pro in Natural Titanium`
+
+`Arcade1Up The Simpsons 4-Player Arcade Cabinet`
+
+Do not use useless alt text such as:
+
+`image1`
+
+or
+
+`product picture`
+
+---
+
+# FINAL IMAGE AUDIT
+
+Before telling me the Shop update is finished, check the entire product catalog.
+
+Report:
+
+1. Total products
+2. Products with professional main images
+3. Products with multiple gallery images
+4. Products using real inventory pictures
+5. Products still missing images
+6. Products where the image needs verification
+7. Any images that I personally still need to upload
+
+The goal should be that **every publicly visible Shop product has a correct, professional image**.
+
+Do not consider the Shop complete if half of the products have missing pictures.
