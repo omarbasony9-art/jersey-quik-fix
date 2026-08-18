@@ -3,8 +3,10 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
   Search, ShoppingCart, X, Plus, Minus, Trash2, Filter,
   ChevronDown, ChevronRight, Star, SlidersHorizontal,
-  Package, AlertCircle, RefreshCcw, Tag, ChevronLeft
+  Package, AlertCircle, RefreshCcw, Tag, ChevronLeft,
+  Menu, User
 } from 'lucide-react';
+import { useUser, useClerk } from '@clerk/react';
 import { useSiteData } from '../context/SiteDataContext';
 import Footer from '../components/Footer';
 
@@ -134,7 +136,20 @@ export default function ShopPage() {
   const [loading, setLoading]         = useState(true);
   const [error, setError]             = useState<string | null>(null);
 
+  // ── Clerk auth ────────────────────────────────────────────────────────────
+  let clerkUser: ReturnType<typeof useUser>['user'] = null;
+  let openSignIn: (() => void) | undefined;
+  try {
+    // eslint-disable-next-line react-hooks/rules-of-hooks
+    const cu = useUser();
+    // eslint-disable-next-line react-hooks/rules-of-hooks
+    const clerk = useClerk();
+    clerkUser = cu.user ?? null;
+    openSignIn = () => clerk.openSignIn({});
+  } catch { /* Clerk not mounted */ }
+
   // ── Filter / search / pagination state ────────────────────────────────────
+  const [menuOpen, setMenuOpen]         = useState(false);
   const [mainCategory, setMainCategory] = useState('All');
   const [subcategory, setSubcategory]   = useState('');
   const [query, setQuery]               = useState('');
@@ -297,8 +312,18 @@ export default function ShopPage() {
 
       {/* Header */}
       <header className="sticky top-0 z-40 bg-card border-b border-border shadow-md">
-        <div className="max-w-7xl mx-auto px-4 md:px-6 h-16 flex items-center gap-4">
-          <a href="/" className="text-xl font-black tracking-tight uppercase italic text-foreground mr-4">
+        <div className="max-w-7xl mx-auto px-4 md:px-6 h-16 flex items-center gap-3">
+
+          {/* Hamburger — mobile only */}
+          <button
+            className="sm:hidden p-2 -ml-1 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+            onClick={() => setMenuOpen(o => !o)}
+            aria-label="Menu"
+          >
+            {menuOpen ? <X size={22} /> : <Menu size={22} />}
+          </button>
+
+          <a href="/shop" className="text-lg font-black tracking-tight uppercase italic text-foreground mr-2 shrink-0">
             {content.site.name}
           </a>
 
@@ -312,6 +337,21 @@ export default function ShopPage() {
           </div>
 
           <div className="flex-1 sm:hidden" />
+
+          {/* Sign-in button */}
+          <button
+            onClick={openSignIn}
+            title={clerkUser ? `Signed in as ${clerkUser.firstName || clerkUser.emailAddresses?.[0]?.emailAddress}` : 'Sign in'}
+            className="p-2 rounded-full hover:bg-muted transition-colors hidden sm:flex items-center justify-center"
+          >
+            {clerkUser ? (
+              <span className="w-[22px] h-[22px] rounded-full bg-primary text-primary-foreground text-[10px] font-black flex items-center justify-center">
+                {(clerkUser.firstName?.[0] || clerkUser.emailAddresses?.[0]?.emailAddress?.[0] || '?').toUpperCase()}
+              </span>
+            ) : (
+              <User size={20} className="text-muted-foreground" />
+            )}
+          </button>
 
           {/* Cart */}
           <div className="relative">
@@ -427,6 +467,73 @@ export default function ShopPage() {
           </div>
         )}
       </header>
+
+      {/* Mobile nav overlay — slides in from left on hamburger tap */}
+      <AnimatePresence>
+        {menuOpen && (
+          <>
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm sm:hidden"
+              onClick={() => setMenuOpen(false)}
+            />
+            <motion.div
+              initial={{ x: '-100%' }}
+              animate={{ x: 0 }}
+              exit={{ x: '-100%' }}
+              transition={{ type: 'spring', damping: 28, stiffness: 260 }}
+              className="fixed left-0 top-0 bottom-0 z-50 w-72 bg-card border-r border-border flex flex-col sm:hidden shadow-2xl"
+            >
+              {/* Overlay header */}
+              <div className="flex items-center justify-between px-5 py-4 border-b border-border">
+                <span className="font-black uppercase tracking-tight text-base">{content.site.name}</span>
+                <button onClick={() => setMenuOpen(false)} className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-colors">
+                  <X size={20} />
+                </button>
+              </div>
+
+              {/* Sign-in row */}
+              <button
+                onClick={() => { openSignIn?.(); setMenuOpen(false); }}
+                className="flex items-center gap-3 px-5 py-4 border-b border-border hover:bg-muted transition-colors text-left"
+              >
+                {clerkUser ? (
+                  <span className="w-8 h-8 rounded-full bg-primary text-primary-foreground text-xs font-black flex items-center justify-center shrink-0">
+                    {(clerkUser.firstName?.[0] || clerkUser.emailAddresses?.[0]?.emailAddress?.[0] || '?').toUpperCase()}
+                  </span>
+                ) : (
+                  <span className="w-8 h-8 rounded-full bg-muted flex items-center justify-center shrink-0">
+                    <User size={16} className="text-muted-foreground" />
+                  </span>
+                )}
+                <div>
+                  <p className="font-bold text-sm">{clerkUser ? (clerkUser.firstName || 'My Account') : 'Sign In'}</p>
+                  {clerkUser && <p className="text-xs text-muted-foreground truncate max-w-[160px]">{clerkUser.emailAddresses?.[0]?.emailAddress}</p>}
+                </div>
+              </button>
+
+              {/* Category links */}
+              <div className="flex-1 overflow-y-auto py-3">
+                <p className="px-5 py-2 text-[10px] font-black uppercase tracking-widest text-muted-foreground">Categories</p>
+                {Object.keys(CATEGORY_TREE).map(c => (
+                  <button
+                    key={c}
+                    onClick={() => { changeMain(c); setMenuOpen(false); }}
+                    className={`w-full text-left px-5 py-3 font-bold text-sm transition-colors flex items-center justify-between ${
+                      mainCategory === c ? 'text-primary bg-primary/10' : 'text-foreground hover:bg-muted'
+                    }`}
+                  >
+                    {c}
+                    {mainCategory === c && <span className="w-1.5 h-1.5 rounded-full bg-primary" />}
+                  </button>
+                ))}
+              </div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
 
       <main className="flex-1 max-w-7xl mx-auto w-full px-4 md:px-6 py-6">
 

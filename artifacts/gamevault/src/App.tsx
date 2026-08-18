@@ -13,7 +13,8 @@ import {
 } from '@tanstack/react-query';
 
 import { TooltipProvider } from '@/components/ui/tooltip';
-import { Wrench } from 'lucide-react';
+import { Wrench, User } from 'lucide-react';
+import { useUser, useClerk } from '@clerk/react';
 
 import ShopPage from './pages/ShopPage';
 import RepairPage from './pages/RepairPage';
@@ -44,6 +45,43 @@ function ScrollToTop() {
   return null;
 }
 
+/** Sign-in / user avatar button — gracefully no-ops if Clerk isn't configured */
+function AuthButton() {
+  let user: ReturnType<typeof useUser>['user'] = null;
+  let openSignIn: (() => void) | null = null;
+
+  try {
+    // eslint-disable-next-line react-hooks/rules-of-hooks
+    const u = useUser();
+    // eslint-disable-next-line react-hooks/rules-of-hooks
+    const clerk = useClerk();
+    user = u.user ?? null;
+    openSignIn = () => clerk.openSignIn({});
+  } catch {
+    return null; // ClerkProvider not mounted
+  }
+
+  const initial = user
+    ? (user.firstName?.[0] || user.emailAddresses?.[0]?.emailAddress?.[0] || '?').toUpperCase()
+    : null;
+
+  return (
+    <button
+      onClick={openSignIn ?? undefined}
+      title={user ? `Signed in as ${user.firstName || user.emailAddresses?.[0]?.emailAddress}` : 'Sign in'}
+      className="flex h-10 w-10 items-center justify-center rounded-full border border-border bg-card transition-all hover:border-primary hover:bg-primary/10 hover:shadow-[0_0_15px_rgba(249,115,22,0.3)]"
+    >
+      {initial ? (
+        <span className="h-5 w-5 rounded-full bg-primary text-primary-foreground text-[10px] font-black flex items-center justify-center">
+          {initial}
+        </span>
+      ) : (
+        <User className="h-4 w-4 text-muted-foreground" />
+      )}
+    </button>
+  );
+}
+
 /**
  * Shared navigation.
  * Hidden completely on the admin page.
@@ -57,7 +95,7 @@ function SharedNav() {
 
   return (
     <nav className="sticky top-0 z-50 w-full border-b border-border bg-background/95 backdrop-blur-xl">
-      <div className="mx-auto flex min-h-[76px] w-full max-w-7xl items-center justify-between gap-4 px-4 sm:px-6 lg:px-8">
+      <div className="mx-auto flex min-h-[64px] w-full max-w-7xl items-center justify-between gap-4 px-4 sm:px-6 lg:px-8">
 
         {/* Logo */}
         <Link
@@ -67,15 +105,14 @@ function SharedNav() {
           <img
             src={jerseyLogo}
             alt="Jersey Quik Fix"
-            className="h-12 w-12 rounded-xl object-contain"
+            className="h-10 w-10 rounded-xl object-contain"
           />
 
           <div className="hidden sm:block">
-            <div className="text-lg font-black leading-none tracking-tight text-foreground">
+            <div className="text-base font-black leading-none tracking-tight text-foreground">
               Jersey Quik Fix
             </div>
-
-            <div className="mt-1 text-[10px] font-bold uppercase tracking-[0.18em] text-muted-foreground">
+            <div className="mt-0.5 text-[10px] font-bold uppercase tracking-[0.18em] text-muted-foreground">
               Device Repair & Electronics
             </div>
           </div>
@@ -83,7 +120,6 @@ function SharedNav() {
 
         {/* Main navigation */}
         <div className="flex gap-1 rounded-full border border-border bg-card p-1 sm:gap-2">
-
           <Link
             href="/"
             className={`rounded-full px-3 py-2 text-xs font-bold uppercase tracking-wider transition-all sm:px-6 sm:text-sm ${
@@ -94,7 +130,6 @@ function SharedNav() {
           >
             Repair
           </Link>
-
           <Link
             href="/shop"
             className={`rounded-full px-3 py-2 text-xs font-bold uppercase tracking-wider transition-all sm:px-6 sm:text-sm ${
@@ -105,7 +140,6 @@ function SharedNav() {
           >
             Shop
           </Link>
-
           <Link
             href="/community"
             className={`rounded-full px-3 py-2 text-xs font-bold uppercase tracking-wider transition-all sm:px-6 sm:text-sm ${
@@ -116,16 +150,16 @@ function SharedNav() {
           >
             Community
           </Link>
-
         </div>
 
-        {/* Admin wrench icon */}
-        <div className="hidden w-[100px] justify-end sm:flex">
+        {/* Right side: sign-in + admin wrench */}
+        <div className="flex items-center gap-2">
+          <AuthButton />
           <Link
             href="/admin"
             aria-label="Open admin"
             title="Admin"
-            className="flex h-10 w-10 items-center justify-center rounded-full border border-border bg-card transition-all hover:border-primary hover:bg-primary/10 hover:shadow-[0_0_15px_rgba(249,115,22,0.3)]"
+            className="hidden sm:flex h-10 w-10 items-center justify-center rounded-full border border-border bg-card transition-all hover:border-primary hover:bg-primary/10 hover:shadow-[0_0_15px_rgba(249,115,22,0.3)]"
           >
             <Wrench className="h-4 w-4 text-primary" />
           </Link>
