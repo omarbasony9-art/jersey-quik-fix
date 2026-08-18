@@ -60,9 +60,10 @@ export default function ShopPage() {
     let cancelled = false;
     setProductsLoading(true);
     fetch(`${API_BASE}/products?limit=200`)
-      .then(r => r.ok ? r.json() : null)
+      .then(r => r.ok ? r.json() : Promise.reject(new Error(`HTTP ${r.status}`)))
       .then(data => {
-        if (cancelled || !data?.products) return;
+        if (cancelled) return;
+        if (!data?.products) { setProductsLoading(false); return; }
         const prods: Product[] = (data.products as any[])
           .filter(p => p.active)
           .map(p => ({
