@@ -8,7 +8,7 @@
 import { Router } from "express";
 import { pool } from "@workspace/db";
 import { randomUUID } from "crypto";
-import { writeFileSync, mkdirSync } from "fs";
+import { writeFileSync, mkdirSync, readdirSync, statSync, unlinkSync } from "fs";
 import { join } from "path";
 import { requireAdminAuth } from "../middleware/adminAuth";
 
@@ -353,6 +353,54 @@ adminProductsRouter.patch("/admin/inventory/:productId", async (req, res): Promi
   } catch (err) {
     console.error("PATCH /api/admin/inventory/:productId error:", err);
     res.status(500).json({ error: "Failed to update inventory" });
+  }
+});
+
+// ── Image list ───────────────────────────────────────────────────────────────
+// GET /admin/product-images/list
+// Returns: { images: Array<{ filename, url, size, modified }> } sorted newest first
+adminProductsRouter.get("/admin/product-images/list", (req, res) => {
+  try {
+    mkdirSync(PRODUCT_IMAGES_DIR, { recursive: true });
+    const IMAGE_RE = /\.(jpe?g|png|webp|gif|svg)$/i;
+    const images = readdirSync(PRODUCT_IMAGES_DIR)
+      .filter(f => IMAGE_RE.test(f))
+      .map(f => {
+        const st = statSync(join(PRODUCT_IMAGES_DIR, f));
+        return {
+          filename: f,
+          url: `/api/product-images/${f}`,
+          size: st.size,
+          modified: st.mtime.toISOString(),
+        };
+      })
+      .sort((a, b) => b.modified.localeCompare(a.modified));
+    return res.json({ images });
+  } catch (err: any) {
+    console.error("GET /admin/product-images/list error:", err);
+    return res.status(500).json({ error: err?.message ?? "Failed to list images." });
+  }
+});
+
+// ── Image delete ─────────────────────────────────────────────────────────────
+// DELETE /admin/product-images/:filename
+adminProductsRouter.delete("/admin/product-images/:filename", (req, res) => {
+  try {
+    const raw = req.params.filename ?? "";
+    // Reject path traversal or characters that shouldn't appear in a filename
+    if (!raw || /[/\\]/.test(raw)) {
+      return res.status(400).json({ error: "Invalid filename." });
+    }
+    const filepath = join(PRODUCT_IMAGES_DIR, raw);
+    // Ensure the resolved path is still inside PRODUCT_IMAGES_DIR
+    if (!filepath.startsWith(PRODUCT_IMAGES_DIR)) {
+      return res.status(400).json({ error: "Invalid path." });
+    }
+    unlinkSync(filepath);
+    return res.json({ ok: true });
+  } catch (err: any) {
+    console.error("DELETE /admin/product-images/:filename error:", err);
+    return res.status(500).json({ error: err?.message ?? "Failed to delete image." });
   }
 });
 

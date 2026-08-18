@@ -10,6 +10,7 @@ import {
 } from 'lucide-react';
 import { useSiteData, DEFAULT_CONTENT, type SiteContent } from '../context/SiteDataContext';
 import jerseyLogo from '../assets/jersey-quik-fix-logo.png';
+import ImageManagerField from '../components/ImageManagerField';
 
 const API_BASE = "/api";
 const SESSION_KEY = "gv_admin_token";
@@ -875,11 +876,13 @@ export default function AdminPage() {
                             <input type="number" step="0.01" value={(editingProduct.price / 100).toFixed(2)}
                               onChange={e => setEditingProduct(p => p ? {...p, price: Math.round(parseFloat(e.target.value) * 100)} : p)} className={inputCls} />
                           </div>
-                          <div>
-                            <label className={labelCls}>Primary Image URL</label>
-                            <input value={editingProduct.images[0] ?? ''} onChange={e => setEditingProduct(p => p ? {...p, images: [e.target.value, ...p.images.slice(1)]} : p)} className={inputCls} placeholder="https://..." />
-                            {editingProduct.images[0] && <img src={editingProduct.images[0]} alt="" className="mt-2 h-28 w-full object-cover rounded-xl border border-border" onError={e => (e.currentTarget.style.display='none')} />}
-                          </div>
+                          <ImageManagerField
+                            label="Product Image"
+                            value={editingProduct.images[0] ?? ''}
+                            onChange={url => setEditingProduct(p => p ? { ...p, images: [url, ...p.images.slice(1)] } : p)}
+                            adminToken={adminToken ?? ''}
+                            apiBase={API_BASE}
+                          />
                           <div className="flex items-center gap-3">
                             <label className={labelCls + ' mb-0'}>Visible to customers</label>
                             <button onClick={() => setEditingProduct(p => p ? {...p, active: !p.active} : p)}
