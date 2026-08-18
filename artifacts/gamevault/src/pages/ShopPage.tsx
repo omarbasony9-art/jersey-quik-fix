@@ -613,182 +613,227 @@ export default function ShopPage() {
 
       <Footer />
 
-      {/* ── Product Detail Modal ──────────────────────────────────────────────── */}
+      {/* ── Product Detail — right-side panel, same format as shop cards ──────── */}
       <AnimatePresence>
         {selectedProduct && (
-          <motion.div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4"
-            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-            <motion.div className="absolute inset-0 bg-background/80 backdrop-blur-sm" onClick={() => setSelectedProduct(null)} />
+          <>
+            {/* Backdrop */}
             <motion.div
-              initial={{ opacity: 0, y: 40 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 40 }}
-              className="relative bg-card border border-border rounded-t-3xl sm:rounded-3xl w-full sm:max-w-3xl max-h-[95vh] overflow-y-auto z-10 flex flex-col md:flex-row">
+              key="backdrop"
+              initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+              className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm"
+              onClick={() => setSelectedProduct(null)}
+            />
 
-              <button onClick={() => setSelectedProduct(null)}
-                className="absolute top-4 right-4 z-20 p-2 bg-card border border-border rounded-full hover:bg-muted transition-colors">
-                <X size={18} />
-              </button>
+            {/* Panel — slides in from right */}
+            <motion.div
+              key="panel"
+              initial={{ x: '100%' }} animate={{ x: 0 }} exit={{ x: '100%' }}
+              transition={{ type: 'spring', damping: 28, stiffness: 260 }}
+              className="fixed right-0 top-0 bottom-0 z-50 w-full sm:w-[500px] bg-card border-l border-border flex flex-col shadow-2xl"
+            >
+              {/* ── Image area ── */}
+              <div className="relative flex-shrink-0 bg-background overflow-hidden" style={{ aspectRatio: '1/1', maxHeight: '42vh' }}>
+                {/* Close */}
+                <button
+                  onClick={() => setSelectedProduct(null)}
+                  className="absolute top-3 left-3 z-10 p-2 bg-black/50 hover:bg-black/70 text-white rounded-full transition-colors"
+                  aria-label="Close"
+                ><X size={16} /></button>
 
-              {/* Left: Images */}
-              <div className="md:w-5/12 flex-shrink-0 p-4">
-                <div className="aspect-square rounded-2xl overflow-hidden bg-muted border border-border">
-                  <LazyImg
-                    src={selectedProduct.images?.[selectedImg] ?? selectedProduct.images?.[0]}
-                    alt={selectedProduct.name}
-                    className="w-full h-full"
-                  />
-                </div>
-                {selectedProduct.images?.length > 1 && (
-                  <div className="flex gap-2 mt-3 flex-wrap">
-                    {selectedProduct.images.map((img, i) => (
-                      <button key={i} onClick={() => setSelectedImg(i)}
-                        className={`w-14 h-14 rounded-xl overflow-hidden border-2 transition-all ${selectedImg === i ? 'border-primary' : 'border-border'}`}>
-                        <LazyImg src={img} alt={`${selectedProduct.name} ${i + 1}`} className="w-full h-full" />
-                      </button>
-                    ))}
-                  </div>
-                )}
-              </div>
-
-              {/* Right: Details */}
-              <div className="flex-1 p-4 md:p-6 flex flex-col">
+                {/* Badge */}
                 {selectedProduct.badge && (
-                  <span className="inline-block bg-primary text-primary-foreground text-xs font-black px-2 py-0.5 rounded-full uppercase tracking-wider w-max mb-2">
+                  <span className="absolute top-3 right-3 z-10 bg-primary text-primary-foreground text-[10px] font-black px-2.5 py-1 rounded-full uppercase tracking-wider">
                     {selectedProduct.badge}
                   </span>
                 )}
-                {!selectedProduct.verified && (
-                  <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-xl p-2 mb-3 text-xs text-yellow-400 font-bold flex items-center gap-2">
-                    <AlertCircle size={14} /> {selectedProduct.verification_note ?? 'This item needs review before purchase — contact us.'}
-                  </div>
+
+                <LazyImg
+                  src={selectedProduct.images?.[selectedImg] ?? selectedProduct.images?.[0]}
+                  alt={selectedProduct.name}
+                  className="w-full h-full"
+                />
+
+                {/* Image prev/next */}
+                {selectedProduct.images?.length > 1 && (
+                  <>
+                    <button
+                      onClick={() => setSelectedImg(i => (i - 1 + selectedProduct.images.length) % selectedProduct.images.length)}
+                      className="absolute left-3 top-1/2 -translate-y-1/2 bg-black/50 hover:bg-black/70 text-white rounded-full w-8 h-8 flex items-center justify-center transition-colors text-lg"
+                    >‹</button>
+                    <button
+                      onClick={() => setSelectedImg(i => (i + 1) % selectedProduct.images.length)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 bg-black/50 hover:bg-black/70 text-white rounded-full w-8 h-8 flex items-center justify-center transition-colors text-lg"
+                    >›</button>
+                  </>
                 )}
+              </div>
 
-                <p className="text-xs text-muted-foreground font-bold uppercase tracking-wider">{selectedProduct.subcategory ?? selectedProduct.category}</p>
-                <h2 className="text-xl font-black mt-1 mb-3 leading-tight">{selectedProduct.name}</h2>
+              {/* Thumbnail strip */}
+              {selectedProduct.images?.length > 1 && (
+                <div className="flex gap-1.5 px-4 py-2 border-b border-border overflow-x-auto flex-shrink-0 bg-background/60">
+                  {selectedProduct.images.map((img, i) => (
+                    <button key={i} onClick={() => setSelectedImg(i)}
+                      className={`w-11 h-11 rounded-lg overflow-hidden border-2 flex-shrink-0 transition-all ${i === selectedImg ? 'border-primary' : 'border-transparent opacity-50 hover:opacity-80'}`}>
+                      <LazyImg src={img} alt="" className="w-full h-full" />
+                    </button>
+                  ))}
+                </div>
+              )}
 
-                <div className="flex items-center gap-2 mb-4">
-                  <div className="flex gap-0.5">
-                    {Array.from({ length: 5 }).map((_, i) => (
-                      <Star key={i} size={14} className={i < Math.round(selectedProduct.rating) ? 'text-primary fill-primary' : 'text-muted-foreground'} />
+              {/* ── Scrollable content ── */}
+              <div className="flex-1 overflow-y-auto">
+                <div className="p-5 space-y-4">
+
+                  {/* Unverified warning */}
+                  {!selectedProduct.verified && (
+                    <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-xl p-3 text-xs text-yellow-400 font-bold flex items-center gap-2">
+                      <AlertCircle size={14} /> {selectedProduct.verification_note ?? 'This item needs review before purchase — contact us.'}
+                    </div>
+                  )}
+
+                  {/* Category + name */}
+                  <div>
+                    <p className="text-[11px] font-black uppercase tracking-widest text-muted-foreground mb-1">
+                      {selectedProduct.subcategory ?? selectedProduct.category}
+                    </p>
+                    <h2 className="text-xl font-black leading-tight">{selectedProduct.name}</h2>
+                  </div>
+
+                  {/* Stars */}
+                  <div className="flex items-center gap-1.5">
+                    <div className="flex gap-0.5">
+                      {Array.from({ length: 5 }).map((_, i) => (
+                        <Star key={i} size={13} className={i < Math.round(selectedProduct.rating) ? 'text-primary fill-primary' : 'text-muted-foreground'} />
+                      ))}
+                    </div>
+                    <span className="text-xs text-muted-foreground font-medium">{selectedProduct.rating}/5</span>
+                  </div>
+
+                  {/* Price */}
+                  <div className="flex items-baseline gap-3 flex-wrap">
+                    <span className="text-2xl font-black text-primary">{formatPrice(detailPrice)}</span>
+                    {selectedProduct.old_price && (
+                      <span className="text-sm font-bold text-muted-foreground line-through">{formatPrice(selectedProduct.old_price)}</span>
+                    )}
+                    {selectedProduct.old_price && (
+                      <span className="text-xs font-black text-green-400 bg-green-400/10 px-2 py-0.5 rounded-full">
+                        Save {formatPrice(Number(selectedProduct.old_price) - detailPrice)}
+                      </span>
+                    )}
+                  </div>
+                  {selectedProduct.price_note && (
+                    <p className="text-xs text-muted-foreground -mt-2">{selectedProduct.price_note}</p>
+                  )}
+
+                  {/* Variants */}
+                  {selectedProduct.configuration?.storageOptions && (
+                    <div>
+                      <p className="text-[11px] font-black uppercase tracking-wider text-muted-foreground mb-2">Storage</p>
+                      <div className="flex flex-wrap gap-1.5">
+                        {selectedProduct.configuration.storageOptions.map(s => (
+                          <button key={s} onClick={() => setSelStorage(s)}
+                            className={`px-3 py-1.5 rounded-xl text-xs font-bold border transition-all ${selStorage === s ? 'bg-primary text-primary-foreground border-primary' : 'bg-background border-border hover:border-primary'}`}>
+                            {s}{selectedProduct.configuration?.pricingByStorage?.[s] ? ` (${selectedProduct.configuration.pricingByStorage[s] > 0 ? '+' : ''}${formatPrice(selectedProduct.configuration.pricingByStorage[s])})` : ''}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {selectedProduct.configuration?.ramOptions && (
+                    <div>
+                      <p className="text-[11px] font-black uppercase tracking-wider text-muted-foreground mb-2">RAM</p>
+                      <div className="flex flex-wrap gap-1.5">
+                        {selectedProduct.configuration.ramOptions.map(r => (
+                          <button key={r} onClick={() => setSelRam(r)}
+                            className={`px-3 py-1.5 rounded-xl text-xs font-bold border transition-all ${selRam === r ? 'bg-primary text-primary-foreground border-primary' : 'bg-background border-border hover:border-primary'}`}>
+                            {r}{selectedProduct.configuration?.pricingByRam?.[r] ? ` (${selectedProduct.configuration.pricingByRam[r] > 0 ? '+' : ''}${formatPrice(selectedProduct.configuration.pricingByRam[r])})` : ''}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {selectedProduct.configuration?.colors && !selectedProduct.configuration?.ramOptions && (
+                    <div>
+                      <p className="text-[11px] font-black uppercase tracking-wider text-muted-foreground mb-2">Color</p>
+                      <div className="flex flex-wrap gap-1.5">
+                        {selectedProduct.configuration.colors.map(c => (
+                          <button key={c} onClick={() => setSelColor(c)}
+                            className={`px-3 py-1.5 rounded-xl text-xs font-bold border transition-all ${selColor === c ? 'bg-primary text-primary-foreground border-primary' : 'bg-background border-border hover:border-primary'}`}>
+                            {c}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {selectedProduct.configuration?.conditions && (
+                    <div>
+                      <p className="text-[11px] font-black uppercase tracking-wider text-muted-foreground mb-2">Condition</p>
+                      <div className="flex flex-wrap gap-1.5">
+                        {selectedProduct.configuration.conditions.map(c => (
+                          <button key={c} onClick={() => setSelCondition(c)}
+                            className={`px-3 py-1.5 rounded-xl text-xs font-bold border transition-all ${selCondition === c ? 'bg-primary text-primary-foreground border-primary' : 'bg-background border-border hover:border-primary'}`}>
+                            {c}{selectedProduct.configuration?.conditionPricing?.[c] ? ` (${selectedProduct.configuration.conditionPricing[c] > 0 ? '+' : ''}${formatPrice(selectedProduct.configuration.conditionPricing[c])})` : ''}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Availability */}
+                  {(() => { const av = availText(selectedProduct); return (
+                    <div className="flex items-center gap-2">
+                      <span className={`text-sm font-bold ${av.cls}`}>{av.text}</span>
+                    </div>
+                  ); })()}
+
+                  {/* Pickup/delivery note */}
+                  {selectedProduct.configuration?.availability && (
+                    <div className="bg-blue-500/10 border border-blue-500/30 rounded-xl p-3 text-xs text-blue-400 font-medium">
+                      📦 {selectedProduct.configuration.availability}
+                    </div>
+                  )}
+
+                  {/* Description */}
+                  {selectedProduct.description && (
+                    <p className="text-sm text-muted-foreground leading-relaxed border-t border-border pt-4">
+                      {selectedProduct.description}
+                    </p>
+                  )}
+
+                  {/* Tags */}
+                  <div className="flex items-center gap-2 flex-wrap pt-1">
+                    <Tag size={11} className="text-muted-foreground/60" />
+                    {[selectedProduct.category, selectedProduct.subcategory, selectedProduct.condition].filter(Boolean).map(t => (
+                      <span key={t} className="text-[11px] text-muted-foreground bg-muted/50 px-2 py-0.5 rounded-full">{t}</span>
                     ))}
                   </div>
-                  <span className="text-xs text-muted-foreground">{selectedProduct.rating}/5</span>
                 </div>
+              </div>
 
-                {/* Variants */}
-                {selectedProduct.configuration?.storageOptions && (
-                  <div className="mb-4">
-                    <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-2">Storage</p>
-                    <div className="flex flex-wrap gap-1.5">
-                      {selectedProduct.configuration.storageOptions.map(s => (
-                        <button key={s} onClick={() => setSelStorage(s)}
-                          className={`px-3 py-1.5 rounded-xl text-xs font-bold border transition-all ${selStorage === s ? 'bg-primary text-primary-foreground border-primary' : 'bg-background border-border hover:border-primary'}`}>
-                          {s}
-                          {selectedProduct.configuration?.pricingByStorage?.[s] != null && selectedProduct.configuration.pricingByStorage[s] !== 0
-                            ? ` (${selectedProduct.configuration.pricingByStorage[s] > 0 ? '+' : ''}${formatPrice(selectedProduct.configuration.pricingByStorage[s])})`
-                            : ''}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {selectedProduct.configuration?.ramOptions && (
-                  <div className="mb-4">
-                    <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-2">RAM</p>
-                    <div className="flex flex-wrap gap-1.5">
-                      {selectedProduct.configuration.ramOptions.map(r => (
-                        <button key={r} onClick={() => setSelRam(r)}
-                          className={`px-3 py-1.5 rounded-xl text-xs font-bold border transition-all ${selRam === r ? 'bg-primary text-primary-foreground border-primary' : 'bg-background border-border hover:border-primary'}`}>
-                          {r}
-                          {selectedProduct.configuration?.pricingByRam?.[r] != null && selectedProduct.configuration.pricingByRam[r] !== 0
-                            ? ` (${selectedProduct.configuration.pricingByRam[r] > 0 ? '+' : ''}${formatPrice(selectedProduct.configuration.pricingByRam[r])})`
-                            : ''}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {selectedProduct.configuration?.colors && !selectedProduct.configuration?.ramOptions && (
-                  <div className="mb-4">
-                    <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-2">Color</p>
-                    <div className="flex flex-wrap gap-1.5">
-                      {selectedProduct.configuration.colors.map(c => (
-                        <button key={c} onClick={() => setSelColor(c)}
-                          className={`px-3 py-1.5 rounded-xl text-xs font-bold border transition-all ${selColor === c ? 'bg-primary text-primary-foreground border-primary' : 'bg-background border-border hover:border-primary'}`}>
-                          {c}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {selectedProduct.configuration?.conditions && (
-                  <div className="mb-4">
-                    <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-2">Condition</p>
-                    <div className="flex flex-wrap gap-1.5">
-                      {selectedProduct.configuration.conditions.map(c => (
-                        <button key={c} onClick={() => setSelCondition(c)}
-                          className={`px-3 py-1.5 rounded-xl text-xs font-bold border transition-all ${selCondition === c ? 'bg-primary text-primary-foreground border-primary' : 'bg-background border-border hover:border-primary'}`}>
-                          {c}
-                          {selectedProduct.configuration?.conditionPricing?.[c] != null && selectedProduct.configuration.conditionPricing[c] !== 0
-                            ? ` (${selectedProduct.configuration.conditionPricing[c] > 0 ? '+' : ''}${formatPrice(selectedProduct.configuration.conditionPricing[c])})`
-                            : ''}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {/* Price and availability */}
-                <div className="flex items-end justify-between mb-4">
-                  <div>
-                    <p className="text-2xl font-black">{formatPrice(detailPrice)}</p>
-                    {selectedProduct.old_price && (
-                      <p className="text-sm line-through text-muted-foreground">{formatPrice(selectedProduct.old_price)}</p>
-                    )}
-                    {selectedProduct.price_note && (
-                      <p className="text-xs text-muted-foreground mt-0.5">{selectedProduct.price_note}</p>
-                    )}
-                  </div>
-                  <div className="text-right">
-                    {(() => { const av = availText(selectedProduct); return <p className={`text-sm font-bold ${av.cls}`}>{av.text}</p>; })()}
-                  </div>
-                </div>
-
-                {/* Special message for pickup-only items */}
-                {selectedProduct.configuration?.availability && (
-                  <div className="bg-blue-500/10 border border-blue-500/30 rounded-xl p-3 mb-4 text-xs text-blue-400 font-medium">
-                    📦 {selectedProduct.configuration.availability}
-                  </div>
-                )}
-
-                {/* Add to Cart */}
+              {/* ── Sticky CTA ── */}
+              <div className="flex-shrink-0 p-4 border-t border-border bg-background/70 backdrop-blur-md">
                 <button
                   onClick={() => {
                     addToCart(selectedProduct, selStorage, selColor || undefined, selCondition || undefined, selRam || undefined);
                     setSelectedProduct(null);
                   }}
                   disabled={!selectedProduct.verified}
-                  className="w-full bg-primary text-primary-foreground py-3 rounded-xl font-black text-sm hover:brightness-110 active:scale-[0.98] transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 mb-3">
+                  className="w-full bg-primary text-primary-foreground py-3.5 rounded-xl font-black text-sm hover:brightness-110 active:scale-[0.98] transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 shadow-lg shadow-primary/20"
+                >
+                  <ShoppingCart size={16} />
                   {selectedProduct.configuration?.pickupOnly
-                    ? '📞 Contact for Purchase'
-                    : selectedProduct.verified ? '🛒 Add to Cart' : '⚠️ Item Needs Verification'}
+                    ? 'Contact for Purchase'
+                    : selectedProduct.verified
+                      ? `Add to Cart — ${formatPrice(detailPrice)}`
+                      : 'Item Needs Verification'}
                 </button>
-
-                {/* Description */}
-                <p className="text-sm text-muted-foreground leading-relaxed">{selectedProduct.description}</p>
-
-                {/* Tags */}
-                <div className="flex items-center gap-2 mt-4 flex-wrap">
-                  <Tag size={12} className="text-muted-foreground" />
-                  <span className="text-xs text-muted-foreground">{selectedProduct.category}</span>
-                  {selectedProduct.subcategory && <span className="text-xs text-muted-foreground">{selectedProduct.subcategory}</span>}
-                  <span className="text-xs text-muted-foreground">{selectedProduct.condition}</span>
-                </div>
               </div>
             </motion.div>
-          </motion.div>
+          </>
         )}
       </AnimatePresence>
     </div>

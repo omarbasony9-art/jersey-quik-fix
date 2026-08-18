@@ -98,6 +98,9 @@ export default function ShopPage() {
   const [cart, setCart] = useState<CartItem[]>([]);
   const [menuOpen, setMenuOpen] = useState(false);
   const [cartOpen, setCartOpen] = useState(false);
+  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
+  const [selectedImageIdx, setSelectedImageIdx] = useState(0);
+  const [addedToCart, setAddedToCart] = useState(false);
   const [checkoutLoading, setCheckoutLoading] = useState(false);
   const [checkoutBanner, setCheckoutBanner] = useState<{ type: 'success' | 'error'; text: string } | null>(() => {
     const params = new URLSearchParams(window.location.search);
@@ -167,6 +170,20 @@ export default function ShopPage() {
   const [tradeSubmitting, setTradeSubmitting] = useState(false);
   const [tradeStatus, setTradeStatus] = useState<'idle' | 'success' | 'error'>('idle');
   const [tradeError, setTradeError] = useState('');
+
+  // Close product detail on ESC
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => { if (e.key === 'Escape') setSelectedProduct(null); };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, []);
+
+  // Open a product in the detail panel
+  const openProduct = (p: Product) => {
+    setSelectedProduct(p);
+    setSelectedImageIdx(0);
+    setAddedToCart(false);
+  };
 
   // Filtering products — search across all text fields, category uses fixed tabs
   const filteredProducts = useMemo(() => {
@@ -860,14 +877,15 @@ export default function ShopPage() {
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-8">
             <AnimatePresence>
               {filteredProducts.map((product, idx) => (
-                <motion.div 
+                <motion.div
                   layout
                   initial={{ opacity: 0, scale: 0.9 }}
                   animate={{ opacity: 1, scale: 1 }}
                   exit={{ opacity: 0, scale: 0.9 }}
                   transition={{ duration: 0.2, delay: idx * 0.05 }}
-                  key={product.id} 
-                  className="bg-card rounded-2xl overflow-hidden border border-border hover:border-t-2 hover:border-primary hover:scale-[1.02] transition-all duration-300 group flex flex-col shadow-sm hover:shadow-[0_0_30px_rgba(245,158,11,0.1)]"
+                  key={product.id}
+                  onClick={() => openProduct(product)}
+                  className="bg-card rounded-2xl overflow-hidden border border-border hover:border-primary hover:scale-[1.02] transition-all duration-300 group flex flex-col shadow-sm hover:shadow-[0_0_30px_rgba(245,158,11,0.12)] cursor-pointer"
                 >
                   <div className="relative min-h-[220px] md:min-h-[260px] overflow-hidden bg-black/50">
                     {product.badge && (
@@ -875,45 +893,45 @@ export default function ShopPage() {
                         {product.badge}
                       </div>
                     )}
-                    <img 
+                    <img
                       src={(product.images && product.images.length > 0) ? product.images[0] : product.image}
                       alt={product.name}
                       loading="lazy"
                       className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
                     />
-                    {/* Add to cart overlay button on desktop */}
-                    <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity hidden md:flex items-center justify-center backdrop-blur-[2px]">
-                      <button 
-                        onClick={() => addToCart(product)}
-                        className="bg-primary text-primary-foreground px-6 py-3 rounded-xl font-black uppercase translate-y-4 group-hover:translate-y-0 transition-all hover:scale-105 active:scale-95 shadow-xl flex items-center gap-2"
+                    {/* Quick-add overlay on desktop */}
+                    <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity hidden md:flex items-end justify-center pb-5 backdrop-blur-[2px]">
+                      <button
+                        onClick={e => { e.stopPropagation(); addToCart(product); }}
+                        className="bg-primary text-primary-foreground px-5 py-2.5 rounded-xl font-black uppercase text-sm translate-y-2 group-hover:translate-y-0 transition-all hover:scale-105 active:scale-95 shadow-xl flex items-center gap-2"
                       >
-                        <ShoppingCart size={18} /> Add
+                        <ShoppingCart size={16} /> Quick Add
                       </button>
                     </div>
                   </div>
+
                   <div className="p-4 flex flex-col flex-1">
                     <div className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-1">{product.category}</div>
-                    <h3 className="font-black text-lg tracking-tight leading-tight mb-2 flex-1 group-hover:text-primary transition-colors line-clamp-2">
+                    <h3 className="font-black text-base md:text-lg tracking-tight leading-tight mb-2 flex-1 group-hover:text-primary transition-colors line-clamp-2">
                       {product.name}
                     </h3>
-
                     <div className="flex items-center gap-1 mb-3 text-yellow-400">
-                      <Star size={14} fill="currentColor" />
+                      <Star size={13} fill="currentColor" />
                       <span className="text-xs font-bold text-foreground">{product.rating}</span>
                     </div>
-
                     <div className="flex items-end justify-between mt-auto">
                       <div>
-                        {(product.oldPrice || product.salePrice) && (
-                          <div className="text-xs text-muted-foreground line-through font-bold">${product.oldPrice ?? product.salePrice}</div>
+                        {(product.oldPrice || (product as any).salePrice) && (
+                          <div className="text-xs text-muted-foreground line-through font-bold">${product.oldPrice ?? (product as any).salePrice}</div>
                         )}
                         <div className="font-black text-xl text-primary">${product.price}</div>
                       </div>
-                      <button 
-                        onClick={() => addToCart(product)}
+                      <button
+                        onClick={e => { e.stopPropagation(); openProduct(product); }}
                         className="md:hidden bg-primary/20 text-primary p-2 rounded-lg hover:bg-primary hover:text-primary-foreground transition-colors"
+                        aria-label="View product"
                       >
-                        <ShoppingCart size={20} />
+                        <ChevronRight size={18} />
                       </button>
                     </div>
                   </div>
@@ -1195,6 +1213,207 @@ export default function ShopPage() {
             </div>
           </div>
         </section>
+
+      {/* ── Product Detail Slide-Over ─────────────────────────────────────── */}
+      <AnimatePresence>
+        {selectedProduct && (() => {
+          const p = selectedProduct;
+          const imgs: string[] = (p.images && p.images.length > 0) ? p.images : (p.image ? [p.image] : []);
+          const inCart = cart.some(i => i.id === p.id);
+          const handleAdd = () => {
+            addToCart(p);
+            setAddedToCart(true);
+            setTimeout(() => setAddedToCart(false), 2000);
+          };
+          return (
+            <>
+              {/* Backdrop */}
+              <motion.div
+                key="backdrop"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                onClick={() => setSelectedProduct(null)}
+                className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50"
+              />
+
+              {/* Panel */}
+              <motion.div
+                key="panel"
+                initial={{ x: '100%' }}
+                animate={{ x: 0 }}
+                exit={{ x: '100%' }}
+                transition={{ type: 'spring', damping: 28, stiffness: 280 }}
+                className="fixed right-0 top-0 bottom-0 z-50 w-full sm:w-[480px] bg-card border-l border-border flex flex-col shadow-2xl overflow-hidden"
+              >
+                {/* ── Image area ── */}
+                <div className="relative bg-black/60 flex-shrink-0" style={{ minHeight: 300, maxHeight: '45vh' }}>
+                  {/* Close */}
+                  <button
+                    onClick={() => setSelectedProduct(null)}
+                    className="absolute top-4 left-4 z-10 bg-black/60 hover:bg-black/80 text-white rounded-full w-9 h-9 flex items-center justify-center transition-colors"
+                    aria-label="Close"
+                  >
+                    <X size={18} />
+                  </button>
+
+                  {/* Badge */}
+                  {p.badge && (
+                    <div className="absolute top-4 right-4 z-10 bg-primary text-primary-foreground text-xs font-black px-3 py-1.5 rounded-full uppercase tracking-wider shadow-lg">
+                      {p.badge}
+                    </div>
+                  )}
+
+                  {/* Main image */}
+                  {imgs.length > 0 ? (
+                    <img
+                      src={imgs[selectedImageIdx] ?? imgs[0]}
+                      alt={p.name}
+                      className="w-full h-full object-contain"
+                      style={{ minHeight: 300, maxHeight: '45vh' }}
+                    />
+                  ) : (
+                    <div className="w-full flex items-center justify-center text-muted-foreground/30" style={{ minHeight: 300 }}>
+                      <ShoppingCart size={64} />
+                    </div>
+                  )}
+
+                  {/* Prev / Next arrows */}
+                  {imgs.length > 1 && (
+                    <>
+                      <button
+                        onClick={() => setSelectedImageIdx(i => (i - 1 + imgs.length) % imgs.length)}
+                        className="absolute left-3 top-1/2 -translate-y-1/2 bg-black/60 hover:bg-black/80 text-white rounded-full w-8 h-8 flex items-center justify-center transition-colors"
+                      >‹</button>
+                      <button
+                        onClick={() => setSelectedImageIdx(i => (i + 1) % imgs.length)}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 bg-black/60 hover:bg-black/80 text-white rounded-full w-8 h-8 flex items-center justify-center transition-colors"
+                      >›</button>
+                    </>
+                  )}
+                </div>
+
+                {/* Thumbnail strip */}
+                {imgs.length > 1 && (
+                  <div className="flex gap-1.5 px-4 py-2 bg-background/50 border-b border-border overflow-x-auto flex-shrink-0">
+                    {imgs.map((src, i) => (
+                      <button
+                        key={i}
+                        onClick={() => setSelectedImageIdx(i)}
+                        className={`w-12 h-12 rounded-lg overflow-hidden flex-shrink-0 border-2 transition-colors ${i === selectedImageIdx ? 'border-primary' : 'border-transparent opacity-60 hover:opacity-100'}`}
+                      >
+                        <img src={src} alt="" className="w-full h-full object-cover" />
+                      </button>
+                    ))}
+                  </div>
+                )}
+
+                {/* ── Content ── */}
+                <div className="flex-1 overflow-y-auto">
+                  <div className="p-6 space-y-5">
+                    {/* Category + name */}
+                    <div>
+                      <div className="text-xs font-black uppercase tracking-widest text-muted-foreground mb-1.5">
+                        {p.category}{p.subcategory ? ` · ${p.subcategory}` : ''}
+                      </div>
+                      <h2 className="text-2xl font-black tracking-tight leading-tight text-foreground">
+                        {p.name}
+                      </h2>
+                    </div>
+
+                    {/* Rating */}
+                    <div className="flex items-center gap-2">
+                      <div className="flex gap-0.5 text-yellow-400">
+                        {[1,2,3,4,5].map(s => (
+                          <Star key={s} size={14} fill={s <= Math.round(p.rating ?? 0) ? 'currentColor' : 'none'} strokeWidth={1.5} />
+                        ))}
+                      </div>
+                      <span className="text-sm font-bold text-foreground">{p.rating}</span>
+                    </div>
+
+                    {/* Price */}
+                    <div className="flex items-baseline gap-3">
+                      <span className="text-3xl font-black text-primary">${Number(p.price).toFixed(2)}</span>
+                      {(p.oldPrice || (p as any).salePrice) && (
+                        <span className="text-base font-bold text-muted-foreground line-through">
+                          ${Number(p.oldPrice ?? (p as any).salePrice).toFixed(2)}
+                        </span>
+                      )}
+                      {(p.oldPrice || (p as any).salePrice) && (
+                        <span className="text-xs font-black text-green-400 bg-green-400/10 px-2 py-0.5 rounded-full uppercase">
+                          Save ${(Number(p.oldPrice ?? (p as any).salePrice) - Number(p.price)).toFixed(2)}
+                        </span>
+                      )}
+                    </div>
+
+                    {/* Description */}
+                    {p.description && (
+                      <p className="text-sm text-muted-foreground font-medium leading-relaxed">
+                        {p.description}
+                      </p>
+                    )}
+
+                    {/* Meta chips */}
+                    <div className="flex flex-wrap gap-2">
+                      {p.condition && (
+                        <span className="text-xs font-bold bg-secondary/40 px-3 py-1.5 rounded-full text-foreground">
+                          {p.condition}
+                        </span>
+                      )}
+                      {p.sku && (
+                        <span className="text-xs font-mono text-muted-foreground bg-muted/40 px-3 py-1.5 rounded-full">
+                          SKU: {p.sku}
+                        </span>
+                      )}
+                      {p.stock != null && p.stock > 0 && p.stock < 10 && (
+                        <span className="text-xs font-bold text-amber-400 bg-amber-400/10 px-3 py-1.5 rounded-full">
+                          Only {p.stock} left
+                        </span>
+                      )}
+                      {p.stock != null && p.stock === 0 && (
+                        <span className="text-xs font-bold text-red-400 bg-red-400/10 px-3 py-1.5 rounded-full">
+                          Out of stock
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                {/* ── Sticky CTA ── */}
+                <div className="flex-shrink-0 p-4 border-t border-border bg-background/70 backdrop-blur-md space-y-2">
+                  <motion.button
+                    onClick={handleAdd}
+                    whileTap={{ scale: 0.97 }}
+                    className={`w-full py-4 rounded-xl font-black uppercase tracking-wider text-sm transition-all flex items-center justify-center gap-2 shadow-lg ${
+                      addedToCart
+                        ? 'bg-green-600 text-white shadow-green-600/30'
+                        : inCart
+                          ? 'bg-primary/20 text-primary border-2 border-primary'
+                          : 'bg-primary text-primary-foreground hover:brightness-110 shadow-primary/30'
+                    }`}
+                  >
+                    {addedToCart ? (
+                      <><Check size={18} /> Added to Cart!</>
+                    ) : inCart ? (
+                      <><ShoppingCart size={18} /> Add Another</>
+                    ) : (
+                      <><ShoppingCart size={18} /> Add to Cart — ${Number(p.price).toFixed(2)}</>
+                    )}
+                  </motion.button>
+                  {inCart && !addedToCart && (
+                    <button
+                      onClick={() => { setSelectedProduct(null); setCartOpen(true); }}
+                      className="w-full py-2.5 rounded-xl font-bold text-sm text-primary hover:text-primary/80 transition-colors"
+                    >
+                      View Cart ({cart.find(i => i.id === p.id)?.quantity}× in cart) →
+                    </button>
+                  )}
+                </div>
+              </motion.div>
+            </>
+          );
+        })()}
+      </AnimatePresence>
 
       </main>
 
