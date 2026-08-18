@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   Router as WouterRouter,
   Route,
@@ -8,7 +8,8 @@ import {
 } from 'wouter';
 import { QueryClientProvider, QueryClient } from '@tanstack/react-query';
 import { TooltipProvider } from '@/components/ui/tooltip';
-import { Wrench } from 'lucide-react';
+import { Wrench, Menu, X, User } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 
 import { ClerkProvider, useClerk, useUser } from '@clerk/react';
 import { shadcn } from '@clerk/themes';
@@ -143,108 +144,223 @@ function BackNavigationGuard() {
   return null;
 }
 
+const NAV_LINKS = [
+  ['/', 'Repair'],
+  ['/shop', 'Shop'],
+  ['/community', 'Community'],
+  ['/repair-status', 'Track Repair'],
+] as const;
+
 function SharedNav() {
   const [location] = useLocation();
   const { user, isLoaded } = useUser();
-  const { signOut } = useClerk();
+  const { signOut, openSignIn } = useClerk();
+  const [menuOpen, setMenuOpen] = useState(false);
 
   if (location === '/admin') return null;
 
+  const initial = user
+    ? (user.firstName?.[0] || user.emailAddresses?.[0]?.emailAddress?.[0] || '?').toUpperCase()
+    : null;
+
   return (
-    <nav className="sticky top-0 z-50 w-full border-b border-border bg-background/95 backdrop-blur-xl">
-      <div className="mx-auto flex min-h-[76px] w-full max-w-7xl items-center justify-between gap-4 px-4 sm:px-6 lg:px-8">
+    <>
+      <nav className="sticky top-0 z-50 w-full border-b border-border bg-background/95 backdrop-blur-xl">
+        <div className="mx-auto flex min-h-[64px] w-full max-w-7xl items-center justify-between gap-3 px-4 sm:px-6 lg:px-8">
 
-        <Link
-          href="/"
-          className="flex items-center gap-3 no-underline"
-        >
-          <img
-            src={jerseyLogo}
-            alt="Jersey Quik Fix"
-            className="h-12 w-12 rounded-xl object-contain"
-          />
-
-          <div className="hidden sm:block">
-            <div className="text-lg font-black leading-none tracking-tight text-foreground">
-              Jersey Quik Fix
-            </div>
-
-            <div className="mt-1 text-[10px] font-bold uppercase tracking-[0.18em] text-muted-foreground">
-              Device Repair & Electronics
-            </div>
-          </div>
-        </Link>
-
-        <div className="flex gap-1 rounded-full border border-border bg-card p-1 sm:gap-2">
-          {[
-            ['/', 'Repair'],
-            ['/shop', 'Shop'],
-            ['/community', 'Community'],
-            ['/repair-status', 'Track Repair'],
-          ].map(([href, label]) => (
-            <Link
-              key={href}
-              href={href}
-              className={`rounded-full px-2.5 py-1.5 text-[10px] font-bold uppercase tracking-wider transition-all sm:px-4 sm:py-2 sm:text-sm ${
-                location === href
-                  ? 'bg-primary text-primary-foreground shadow-[0_0_15px_rgba(41,165,238,0.4)]'
-                  : 'text-muted-foreground hover:text-foreground'
-              }`}
-            >
-              {label}
-            </Link>
-          ))}
-        </div>
-
-        <div className="flex items-center gap-2">
-          <Link
-            href="/admin"
-            aria-label="Open admin"
-            title="Admin"
-            className="flex h-10 w-10 items-center justify-center rounded-full border border-border text-muted-foreground transition-colors hover:border-primary hover:text-primary"
+          {/* Hamburger — mobile only */}
+          <button
+            onClick={() => setMenuOpen(o => !o)}
+            aria-label="Open menu"
+            className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full border border-border bg-card text-muted-foreground transition-colors hover:text-foreground sm:hidden"
           >
-            <Wrench size={18} />
-          </Link>
-          {isLoaded && user ? (
-            <div className="flex items-center gap-2">
-              <span className="hidden sm:block text-xs text-muted-foreground font-medium">
-                Hi,{' '}
-                {user.firstName ||
-                  user.emailAddresses[0]?.emailAddress?.split('@')[0]}
-              </span>
+            <Menu size={20} />
+          </button>
 
+          {/* Logo */}
+          <Link href="/" className="flex items-center gap-2.5 no-underline flex-shrink-0">
+            <img
+              src={jerseyLogo}
+              alt="Jersey Quik Fix"
+              className="h-10 w-10 rounded-xl object-contain"
+            />
+            <div className="hidden sm:block">
+              <div className="text-base font-black leading-none tracking-tight text-foreground">
+                Jersey Quik Fix
+              </div>
+              <div className="mt-0.5 text-[10px] font-bold uppercase tracking-[0.18em] text-muted-foreground">
+                Device Repair & Electronics
+              </div>
+            </div>
+          </Link>
+
+          {/* Desktop nav pills */}
+          <div className="hidden sm:flex gap-1 rounded-full border border-border bg-card p-1 sm:gap-2">
+            {NAV_LINKS.map(([href, label]) => (
+              <Link
+                key={href}
+                href={href}
+                className={`rounded-full px-4 py-2 text-xs font-bold uppercase tracking-wider transition-all sm:text-sm ${
+                  location === href
+                    ? 'bg-primary text-primary-foreground shadow-[0_0_15px_rgba(41,165,238,0.4)]'
+                    : 'text-muted-foreground hover:text-foreground'
+                }`}
+              >
+                {label}
+              </Link>
+            ))}
+          </div>
+
+          {/* Right side */}
+          <div className="flex items-center gap-2 flex-shrink-0">
+            {/* Admin wrench — desktop only */}
+            <Link
+              href="/admin"
+              aria-label="Admin"
+              title="Admin"
+              className="hidden sm:flex h-9 w-9 items-center justify-center rounded-full border border-border text-muted-foreground transition-colors hover:border-primary hover:text-primary"
+            >
+              <Wrench size={18} />
+            </Link>
+
+            {/* Single auth button */}
+            {isLoaded && user ? (
               <button
-                onClick={() =>
-                  signOut({
-                    redirectUrl: base || '/',
-                  })
-                }
-                className="text-xs font-bold text-muted-foreground hover:text-foreground border border-border rounded-full px-3 py-1.5 transition-all hover:border-primary/50"
+                onClick={() => signOut({ redirectUrl: base || '/' })}
+                title={`Signed in as ${user.firstName || user.emailAddresses[0]?.emailAddress}`}
+                className="flex h-9 w-9 items-center justify-center rounded-full bg-primary text-primary-foreground text-xs font-black transition-all hover:brightness-110"
               >
-                Sign out
+                {initial}
               </button>
-            </div>
-          ) : (
-            <div className="flex items-center gap-1.5">
-              <Link
-                href="/sign-in"
-                className="text-xs font-bold text-muted-foreground hover:text-foreground border border-border rounded-full px-3 py-1.5 transition-all hover:border-primary/50"
+            ) : (
+              <button
+                onClick={() => openSignIn({})}
+                className="flex items-center gap-1.5 rounded-full border border-border bg-card px-3.5 py-2 text-xs font-bold text-foreground transition-all hover:border-primary hover:text-primary"
               >
+                <User size={14} />
                 Sign in
-              </Link>
-              <Link
-                href="/sign-up"
-                className="text-xs font-bold bg-primary text-primary-foreground rounded-full px-3 py-1.5 transition-all hover:brightness-110"
-              >
-                Sign up
-              </Link>
-            </div>
-          )}
+              </button>
+            )}
+          </div>
 
         </div>
+      </nav>
 
-      </div>
-    </nav>
+      {/* Mobile drawer */}
+      <AnimatePresence>
+        {menuOpen && (
+          <>
+            {/* Backdrop */}
+            <motion.div
+              key="backdrop"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 z-40 bg-black/60 sm:hidden"
+              onClick={() => setMenuOpen(false)}
+            />
+
+            {/* Drawer */}
+            <motion.div
+              key="drawer"
+              initial={{ x: '-100%' }}
+              animate={{ x: 0 }}
+              exit={{ x: '-100%' }}
+              transition={{ type: 'spring', damping: 28, stiffness: 260 }}
+              className="fixed left-0 top-0 bottom-0 z-50 w-72 bg-card border-r border-border flex flex-col sm:hidden shadow-2xl"
+            >
+              {/* Drawer header */}
+              <div className="flex items-center justify-between px-5 py-4 border-b border-border">
+                <div className="flex items-center gap-2.5">
+                  <img src={jerseyLogo} alt="Jersey Quik Fix" className="h-8 w-8 rounded-lg object-contain" />
+                  <span className="font-black text-sm uppercase tracking-tight">Jersey Quik Fix</span>
+                </div>
+                <button
+                  onClick={() => setMenuOpen(false)}
+                  className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+                >
+                  <X size={20} />
+                </button>
+              </div>
+
+              {/* Auth row */}
+              <button
+                onClick={() => {
+                  setMenuOpen(false);
+                  if (user) {
+                    signOut({ redirectUrl: base || '/' });
+                  } else {
+                    openSignIn({});
+                  }
+                }}
+                className="flex items-center gap-3 px-5 py-4 border-b border-border hover:bg-muted transition-colors text-left"
+              >
+                {user ? (
+                  <span className="w-8 h-8 rounded-full bg-primary text-primary-foreground text-xs font-black flex items-center justify-center shrink-0">
+                    {initial}
+                  </span>
+                ) : (
+                  <span className="w-8 h-8 rounded-full bg-muted flex items-center justify-center shrink-0">
+                    <User size={16} className="text-muted-foreground" />
+                  </span>
+                )}
+                <div>
+                  <p className="font-bold text-sm">
+                    {user ? (user.firstName || 'My Account') : 'Sign In'}
+                  </p>
+                  {user && (
+                    <p className="text-xs text-muted-foreground truncate max-w-[160px]">
+                      {user.emailAddresses?.[0]?.emailAddress}
+                    </p>
+                  )}
+                  {!user && (
+                    <p className="text-xs text-muted-foreground">
+                      Sign up option inside
+                    </p>
+                  )}
+                </div>
+              </button>
+
+              {/* Nav links */}
+              <div className="flex-1 overflow-y-auto py-3">
+                <p className="px-5 py-2 text-[10px] font-black uppercase tracking-widest text-muted-foreground">
+                  Navigation
+                </p>
+                {NAV_LINKS.map(([href, label]) => (
+                  <Link
+                    key={href}
+                    href={href}
+                    onClick={() => setMenuOpen(false)}
+                    className={`block w-full px-5 py-3 font-bold text-sm transition-colors flex items-center justify-between ${
+                      location === href
+                        ? 'text-primary bg-primary/10'
+                        : 'text-foreground hover:bg-muted'
+                    }`}
+                  >
+                    {label}
+                    {location === href && (
+                      <span className="w-1.5 h-1.5 rounded-full bg-primary" />
+                    )}
+                  </Link>
+                ))}
+              </div>
+
+              {/* Admin link at bottom */}
+              <div className="border-t border-border p-4">
+                <Link
+                  href="/admin"
+                  onClick={() => setMenuOpen(false)}
+                  className="flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-muted-foreground hover:text-primary hover:bg-muted transition-colors font-bold text-sm"
+                >
+                  <Wrench size={16} />
+                  Admin Panel
+                </Link>
+              </div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
+    </>
   );
 }
 
