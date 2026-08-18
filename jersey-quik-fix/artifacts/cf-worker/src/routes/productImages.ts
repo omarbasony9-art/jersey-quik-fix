@@ -24,8 +24,10 @@ export function registerProductImages(app: Hono<{ Bindings: Env }>) {
       // Sanitise — prevent path traversal
       const safe = filename.replace(/[^a-zA-Z0-9._-]/g, "_");
 
-      // ── 1. Try R2 first (admin-uploaded images) ─────────────────────────────
-      const object = await c.env.PRODUCT_IMAGES.get(safe);
+      // ── 1. Try R2 first (admin-uploaded images, only if R2 is enabled) ────────
+      const object = c.env.PRODUCT_IMAGES
+        ? await c.env.PRODUCT_IMAGES.get(safe)
+        : null;
       if (object) {
         const contentType =
           object.httpMetadata?.contentType || "application/octet-stream";

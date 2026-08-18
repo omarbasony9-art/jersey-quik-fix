@@ -54,7 +54,10 @@ export function registerAdminProductImages(app: Hono<{ Bindings: Env }>) {
       const safe = body.filename.replace(/[^a-zA-Z0-9._-]/g, "_");
       const bytes = base64ToUint8Array(body.data);
 
-      // Upload to R2
+      // Upload to R2 (requires R2 to be enabled in the Cloudflare dashboard)
+      if (!c.env.PRODUCT_IMAGES) {
+        return c.json({ error: "Image uploads require R2 to be enabled. Please enable R2 in your Cloudflare dashboard and create the 'jqf-product-images' bucket." }, 503);
+      }
       await c.env.PRODUCT_IMAGES.put(safe, bytes, {
         httpMetadata: { contentType: body.mimeType },
       });
@@ -114,8 +117,10 @@ export function registerAdminProductImages(app: Hono<{ Bindings: Env }>) {
       const filename = c.req.param("filename");
       const safe = filename.replace(/[^a-zA-Z0-9._-]/g, "_");
 
-      // Delete from R2 (no error if object doesn't exist)
-      await c.env.PRODUCT_IMAGES.delete(safe);
+      // Delete from R2 (if R2 is enabled)
+      if (c.env.PRODUCT_IMAGES) {
+        await c.env.PRODUCT_IMAGES.delete(safe);
+      }
 
       // Delete from D1 metadata
       await c.env.DB.prepare(

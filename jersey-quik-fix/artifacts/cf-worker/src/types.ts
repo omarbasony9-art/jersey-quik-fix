@@ -1,7 +1,7 @@
 export interface Env {
   DB: D1Database;
   ASSETS: Fetcher;
-  PRODUCT_IMAGES: R2Bucket;
+  PRODUCT_IMAGES?: R2Bucket; // optional — requires R2 to be enabled in Cloudflare dashboard
 
   // Secrets (set via `wrangler secret put`)
   SESSION_SECRET: string;
