@@ -8,6 +8,8 @@ import stripeCheckoutRouter from "./stripe-checkout";
 import cartRouter from "./cart";
 import tradeRouter from "./trade-inquiries";
 import membershipRouter from "./membership";
+import productsRouter from "./products";
+import adminProductsRouter from "./admin-products";
 
 const router: IRouter = Router();
 
@@ -20,5 +22,7 @@ router.use(stripeCheckoutRouter);
 router.use(cartRouter);
 router.use(tradeRouter);
 router.use(membershipRouter);
+router.use(productsRouter);
+router.use(adminProductsRouter);
 
 export default router;

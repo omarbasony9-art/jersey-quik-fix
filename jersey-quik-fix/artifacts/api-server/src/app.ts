@@ -1,6 +1,8 @@
 import express, { type Express } from "express";
 import cors from "cors";
 import pinoHttp from "pino-http";
+import path from "path";
+import { createReadStream, existsSync } from "fs";
 import { clerkMiddleware } from "@clerk/express";
 import { publishableKeyFromHost } from "@clerk/shared/keys";
 import router from "./routes";
@@ -65,6 +67,31 @@ app.use(
     ),
   }))
 );
+
+// ── Product images static serving ─────────────────────────────────────────
+// Serves uploaded product images at /api/product-images/:filename
+app.use("/api/product-images", (req, res, next) => {
+  const file = decodeURIComponent(req.path.replace(/^\//, "").replace(/\.\./g, ""));
+  const base = path.join(__dirname, "../public/product-images");
+  const exact = path.join(base, file);
+  const svgFallback = exact.replace(/\.(jpg|png|webp)$/i, ".svg");
+  const mime: Record<string, string> = {
+    ".jpg": "image/jpeg", ".jpeg": "image/jpeg", ".png": "image/png",
+    ".webp": "image/webp", ".svg": "image/svg+xml",
+  };
+  if (existsSync(exact)) {
+    const ext = path.extname(exact).toLowerCase();
+    res.setHeader("Content-Type", mime[ext] || "application/octet-stream");
+    res.setHeader("Cache-Control", "public, max-age=86400");
+    createReadStream(exact).pipe(res);
+  } else if (existsSync(svgFallback)) {
+    res.setHeader("Content-Type", "image/svg+xml");
+    res.setHeader("Cache-Control", "public, max-age=86400");
+    createReadStream(svgFallback).pipe(res);
+  } else {
+    next();
+  }
+});
 
 app.use("/api", router);
 
