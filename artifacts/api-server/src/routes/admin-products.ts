@@ -8,7 +8,19 @@
 import { Router } from "express";
 import { pool } from "@workspace/db";
 import { randomUUID } from "crypto";
+import { writeFileSync, mkdirSync } from "fs";
+import { join } from "path";
 import { requireAdminAuth } from "../middleware/adminAuth";
+
+// __dirname in the esbuild bundle == dist/ directory
+const PRODUCT_IMAGES_DIR = join(__dirname, "../public/product-images");
+const MIME_TO_EXT: Record<string, string> = {
+  "image/jpeg": ".jpg",
+  "image/jpg":  ".jpg",
+  "image/png":  ".png",
+  "image/webp": ".webp",
+  "image/gif":  ".gif",
+};
 
 const adminProductsRouter = Router();
 adminProductsRouter.use(requireAdminAuth);
@@ -341,6 +353,50 @@ adminProductsRouter.patch("/admin/inventory/:productId", async (req, res): Promi
   } catch (err) {
     console.error("PATCH /api/admin/inventory/:productId error:", err);
     res.status(500).json({ error: "Failed to update inventory" });
+  }
+});
+
+// ── Image upload ────────────────────────────────────────────────────────────
+// POST /admin/product-images/upload
+// Body: { filename: string, mimeType: string, data: string (base64, no prefix) }
+// Returns: { url: string }  ("/api/product-images/<filename>")
+adminProductsRouter.post("/admin/product-images/upload", (req, res) => {
+  try {
+    const { filename = "upload", mimeType, data } = req.body as {
+      filename?: string;
+      mimeType: string;
+      data: string;
+    };
+
+    const ext = MIME_TO_EXT[mimeType?.toLowerCase()];
+    if (!ext) {
+      return res.status(400).json({ error: "Unsupported image type. Use JPEG, PNG, WebP, or GIF." });
+    }
+    if (!data) {
+      return res.status(400).json({ error: "No image data provided." });
+    }
+
+    const buffer = Buffer.from(data, "base64");
+    if (buffer.length > 15 * 1024 * 1024) {
+      return res.status(400).json({ error: "File too large (max 15 MB)." });
+    }
+
+    // Sanitise: keep alphanumeric, hyphens, underscores, dots; strip extension; re-add correct one
+    const safeStem = filename
+      .replace(/\.[^.]*$/, "")          // drop extension from original name
+      .replace(/[^a-zA-Z0-9_\-.]/g, "-") // sanitise
+      .replace(/-+/g, "-")
+      .slice(0, 120)
+      || "upload";
+    const saveName = `${safeStem}${ext}`;
+
+    mkdirSync(PRODUCT_IMAGES_DIR, { recursive: true });
+    writeFileSync(join(PRODUCT_IMAGES_DIR, saveName), buffer);
+
+    return res.json({ url: `/api/product-images/${saveName}` });
+  } catch (err: any) {
+    console.error("POST /admin/product-images/upload error:", err);
+    return res.status(500).json({ error: err?.message ?? "Upload failed." });
   }
 });
 

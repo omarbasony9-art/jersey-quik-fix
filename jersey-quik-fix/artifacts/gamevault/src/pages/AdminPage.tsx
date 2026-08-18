@@ -130,7 +130,7 @@ function ImageField({ label, value, onChange }: { label: string; value: string; 
   );
 }
 
-// ── Multi-image gallery field for admin product editor ─────────────────────
+// ── Multi-image gallery field — drag & drop, upload, reorder ──────────────
 function ImageGalleryField({
   images,
   onChange,
@@ -139,7 +139,109 @@ function ImageGalleryField({
   onChange: (images: string[]) => void;
 }) {
   const [urlInput, setUrlInput] = React.useState('');
+  const [zoneActive, setZoneActive] = React.useState(false);
+  const [uploading, setUploading] = React.useState<string[]>([]);   // filenames in flight
+  const [uploadErrors, setUploadErrors] = React.useState<string[]>([]);
   const fileInputRef = React.useRef<HTMLInputElement>(null);
+  const dragIdxRef = React.useRef<number | null>(null);
+  const [dropTarget, setDropTarget] = React.useState<number | null>(null);
+
+  // ── server upload ─────────────────────────────────────────────────────────
+  async function uploadFile(file: File): Promise<string | null> {
+    const UPLOAD_TYPES = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'image/gif'];
+    if (!UPLOAD_TYPES.includes(file.type)) {
+      setUploadErrors(e => [...e, `${file.name}: unsupported type (use JPEG, PNG, WebP, or GIF)`]);
+      return null;
+    }
+    if (file.size > 15 * 1024 * 1024) {
+      setUploadErrors(e => [...e, `${file.name}: must be under 15 MB`]);
+      return null;
+    }
+    return new Promise(resolve => {
+      const reader = new FileReader();
+      reader.onload = async ev => {
+        const dataUrl = ev.target?.result as string;
+        const base64 = dataUrl.split(',')[1];
+        const token = sessionStorage.getItem(SESSION_KEY);
+        try {
+          const res = await fetch(`${API_BASE}/admin/product-images/upload`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              ...(token ? { Authorization: `Bearer ${token}` } : {}),
+            },
+            body: JSON.stringify({ filename: file.name, data: base64, mimeType: file.type }),
+          });
+          if (res.ok) {
+            const body = await res.json() as { url: string };
+            resolve(body.url);
+          } else {
+            const body = await res.json().catch(() => ({})) as { error?: string };
+            setUploadErrors(e => [...e, `${file.name}: ${body.error ?? 'upload failed'}`]);
+            resolve(null);
+          }
+        } catch {
+          setUploadErrors(e => [...e, `${file.name}: network error`]);
+          resolve(null);
+        }
+      };
+      reader.onerror = () => { setUploadErrors(e => [...e, `${file.name}: read error`]); resolve(null); };
+      reader.readAsDataURL(file);
+    });
+  }
+
+  async function handleFiles(files: File[]) {
+    if (files.length === 0) return;
+    setUploadErrors([]);
+    setUploading(files.map(f => f.name));
+    const results = await Promise.all(files.map(uploadFile));
+    const urls = results.filter((u): u is string => u !== null);
+    if (urls.length > 0) onChange([...images, ...urls]);
+    setUploading([]);
+  }
+
+  // ── drop zone (file drops only) ───────────────────────────────────────────
+  function onZoneDragOver(e: React.DragEvent) {
+    if (!e.dataTransfer.types.includes('Files')) return;
+    e.preventDefault();
+    setZoneActive(true);
+  }
+  function onZoneDragLeave(e: React.DragEvent) {
+    if (!e.currentTarget.contains(e.relatedTarget as Node)) setZoneActive(false);
+  }
+  function onZoneDrop(e: React.DragEvent) {
+    e.preventDefault();
+    setZoneActive(false);
+    const files = Array.from(e.dataTransfer.files);
+    if (files.length) handleFiles(files);
+  }
+
+  // ── thumbnail drag-to-reorder ─────────────────────────────────────────────
+  function onThumbDragStart(e: React.DragEvent, idx: number) {
+    dragIdxRef.current = idx;
+    e.dataTransfer.effectAllowed = 'move';
+    e.dataTransfer.setData('text/plain', String(idx));  // marks this as an element drag, not a file drag
+  }
+  function onThumbDragOver(e: React.DragEvent, idx: number) {
+    if (e.dataTransfer.types.includes('Files')) return;  // ignore OS file drags on thumbnails
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+    if (dropTarget !== idx) setDropTarget(idx);
+  }
+  function onThumbDrop(e: React.DragEvent, idx: number) {
+    if (e.dataTransfer.types.includes('Files')) return;
+    e.preventDefault();
+    const from = dragIdxRef.current;
+    dragIdxRef.current = null;
+    setDropTarget(null);
+    if (from === null || from === idx) return;
+    const next = [...images];
+    next.splice(idx, 0, next.splice(from, 1)[0]);
+    onChange(next);
+  }
+  function onThumbDragEnd() { dragIdxRef.current = null; setDropTarget(null); }
+
+  function remove(idx: number) { onChange(images.filter((_, i) => i !== idx)); }
 
   function addUrl() {
     const trimmed = urlInput.trim();
@@ -148,107 +250,131 @@ function ImageGalleryField({
     setUrlInput('');
   }
 
-  function applyFile(file: File) {
-    if (!ACCEPTED_TYPES.includes(file.type)) return;
-    if (file.size > MAX_BYTES) return;
-    const reader = new FileReader();
-    reader.onload = e => {
-      if (e.target?.result) onChange([...images, e.target.result as string]);
-    };
-    reader.readAsDataURL(file);
-    if (fileInputRef.current) fileInputRef.current.value = '';
-  }
-
-  function remove(idx: number) {
-    onChange(images.filter((_, i) => i !== idx));
-  }
-
-  function moveUp(idx: number) {
-    if (idx === 0) return;
-    const next = [...images];
-    [next[idx - 1], next[idx]] = [next[idx], next[idx - 1]];
-    onChange(next);
-  }
-
-  function moveDown(idx: number) {
-    if (idx === images.length - 1) return;
-    const next = [...images];
-    [next[idx], next[idx + 1]] = [next[idx + 1], next[idx]];
-    onChange(next);
-  }
+  const hasItems = images.length > 0 || uploading.length > 0;
 
   return (
     <div className="space-y-3">
       <label className="block text-xs font-bold uppercase tracking-wider text-muted-foreground">
-        Product Images <span className="normal-case font-normal">(first = primary display)</span>
+        Product Images{' '}
+        <span className="normal-case font-normal text-muted-foreground/70">
+          (first = main · drag thumbnails to reorder)
+        </span>
       </label>
 
-      {/* Existing images */}
-      {images.length > 0 && (
-        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+      {/* ── Thumbnail grid ── */}
+      {hasItems && (
+        <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
           {images.map((src, idx) => (
-            <div key={idx} className="relative group rounded-xl overflow-hidden border border-border bg-background">
+            <div
+              key={src + idx}
+              draggable
+              onDragStart={e => onThumbDragStart(e, idx)}
+              onDragOver={e => onThumbDragOver(e, idx)}
+              onDrop={e => onThumbDrop(e, idx)}
+              onDragEnd={onThumbDragEnd}
+              className={`relative group rounded-xl overflow-hidden border-2 cursor-grab active:cursor-grabbing transition-all select-none
+                ${dropTarget === idx
+                  ? 'border-primary ring-2 ring-primary/40 scale-105 shadow-lg shadow-primary/20'
+                  : idx === 0 ? 'border-primary/50' : 'border-border hover:border-border/80'}
+                ${dragIdxRef.current === idx ? 'opacity-30 scale-95' : ''}`}
+            >
               <img
                 src={src}
-                alt={`Image ${idx + 1}`}
-                className="w-full h-24 object-cover"
-                onError={e => (e.currentTarget.style.opacity = '0.3')}
+                alt={`Product image ${idx + 1}`}
+                className="w-full h-20 object-cover pointer-events-none"
+                onError={e => { e.currentTarget.style.opacity = '0.15'; }}
               />
+              {/* "Main" badge on first image */}
               {idx === 0 && (
-                <div className="absolute top-1 left-1 bg-primary text-primary-foreground text-[9px] font-black px-1.5 py-0.5 rounded-md uppercase tracking-wider">
-                  Primary
-                </div>
+                <span className="absolute top-1 left-1 bg-primary text-primary-foreground text-[9px] font-black px-1.5 py-0.5 rounded uppercase tracking-wider leading-none pointer-events-none">
+                  Main
+                </span>
               )}
-              <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-1">
-                <button
-                  type="button"
-                  onClick={() => moveUp(idx)}
-                  disabled={idx === 0}
-                  className="bg-white/20 hover:bg-white/40 text-white rounded px-2 py-1 text-xs font-bold disabled:opacity-30"
-                  title="Move left"
-                >←</button>
-                <button
-                  type="button"
-                  onClick={() => remove(idx)}
-                  className="bg-red-500/80 hover:bg-red-500 text-white rounded px-2 py-1 text-xs font-bold"
-                  title="Remove"
-                >✕</button>
-                <button
-                  type="button"
-                  onClick={() => moveDown(idx)}
-                  disabled={idx === images.length - 1}
-                  className="bg-white/20 hover:bg-white/40 text-white rounded px-2 py-1 text-xs font-bold disabled:opacity-30"
-                  title="Move right"
-                >→</button>
+              {/* Hover overlay: remove button only — reorder via drag */}
+              <button
+                type="button"
+                onClick={() => remove(idx)}
+                className="absolute top-1 right-1 bg-black/60 hover:bg-red-500 text-white rounded-full w-5 h-5 items-center justify-center text-[11px] font-bold hidden group-hover:flex transition-colors"
+                title="Remove image"
+              >✕</button>
+              {/* Drag handle hint */}
+              <div className="absolute bottom-1 right-1 opacity-0 group-hover:opacity-60 transition-opacity pointer-events-none">
+                <svg width="10" height="10" viewBox="0 0 10 10" fill="currentColor" className="text-white">
+                  <circle cx="3" cy="3" r="1"/><circle cx="7" cy="3" r="1"/>
+                  <circle cx="3" cy="7" r="1"/><circle cx="7" cy="7" r="1"/>
+                </svg>
               </div>
+            </div>
+          ))}
+
+          {/* Uploading placeholders */}
+          {uploading.map((name, i) => (
+            <div key={'upload-' + i}
+              className="rounded-xl border-2 border-primary/40 border-dashed bg-primary/5 h-20 flex flex-col items-center justify-center gap-1 select-none">
+              <div className="w-4 h-4 border-2 border-primary/30 border-t-primary rounded-full animate-spin" />
+              <span className="text-[9px] text-muted-foreground font-medium px-1 text-center truncate w-full leading-none">
+                {name}
+              </span>
             </div>
           ))}
         </div>
       )}
 
-      {/* Add by file */}
+      {/* ── Drop zone ── */}
       <div
+        onDragOver={onZoneDragOver}
+        onDragLeave={onZoneDragLeave}
+        onDrop={onZoneDrop}
         onClick={() => fileInputRef.current?.click()}
-        className="flex items-center justify-center gap-2 border-2 border-dashed border-border rounded-xl px-4 py-3 cursor-pointer text-xs font-medium text-muted-foreground hover:border-primary/50 hover:text-foreground transition-colors select-none"
+        className={`relative flex flex-col items-center justify-center gap-2 border-2 border-dashed rounded-2xl px-6 py-6 cursor-pointer select-none transition-all duration-150
+          ${zoneActive
+            ? 'border-primary bg-primary/10 shadow-lg shadow-primary/20 scale-[1.01]'
+            : 'border-border hover:border-primary/50 hover:bg-primary/5'}`}
       >
-        <Upload size={14} />
-        <span>Upload image (PNG/JPEG/WebP, max 5 MB)</span>
+        <div className={`w-10 h-10 rounded-xl flex items-center justify-center transition-colors
+          ${zoneActive ? 'bg-primary/20 text-primary' : 'bg-muted text-muted-foreground'}`}>
+          <Upload size={20} />
+        </div>
+        <div className="text-center">
+          <p className={`text-sm font-bold transition-colors ${zoneActive ? 'text-primary' : 'text-foreground'}`}>
+            {zoneActive ? 'Release to upload' : 'Drag & drop photos here'}
+          </p>
+          <p className="text-xs text-muted-foreground mt-0.5">
+            or <span className="text-primary font-semibold">click to browse</span> · JPEG · PNG · WebP · up to 15 MB · multiple OK
+          </p>
+        </div>
         <input
           ref={fileInputRef}
           type="file"
-          accept={ACCEPTED_TYPES.join(',')}
+          accept="image/jpeg,image/jpg,image/png,image/webp,image/gif"
+          multiple
           className="hidden"
-          onChange={e => { const f = e.target.files?.[0]; if (f) applyFile(f); }}
+          onChange={e => {
+            const files = Array.from(e.target.files ?? []);
+            e.target.value = '';
+            if (files.length) handleFiles(files);
+          }}
         />
       </div>
 
-      {/* Add by URL */}
+      {/* Upload errors */}
+      {uploadErrors.length > 0 && (
+        <div className="space-y-1">
+          {uploadErrors.map((err, i) => (
+            <p key={i} className="text-xs text-red-400 font-medium flex items-center gap-1">
+              <span>⚠</span> {err}
+            </p>
+          ))}
+        </div>
+      )}
+
+      {/* ── URL paste ── */}
       <div className="flex gap-2">
         <input
           value={urlInput}
           onChange={e => setUrlInput(e.target.value)}
           onKeyDown={e => e.key === 'Enter' && (e.preventDefault(), addUrl())}
-          placeholder="Paste image URL and press Add…"
+          placeholder="Or paste an image URL…"
           className="flex-1 bg-background border border-border rounded-xl px-4 py-2.5 text-foreground text-sm outline-none focus:border-primary transition-colors font-medium"
         />
         <button
