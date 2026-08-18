@@ -418,6 +418,10 @@ export default function AdminPage() {
   const [savingProdId, setSavingProdId] = useState<string | null>(null);
   const [normProdSearch, setNormProdSearch] = useState('');
   const [expandedProdId, setExpandedProdId] = useState<string | null>(null);
+  // IDs of products just created via "New Product" but not yet manually saved —
+  // the Delete button is hidden for these so accidental clicks on a blank stub
+  // don't immediately destroy something the admin hasn't intentionally set up.
+  const [freshNormProdIds, setFreshNormProdIds] = useState<Set<string>>(new Set());
 
   // Restore session from sessionStorage on mount
   useEffect(() => {
@@ -545,6 +549,8 @@ export default function AdminPage() {
         body: JSON.stringify(body),
       });
       if (res.ok) {
+        // First manual save removes the "fresh" guard so Delete becomes available.
+        setFreshNormProdIds(prev => { const s = new Set(prev); s.delete(p.id); return s; });
         showToast(`✓ "${p.name}" saved.`);
       } else {
         const err = await res.json().catch(() => ({}));
@@ -554,6 +560,30 @@ export default function AdminPage() {
       showToast('⚠ Network error — changes not saved.');
     } finally {
       setSavingProdId(null);
+    }
+  };
+
+  const deleteNormProd = async (p: NormProduct) => {
+    if (!window.confirm(`Permanently delete "${p.name}"?\n\nThis removes the product from the live catalog and cannot be undone.`)) return;
+    const token = sessionStorage.getItem(SESSION_KEY);
+    if (!token) { showToast('⚠ Not logged in.'); return; }
+    try {
+      const res = await fetch(`${API_BASE}/admin/products/${p.id}`, {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (res.ok) {
+        setNormProds(prev => prev.filter(x => x.id !== p.id));
+        setFreshNormProdIds(prev => { const s = new Set(prev); s.delete(p.id); return s; });
+        if (expandedProdId === p.id) setExpandedProdId(null);
+        showToast(`✓ "${p.name}" deleted.`);
+      } else {
+        const err = await res.json().catch(() => ({})) as any;
+        showToast(`⚠ Delete failed: ${err.error || res.status}`);
+      }
+    } catch (err) {
+      console.error('deleteNormProd error:', err);
+      showToast('⚠ Network error — product was not deleted.');
     }
   };
 
@@ -578,6 +608,7 @@ export default function AdminPage() {
         };
         setNormProds(prev => [np, ...prev]);
         setExpandedProdId(np.id);
+        setFreshNormProdIds(prev => new Set([...prev, np.id]));
         showToast('✓ New product created — edit and save to publish.');
       } else {
         const err = await res.json().catch(() => ({})) as any;
@@ -1334,8 +1365,17 @@ export default function AdminPage() {
                                         images={p.images ?? []}
                                         onChange={imgs => updateNormProd(p.id, 'images', imgs)}
                                       />
-                                      {/* Bottom save button for convenience */}
-                                      <div className="flex justify-end">
+                                      {/* Bottom action row: Delete (left) · Save (right) */}
+                                      <div className="flex items-center justify-between pt-1">
+                                        {/* Delete — hidden for brand-new unsaved stubs */}
+                                        {!freshNormProdIds.has(p.id) ? (
+                                          <button
+                                            onClick={() => deleteNormProd(p)}
+                                            className="px-3 py-2 rounded-xl border border-destructive/40 bg-destructive/10 text-destructive text-sm font-black hover:bg-destructive/20 transition-colors flex items-center gap-2"
+                                          ><Trash2 size={14} /> Delete</button>
+                                        ) : (
+                                          <span className="text-xs text-muted-foreground italic">Save first to unlock delete</span>
+                                        )}
                                         <button
                                           onClick={() => saveNormProd(p)}
                                           disabled={savingProdId === p.id}
