@@ -1,5 +1,5 @@
 /**
- * seed.ts — Full Vibe Tribe product catalog
+ * seed.ts — Full Jersey Quik Fix product catalog
  * ~160 products across all categories.
  * Idempotent: skips if products table already has ≥ 20 rows.
  * Prices are the single source of truth — update here to change storefront prices.
