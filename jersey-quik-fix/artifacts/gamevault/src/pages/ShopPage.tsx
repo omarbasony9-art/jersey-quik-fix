@@ -23,12 +23,19 @@ const AppleSVG = () => (
   </svg>
 );
 
+// Maps fixed shop tabs → real DB category names
+const GAMING_CATS = new Set(['Nintendo', 'Xbox', 'PlayStation', 'Controllers', 'Arcade Machines', 'Video Games', 'Sega / Retro']);
+const APPLE_CATS  = new Set(['Apple', 'MacBook', 'iPhone', 'Tablets']);
+
 function matchesCategory(p: Product, tab: string): boolean {
   if (tab === 'All') return true;
-  if (tab === 'Accessories') {
-    return !NAMED_CATEGORIES.some(m => p.category.toLowerCase() === m.toLowerCase());
-  }
-  return p.category.toLowerCase() === tab.toLowerCase();
+  const cat = p.category || '';
+  if (tab === 'Phones')     return cat === 'iPhone';
+  if (tab === 'Computers')  return cat === 'MacBook';
+  if (tab === 'Gaming')     return GAMING_CATS.has(cat);
+  if (tab === 'Apple')      return APPLE_CATS.has(cat);
+  // Accessories = everything else (Audio, Protection, Chargers, Cases, Cables, Accessories…)
+  return !GAMING_CATS.has(cat) && !APPLE_CATS.has(cat);
 }
 
 const DEVICE_TYPES = ['Phone', 'Tablet', 'Laptop', 'Game Console', 'Controller', 'Other Electronics'];
@@ -44,9 +51,45 @@ type CartItem = Product & { quantity: number };
 export default function ShopPage() {
   const { content } = useSiteData();
   const { shop } = content;
-  const products = shop.products
-    .filter(p => p.active)
-    .sort((a, b) => (a.sortOrder ?? 999) - (b.sortOrder ?? 999));
+
+  // ── Fetch all 165 products from the normalized API ──────────────────────
+  const [products, setProducts] = useState<Product[]>([]);
+  const [productsLoading, setProductsLoading] = useState(true);
+
+  useEffect(() => {
+    let cancelled = false;
+    setProductsLoading(true);
+    fetch(`${API_BASE}/products?limit=200`)
+      .then(r => r.ok ? r.json() : null)
+      .then(data => {
+        if (cancelled || !data?.products) return;
+        const prods: Product[] = (data.products as any[])
+          .filter(p => p.active)
+          .map(p => ({
+            id: String(p.id),
+            name: p.name,
+            category: p.category || '',
+            subcategory: p.subcategory ?? undefined,
+            description: p.description ?? '',
+            price: typeof p.price === 'string' ? parseFloat(p.price) : Number(p.price),
+            oldPrice: p.old_price ? (typeof p.old_price === 'string' ? parseFloat(p.old_price) : Number(p.old_price)) : undefined,
+            rating: p.rating ? Number(p.rating) : 4.5,
+            badge: p.badge ?? undefined,
+            image: (p.images && p.images.length > 0) ? p.images[0] : '',
+            images: p.images ?? [],
+            stock: Number(p.inventory_quantity ?? p.stock ?? 0),
+            sku: p.sku || '',
+            active: Boolean(p.active),
+            sortOrder: undefined,
+            condition: p.condition ?? undefined,
+            tags: undefined,
+          }));
+        setProducts(prods);
+        setProductsLoading(false);
+      })
+      .catch(() => setProductsLoading(false));
+    return () => { cancelled = true; };
+  }, []);
   const [, navigate] = useLocation();
   const { user, isLoaded: clerkLoaded } = useUser();
 
@@ -878,7 +921,13 @@ export default function ShopPage() {
               ))}
             </AnimatePresence>
 
-            {filteredProducts.length === 0 && (
+            {productsLoading && (
+              <div className="col-span-full py-20 text-center text-muted-foreground flex flex-col items-center justify-center">
+                <div className="w-10 h-10 border-4 border-primary/30 border-t-primary rounded-full animate-spin mb-4" />
+                <p className="text-sm font-bold uppercase tracking-wider">Loading products…</p>
+              </div>
+            )}
+            {!productsLoading && filteredProducts.length === 0 && (
               <div className="col-span-full py-20 text-center text-muted-foreground flex flex-col items-center justify-center bg-card rounded-2xl border border-dashed border-border">
                 <Search size={48} className="mb-4 opacity-20" />
                 <h3 className="text-2xl font-black uppercase mb-2">No products found</h3>

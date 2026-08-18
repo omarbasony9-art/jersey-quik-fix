@@ -56,6 +56,32 @@ app.use(cors({ credentials: true, origin: true }));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
+// ── Serve locally-downloaded product images ────────────────────────────────
+import path from "path";
+import { createReadStream, existsSync } from "fs";
+// Mount at /api/product-images so the JQF frontend proxy handles it correctly
+app.use("/api/product-images", (req, res, next) => {
+  // Strip query string, sanitize
+  const file = decodeURIComponent(req.path.replace(/^\//, "").replace(/\.\./g, ""));
+  const base = path.join(__dirname, "../public/product-images");
+  // Try exact path, then .jpg → .svg fallback
+  const exact = path.join(base, file);
+  const svgFallback = exact.replace(/\.(jpg|png|webp)$/i, ".svg");
+  if (existsSync(exact)) {
+    const ext = path.extname(exact).toLowerCase();
+    const mime: Record<string, string> = { ".jpg": "image/jpeg", ".jpeg": "image/jpeg", ".png": "image/png", ".webp": "image/webp", ".svg": "image/svg+xml" };
+    res.setHeader("Content-Type", mime[ext] || "application/octet-stream");
+    res.setHeader("Cache-Control", "public, max-age=86400");
+    createReadStream(exact).pipe(res);
+  } else if (existsSync(svgFallback)) {
+    res.setHeader("Content-Type", "image/svg+xml");
+    res.setHeader("Cache-Control", "public, max-age=86400");
+    createReadStream(svgFallback).pipe(res);
+  } else {
+    next();
+  }
+});
+
 // ── Clerk session middleware ────────────────────────────────────────────────
 app.use(
   clerkMiddleware((req) => ({

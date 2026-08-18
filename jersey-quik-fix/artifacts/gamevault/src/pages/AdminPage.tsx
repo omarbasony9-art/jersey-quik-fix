@@ -36,6 +36,19 @@ type MembershipCode = {
   isActive: boolean; createdAt: string; expiresAt: string;
 };
 
+// Normalized product from /api/admin/products (prices stored as dollars in display state)
+type NormProduct = {
+  id: string; sku: string; name: string; category: string; subcategory: string | null;
+  description: string | null; price: number; oldPrice?: number; priceNote?: string | null;
+  condition: string | null; configuration: string | null; stock: string | null;
+  images: string[]; badge: string | null; rating: number | null; active: boolean;
+  featured: boolean; verified: boolean; verificationNote?: string | null;
+  inventoryQuantity: number | null; reserved: number | null;
+  createdAt?: string; updatedAt?: string;
+};
+
+const NORM_CATEGORIES = ['iPhone','MacBook','Apple','Nintendo','Xbox','PlayStation','Controllers','Arcade Machines','Video Games','Sega / Retro','Tablets','Accessories','Audio','Protection','Chargers','Cases','Cables'];
+
 // Field helper component
 const ACCEPTED_TYPES = ['image/png', 'image/jpeg', 'image/webp', 'image/gif'];
 const MAX_BYTES = 5 * 1024 * 1024;
@@ -273,6 +286,13 @@ export default function AdminPage() {
   const [adminToken, setAdminToken] = useState<string | null>(null);
   const [toastMsg, setToastMsg] = useState<string | null>(null);
 
+  // ── Normalized products (from /api/admin/products) ──────────────────────
+  const [normProds, setNormProds] = useState<NormProduct[]>([]);
+  const [normProdsLoading, setNormProdsLoading] = useState(false);
+  const [savingProdId, setSavingProdId] = useState<string | null>(null);
+  const [normProdSearch, setNormProdSearch] = useState('');
+  const [expandedProdId, setExpandedProdId] = useState<string | null>(null);
+
   // Restore session from sessionStorage on mount
   useEffect(() => {
     const token = sessionStorage.getItem(SESSION_KEY);
@@ -291,9 +311,9 @@ export default function AdminPage() {
     }
   }, [loaded, content]);
 
-  // Load repairs, emails, trade inquiries, and membership codes when token is available
+  // Load repairs, emails, trade inquiries, membership codes, and normalized products when token is available
   useEffect(() => {
-    if (adminToken) { loadRepairs(); loadEmails(); loadTradeInquiries(); loadMembershipCodes(); }
+    if (adminToken) { loadRepairs(); loadEmails(); loadTradeInquiries(); loadMembershipCodes(); loadNormProds(); }
   }, [adminToken]);
 
   useEffect(() => {
@@ -348,6 +368,90 @@ export default function AdminPage() {
       .then(r => r.ok ? r.json() : [])
       .then(data => setMembershipCodes(Array.isArray(data) ? data : []))
       .catch(() => setMembershipCodes([]));
+  };
+
+  // ── Normalized products: load / save / create / update ──────────────────
+  const loadNormProds = async () => {
+    if (!sessionStorage.getItem(SESSION_KEY)) return;
+    setNormProdsLoading(true);
+    try {
+      const token = sessionStorage.getItem(SESSION_KEY);
+      const res = await fetch(`${API_BASE}/admin/products?limit=200`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (res.ok) {
+        const data = await res.json() as { products: any[] };
+        setNormProds((data.products ?? []).map((p: any) => ({
+          ...p,
+          price: Number(p.price) / 100,
+          oldPrice: p.oldPrice ? Number(p.oldPrice) / 100 : undefined,
+          rating: p.rating != null ? Number(p.rating) : null,
+          images: p.images ?? [],
+        })));
+      }
+    } finally {
+      setNormProdsLoading(false);
+    }
+  };
+
+  const updateNormProd = (id: string, field: string, value: any) =>
+    setNormProds(prev => prev.map(p => p.id === id ? { ...p, [field]: value } : p));
+
+  const saveNormProd = async (p: NormProduct) => {
+    const token = sessionStorage.getItem(SESSION_KEY);
+    if (!token) { showToast('⚠ Not logged in.'); return; }
+    setSavingProdId(p.id);
+    try {
+      const body: Record<string, any> = {
+        name: p.name, sku: p.sku, description: p.description,
+        category: p.category, subcategory: p.subcategory || null,
+        condition: p.condition || null, active: p.active, featured: p.featured,
+        badge: p.badge || null, rating: p.rating,
+        price: Math.round(p.price * 100),
+        oldPrice: p.oldPrice ? Math.round(p.oldPrice * 100) : null,
+        images: p.images ?? [],
+        stock: p.stock || null,
+        inventoryQuantity: p.inventoryQuantity ?? null,
+      };
+      const res = await fetch(`${API_BASE}/admin/products/${p.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify(body),
+      });
+      if (res.ok) {
+        showToast(`✓ "${p.name}" saved.`);
+      } else {
+        const err = await res.json().catch(() => ({}));
+        showToast(`⚠ Save failed: ${(err as any).error || res.status}`);
+      }
+    } catch {
+      showToast('⚠ Network error — changes not saved.');
+    } finally {
+      setSavingProdId(null);
+    }
+  };
+
+  const createNormProd = async () => {
+    const token = sessionStorage.getItem(SESSION_KEY);
+    if (!token) { showToast('⚠ Not logged in.'); return; }
+    try {
+      const res = await fetch(`${API_BASE}/admin/products`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ name: 'New Product', sku: `PROD-${Date.now()}`, category: 'Accessories', price: 0, active: false }),
+      });
+      if (res.ok) {
+        const data = await res.json() as { product: any };
+        const np: NormProduct = { ...data.product, price: Number(data.product.price) / 100, oldPrice: undefined, images: [] };
+        setNormProds(prev => [np, ...prev]);
+        setExpandedProdId(np.id);
+        showToast('✓ New product created — edit and save to publish.');
+      } else {
+        showToast('⚠ Failed to create product.');
+      }
+    } catch {
+      showToast('⚠ Network error.');
+    }
   };
 
   const handleCheckMembershipCode = async () => {
@@ -991,220 +1095,130 @@ export default function AdminPage() {
                       </div>
                     </div>
 
+                    {/* ── Products (165-product normalized catalog) ── */}
                     <div>
-                      <h3 className={sectionHeadCls}>Products</h3>
-                      <p className="text-xs text-muted-foreground mb-4 font-medium">All edits save to the live shop. Category determines which tab the product appears under (Phones / Computers / Gaming / Apple / Accessories).</p>
-                      {(draft.shop.products ?? []).map((p, pIdx) => (
-                        <div key={p.id} className={cardCls + " space-y-4"}>
-                          {/* Header row: name + publish toggle + reorder + delete */}
-                          <div className="flex items-center gap-3">
-                            <div className="flex-1 font-black text-sm truncate">{p.name || 'Unnamed Product'}</div>
-                            {/* Publish / Unpublish */}
-                            <button
-                              type="button"
-                              onClick={() => updateArrayItem('shop', p.id, 'active', !p.active)}
-                              className={`px-3 py-1.5 rounded-full text-xs font-black uppercase tracking-wider border transition-all ${p.active ? 'bg-green-500/10 text-green-400 border-green-500/30 hover:bg-green-500/20' : 'bg-muted text-muted-foreground border-border hover:border-primary/50'}`}
-                            >
-                              {p.active ? '● Published' : '○ Unpublished'}
-                            </button>
-                            {/* Reorder up/down */}
-                            <button
-                              type="button"
-                              onClick={() => setDraft(d => {
-                                const prods = [...(d.shop.products ?? [])];
-                                if (pIdx === 0) return d;
-                                [prods[pIdx - 1], prods[pIdx]] = [prods[pIdx], prods[pIdx - 1]];
-                                return { ...d, shop: { ...d.shop, products: prods } };
-                              })}
-                              disabled={pIdx === 0}
-                              className="p-1.5 rounded-lg border border-border text-muted-foreground hover:text-foreground disabled:opacity-30 transition-colors"
-                              title="Move up"
-                            >↑</button>
-                            <button
-                              type="button"
-                              onClick={() => setDraft(d => {
-                                const prods = [...(d.shop.products ?? [])];
-                                if (pIdx === prods.length - 1) return d;
-                                [prods[pIdx], prods[pIdx + 1]] = [prods[pIdx + 1], prods[pIdx]];
-                                return { ...d, shop: { ...d.shop, products: prods } };
-                              })}
-                              disabled={pIdx === (draft.shop.products ?? []).length - 1}
-                              className="p-1.5 rounded-lg border border-border text-muted-foreground hover:text-foreground disabled:opacity-30 transition-colors"
-                              title="Move down"
-                            >↓</button>
-                            <button onClick={() => setDraft(d => ({...d, shop: {...d.shop, products: (d.shop.products ?? []).filter(x => x.id !== p.id)}}))} className={deleteBtnCls}><Trash2 size={16} /></button>
-                          </div>
+                      <div className="flex items-center justify-between mb-3">
+                        <h3 className={sectionHeadCls}>
+                          Products
+                          {normProds.length > 0 && <span className="ml-2 text-xs font-normal text-muted-foreground normal-case">({normProds.length} total)</span>}
+                        </h3>
+                        <button onClick={createNormProd} className={addBtnCls}><Plus size={14} /> New Product</button>
+                      </div>
+                      <p className="text-xs text-muted-foreground mb-3 font-medium">
+                        Each product saves individually to the live catalog. Use the search to find specific products. Changes are saved instantly when you click Save.
+                      </p>
 
-                          {/* Row 1: Name, SKU */}
-                          <div className="grid grid-cols-2 gap-2">
-                            <div><label className={labelCls}>Product Name</label>
-                              <input value={p.name} onChange={e => updateArrayItem('shop', p.id, 'name', e.target.value)} className={inputCls} placeholder="e.g. iPhone 15 Pro — Space Black 256GB" /></div>
-                            <div><label className={labelCls}>SKU</label>
-                              <input value={p.sku} onChange={e => updateArrayItem('shop', p.id, 'sku', e.target.value)} className={inputCls} placeholder="e.g. IP15P-BLK-256" /></div>
-                          </div>
-
-                          {/* Row 2: Description */}
-                          <div><label className={labelCls}>Description</label>
-                            <textarea
-                              value={(p as any).description ?? ''}
-                              onChange={e => updateArrayItem('shop', p.id, 'description', e.target.value)}
-                              className={textareaCls}
-                              placeholder="Full product description shown in search results and product details…"
-                              rows={3}
-                            /></div>
-
-                          {/* Row 3: Category, Subcategory, Brand, Model */}
-                          <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-                            <div><label className={labelCls}>Category</label>
-                              <select value={p.category} onChange={e => updateArrayItem('shop', p.id, 'category', e.target.value)} className={inputCls}>
-                                <option>Phones</option>
-                                <option>Computers</option>
-                                <option>Gaming</option>
-                                <option>Apple</option>
-                                <option>Accessories</option>
-                              </select></div>
-                            <div><label className={labelCls}>Subcategory</label>
-                              <input value={(p as any).subcategory ?? ''} onChange={e => updateArrayItem('shop', p.id, 'subcategory', e.target.value)} className={inputCls} placeholder="e.g. Cases, Cables" /></div>
-                            <div><label className={labelCls}>Brand</label>
-                              <input value={(p as any).brand ?? ''} onChange={e => updateArrayItem('shop', p.id, 'brand', e.target.value)} className={inputCls} placeholder="e.g. Apple, Samsung" /></div>
-                            <div><label className={labelCls}>Model</label>
-                              <input value={(p as any).model ?? ''} onChange={e => updateArrayItem('shop', p.id, 'model', e.target.value)} className={inputCls} placeholder="e.g. iPhone 15 Pro" /></div>
-                          </div>
-
-                          {/* Row 4: Condition */}
-                          <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-                            <div><label className={labelCls}>Condition</label>
-                              <select value={(p as any).condition ?? ''} onChange={e => updateArrayItem('shop', p.id, 'condition', e.target.value)} className={inputCls}>
-                                <option value="">Not specified</option>
-                                <option>New</option>
-                                <option>Like New</option>
-                                <option>Excellent</option>
-                                <option>Good</option>
-                                <option>Fair</option>
-                                <option>Refurbished</option>
-                              </select></div>
-                            <div><label className={labelCls}>Stock Qty</label>
-                              <input type="number" min="0" value={p.stock} onChange={e => updateArrayItem('shop', p.id, 'stock', Number(e.target.value))} className={inputCls} /></div>
-                            <div><label className={labelCls}>Stock Status</label>
-                              <select value={(p as any).stockStatus ?? ''} onChange={e => updateArrayItem('shop', p.id, 'stockStatus', e.target.value)} className={inputCls}>
-                                <option value="">Auto from qty</option>
-                                <option>In Stock</option>
-                                <option>Low Stock</option>
-                                <option>Out of Stock</option>
-                                <option>Pre-Order</option>
-                              </select></div>
-                            <div><label className={labelCls}>Sort Order</label>
-                              <input type="number" min="0" value={(p as any).sortOrder ?? ''} onChange={e => updateArrayItem('shop', p.id, 'sortOrder', Number(e.target.value))} className={inputCls} placeholder="0 = first" /></div>
-                          </div>
-
-                          {/* Row 5: Price, Sale Price, Badge, Rating */}
-                          <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-                            <div><label className={labelCls}>Price ($)</label>
-                              <input type="number" step="0.01" min="0" value={p.price} onChange={e => updateArrayItem('shop', p.id, 'price', Number(e.target.value))} className={inputCls} /></div>
-                            <div><label className={labelCls}>Original / Sale Price ($)</label>
-                              <input type="number" step="0.01" min="0" value={p.oldPrice || (p as any).salePrice || ''} onChange={e => { const v = Number(e.target.value); updateArrayItem('shop', p.id, 'oldPrice', v || undefined); updateArrayItem('shop', p.id, 'salePrice', v || undefined); }} className={inputCls} placeholder="Struck-through price" /></div>
-                            <div><label className={labelCls}>Badge Label</label>
-                              <input value={p.badge ?? ''} onChange={e => updateArrayItem('shop', p.id, 'badge', e.target.value)} className={inputCls} placeholder="e.g. Best Seller, Sale, New" /></div>
-                            <div><label className={labelCls}>Rating (0–5)</label>
-                              <input type="number" step="0.1" min="0" max="5" value={p.rating} onChange={e => updateArrayItem('shop', p.id, 'rating', Number(e.target.value))} className={inputCls} /></div>
-                          </div>
-
-                          {/* Row 6: Tags / Keywords */}
-                          <div><label className={labelCls}>Search Keywords / Tags <span className="font-normal normal-case">(comma-separated)</span></label>
-                            <input value={(p as any).tags ?? ''} onChange={e => updateArrayItem('shop', p.id, 'tags', e.target.value)} className={inputCls} placeholder="e.g. iphone, phone, apple, smartphone, 256gb" /></div>
-
-                          {/* Row 7: Specifications */}
-                          <div>
-                            <label className={labelCls}>Specifications</label>
-                            {((p as any).specifications ?? []).map((spec: any, si: number) => (
-                              <div key={si} className="flex gap-2 mb-2">
-                                <input
-                                  value={spec.key}
-                                  onChange={e => {
-                                    const specs = [...((p as any).specifications ?? [])];
-                                    specs[si] = { ...specs[si], key: e.target.value };
-                                    updateArrayItem('shop', p.id, 'specifications', specs);
-                                  }}
-                                  className={inputCls}
-                                  placeholder="Label (e.g. Storage)"
-                                />
-                                <input
-                                  value={spec.value}
-                                  onChange={e => {
-                                    const specs = [...((p as any).specifications ?? [])];
-                                    specs[si] = { ...specs[si], value: e.target.value };
-                                    updateArrayItem('shop', p.id, 'specifications', specs);
-                                  }}
-                                  className={inputCls}
-                                  placeholder="Value (e.g. 256 GB)"
-                                />
-                                <button
-                                  type="button"
-                                  onClick={() => {
-                                    const specs = ((p as any).specifications ?? []).filter((_: any, i: number) => i !== si);
-                                    updateArrayItem('shop', p.id, 'specifications', specs);
-                                  }}
-                                  className={deleteBtnCls}
-                                ><Trash2 size={14} /></button>
-                              </div>
-                            ))}
-                            <button
-                              type="button"
-                              onClick={() => {
-                                const specs = [...((p as any).specifications ?? []), { key: '', value: '' }];
-                                updateArrayItem('shop', p.id, 'specifications', specs);
-                              }}
-                              className={addBtnCls}
-                            ><Plus size={12} /> Add Spec</button>
-                          </div>
-
-                          {/* Row 8: Images gallery */}
-                          <ImageGalleryField
-                            images={(p as any).images ?? (p.image ? [p.image] : [])}
-                            onChange={imgs => {
-                              // Keep legacy image field in sync with first image
-                              updateArrayItem('shop', p.id, 'images', imgs);
-                              updateArrayItem('shop', p.id, 'image', imgs[0] ?? '');
-                            }}
-                          />
+                      {normProdsLoading ? (
+                        <div className="text-center py-10 text-muted-foreground text-sm flex items-center justify-center gap-2">
+                          <div className="w-4 h-4 border-2 border-primary/30 border-t-primary rounded-full animate-spin" />
+                          Loading {normProds.length > 0 ? `${normProds.length} products` : 'products'}…
                         </div>
-                      ))}
-                      <button
-                        onClick={() => setDraft(d => ({
-                          ...d,
-                          shop: {
-                            ...d.shop,
-                            products: [
-                              ...(d.shop.products ?? []),
-                              {
-                                id: crypto.randomUUID(),
-                                name: 'New Product',
-                                description: '',
-                                category: 'Accessories',
-                                subcategory: '',
-                                brand: '',
-                                model: '',
-                                condition: '',
-                                price: 0,
-                                oldPrice: undefined,
-                                salePrice: undefined,
-                                rating: 4.5,
-                                badge: '',
-                                image: '',
-                                images: [],
-                                stock: 0,
-                                stockStatus: '',
-                                sku: '',
-                                active: false,
-                                sortOrder: (d.shop.products ?? []).length,
-                                specifications: [],
-                                tags: '',
-                              },
-                            ],
-                          },
-                        }))}
-                        className={addBtnCls}
-                      ><Plus size={14} /> Add Product</button>
+                      ) : (
+                        <>
+                          <input
+                            type="search"
+                            value={normProdSearch}
+                            onChange={e => setNormProdSearch(e.target.value)}
+                            placeholder="Search by name, SKU, or category…"
+                            className={inputCls + " mb-3"}
+                          />
+                          <div className="space-y-2">
+                            {normProds
+                              .filter(p => !normProdSearch.trim() || [p.name, p.sku, p.category, p.subcategory ?? ''].join(' ').toLowerCase().includes(normProdSearch.toLowerCase().trim()))
+                              .map(p => (
+                                <div key={p.id} className={cardCls + " !p-3"}>
+                                  {/* ── Collapsed header ── */}
+                                  <div className="flex items-center gap-2 min-w-0">
+                                    <div className="flex-1 min-w-0">
+                                      <div className="font-bold text-sm truncate">{p.name || 'Unnamed Product'}</div>
+                                      <div className="text-xs text-muted-foreground font-mono truncate">{p.sku} · {p.category}{p.subcategory ? ` / ${p.subcategory}` : ''}</div>
+                                    </div>
+                                    {/* Status */}
+                                    <button
+                                      type="button"
+                                      onClick={() => updateNormProd(p.id, 'active', !p.active)}
+                                      className={`shrink-0 px-2 py-1 rounded-full text-xs font-black uppercase tracking-wider border transition-all ${p.active ? 'bg-green-500/10 text-green-400 border-green-500/30' : 'bg-muted text-muted-foreground border-border'}`}
+                                    >{p.active ? '● Live' : '○ Hidden'}</button>
+                                    {/* Expand/collapse */}
+                                    <button
+                                      onClick={() => setExpandedProdId(expandedProdId === p.id ? null : p.id)}
+                                      className="shrink-0 px-2 py-1 rounded-lg border border-border text-xs font-bold hover:border-primary/50 transition-colors"
+                                    >{expandedProdId === p.id ? '↑ Close' : '↓ Edit'}</button>
+                                    {/* Save */}
+                                    {savingProdId === p.id ? (
+                                      <span className="shrink-0 text-xs text-muted-foreground">Saving…</span>
+                                    ) : (
+                                      <button
+                                        onClick={() => saveNormProd(p)}
+                                        className="shrink-0 px-2 py-1 rounded-lg bg-primary/10 text-primary border border-primary/30 text-xs font-black hover:bg-primary/20 transition-colors flex items-center gap-1"
+                                      ><Save size={12} /> Save</button>
+                                    )}
+                                  </div>
+
+                                  {/* ── Expanded editor ── */}
+                                  {expandedProdId === p.id && (
+                                    <div className="pt-4 mt-3 border-t border-border space-y-4">
+                                      {/* Row 1: Name + SKU */}
+                                      <div className="grid grid-cols-2 gap-2">
+                                        <div><label className={labelCls}>Product Name</label>
+                                          <input value={p.name} onChange={e => updateNormProd(p.id, 'name', e.target.value)} className={inputCls} /></div>
+                                        <div><label className={labelCls}>SKU</label>
+                                          <input value={p.sku} onChange={e => updateNormProd(p.id, 'sku', e.target.value)} className={inputCls} /></div>
+                                      </div>
+                                      {/* Row 2: Description */}
+                                      <div><label className={labelCls}>Description</label>
+                                        <textarea value={p.description ?? ''} onChange={e => updateNormProd(p.id, 'description', e.target.value)} className={textareaCls} rows={3} /></div>
+                                      {/* Row 3: Category + Subcategory + Condition + Stock */}
+                                      <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+                                        <div><label className={labelCls}>Category</label>
+                                          <select value={p.category} onChange={e => updateNormProd(p.id, 'category', e.target.value)} className={inputCls}>
+                                            {NORM_CATEGORIES.map(c => <option key={c}>{c}</option>)}
+                                          </select></div>
+                                        <div><label className={labelCls}>Subcategory</label>
+                                          <input value={p.subcategory ?? ''} onChange={e => updateNormProd(p.id, 'subcategory', e.target.value || null)} className={inputCls} /></div>
+                                        <div><label className={labelCls}>Condition</label>
+                                          <select value={p.condition ?? ''} onChange={e => updateNormProd(p.id, 'condition', e.target.value || null)} className={inputCls}>
+                                            {['','New','Like New','Excellent','Good','Fair','Refurbished'].map(c => <option key={c} value={c}>{c || 'Not specified'}</option>)}
+                                          </select></div>
+                                        <div><label className={labelCls}>Qty in Stock</label>
+                                          <input type="number" min="0" value={p.inventoryQuantity ?? 0} onChange={e => updateNormProd(p.id, 'inventoryQuantity', Number(e.target.value))} className={inputCls} /></div>
+                                      </div>
+                                      {/* Row 4: Prices + Badge + Rating */}
+                                      <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+                                        <div><label className={labelCls}>Price ($)</label>
+                                          <input type="number" step="0.01" min="0" value={p.price} onChange={e => updateNormProd(p.id, 'price', Number(e.target.value))} className={inputCls} /></div>
+                                        <div><label className={labelCls}>Original Price ($)</label>
+                                          <input type="number" step="0.01" min="0" value={p.oldPrice ?? ''} onChange={e => updateNormProd(p.id, 'oldPrice', e.target.value ? Number(e.target.value) : undefined)} className={inputCls} placeholder="Struck-through" /></div>
+                                        <div><label className={labelCls}>Badge</label>
+                                          <input value={p.badge ?? ''} onChange={e => updateNormProd(p.id, 'badge', e.target.value || null)} className={inputCls} placeholder="e.g. New, Sale" /></div>
+                                        <div><label className={labelCls}>Rating (0–5)</label>
+                                          <input type="number" step="0.1" min="0" max="5" value={p.rating ?? 4.5} onChange={e => updateNormProd(p.id, 'rating', Number(e.target.value))} className={inputCls} /></div>
+                                      </div>
+                                      {/* Images */}
+                                      <ImageGalleryField
+                                        images={p.images ?? []}
+                                        onChange={imgs => updateNormProd(p.id, 'images', imgs)}
+                                      />
+                                      {/* Bottom save button for convenience */}
+                                      <div className="flex justify-end">
+                                        <button
+                                          onClick={() => saveNormProd(p)}
+                                          disabled={savingProdId === p.id}
+                                          className="px-4 py-2 bg-primary text-primary-foreground rounded-xl font-black text-sm hover:opacity-90 transition-opacity disabled:opacity-50 flex items-center gap-2"
+                                        ><Save size={14} /> {savingProdId === p.id ? 'Saving…' : 'Save Product'}</button>
+                                      </div>
+                                    </div>
+                                  )}
+                                </div>
+                              ))}
+                            {normProds.filter(p => !normProdSearch.trim() || [p.name, p.sku, p.category, p.subcategory ?? ''].join(' ').toLowerCase().includes(normProdSearch.toLowerCase().trim())).length === 0 && (
+                              <div className="text-center py-8 text-muted-foreground text-sm border border-dashed border-border rounded-xl">
+                                No products match "<strong>{normProdSearch}</strong>"
+                              </div>
+                            )}
+                          </div>
+                        </>
+                      )}
                     </div>
 
                     <div>
