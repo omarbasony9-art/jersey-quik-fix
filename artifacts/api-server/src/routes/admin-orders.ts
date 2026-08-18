@@ -3,6 +3,8 @@
  * GET  /api/admin/orders        — list all orders, newest first
  * GET  /api/admin/orders/:id    — order detail with line items
  * PATCH /api/admin/orders/:id   — update fulfillment status
+ *
+ * Response contract: camelCase field names; monetary values in cents (integers).
  */
 import { Router } from "express";
 import { pool } from "@workspace/db";
@@ -10,6 +12,39 @@ import { requireAdminAuth } from "../middleware/adminAuth";
 
 const adminOrdersRouter = Router();
 adminOrdersRouter.use(requireAdminAuth);
+
+// SQL fragment that builds a camelCase order_items JSON array
+const ITEMS_AGG = `
+  COALESCE(json_agg(
+    json_build_object(
+      'id',           oi.id::text,
+      'productId',    oi.product_id,
+      'productName',  oi.product_name,
+      'productImage', oi.product_image,
+      'unitPriceCents', ROUND(oi.price * 100)::INTEGER,
+      'quantity',     oi.quantity,
+      'storage',      oi.storage,
+      'color',        oi.color,
+      'condition',    oi.condition
+    ) ORDER BY oi.id
+  ) FILTER (WHERE oi.id IS NOT NULL), '[]'::json)
+`;
+
+/** Normalize a Postgres order row to the shape the admin UI expects. */
+function normalizeOrder(r: any) {
+  return {
+    id:              r.id,
+    stripeSessionId: r.stripe_session_id ?? null,
+    customerEmail:   r.customer_email ?? null,
+    customerName:    r.customer_name ?? null,
+    totalCents:      Math.round(Number(r.total ?? 0) * 100),
+    status:          r.status,
+    shippingAddress: r.shipping_address ?? null,
+    createdAt:       r.created_at,
+    updatedAt:       r.updated_at,
+    items:           Array.isArray(r.items) ? r.items : [],
+  };
+}
 
 // ── GET /api/admin/orders ───────────────────────────────────────────────────
 adminOrdersRouter.get("/admin/orders", async (req, res): Promise<void> => {
@@ -31,14 +66,7 @@ adminOrdersRouter.get("/admin/orders", async (req, res): Promise<void> => {
     const total = parseInt(countRes.rows[0].total, 10);
 
     const ordersRes = await pool.query(
-      `SELECT o.*,
-              COALESCE(json_agg(
-                json_build_object(
-                  'id', oi.id, 'product_id', oi.product_id,
-                  'product_name', oi.product_name, 'product_image', oi.product_image,
-                  'price', oi.price, 'quantity', oi.quantity
-                ) ORDER BY oi.id
-              ) FILTER (WHERE oi.id IS NOT NULL), '[]') AS items
+      `SELECT o.*, ${ITEMS_AGG} AS items
        FROM orders o
        LEFT JOIN order_items oi ON oi.order_id = o.id
        ${where}
@@ -49,11 +77,11 @@ adminOrdersRouter.get("/admin/orders", async (req, res): Promise<void> => {
     );
 
     res.json({
-      orders: ordersRes.rows,
+      orders:     ordersRes.rows.map(normalizeOrder),
       total,
-      page: pageNum,
+      page:       pageNum,
       totalPages: Math.ceil(total / limitNum),
-      limit: limitNum,
+      limit:      limitNum,
     });
   } catch (err) {
     console.error("GET /api/admin/orders error:", err);
@@ -66,14 +94,7 @@ adminOrdersRouter.get("/admin/orders/:id", async (req, res): Promise<void> => {
   const { id } = req.params;
   try {
     const orderRes = await pool.query(
-      `SELECT o.*,
-              COALESCE(json_agg(
-                json_build_object(
-                  'id', oi.id, 'product_id', oi.product_id,
-                  'product_name', oi.product_name, 'product_image', oi.product_image,
-                  'price', oi.price, 'quantity', oi.quantity
-                ) ORDER BY oi.id
-              ) FILTER (WHERE oi.id IS NOT NULL), '[]') AS items
+      `SELECT o.*, ${ITEMS_AGG} AS items
        FROM orders o
        LEFT JOIN order_items oi ON oi.order_id = o.id
        WHERE o.id = $1
@@ -84,7 +105,7 @@ adminOrdersRouter.get("/admin/orders/:id", async (req, res): Promise<void> => {
       res.status(404).json({ error: "Order not found" });
       return;
     }
-    res.json(orderRes.rows[0]);
+    res.json(normalizeOrder(orderRes.rows[0]));
   } catch (err) {
     console.error("GET /api/admin/orders/:id error:", err);
     res.status(500).json({ error: "Failed to fetch order" });
@@ -93,9 +114,10 @@ adminOrdersRouter.get("/admin/orders/:id", async (req, res): Promise<void> => {
 
 // ── PATCH /api/admin/orders/:id ─────────────────────────────────────────────
 adminOrdersRouter.patch("/admin/orders/:id", async (req, res): Promise<void> => {
-  const { id }    = req.params;
+  const { id }     = req.params;
   const { status } = req.body as { status?: string };
-  const allowed   = ["paid", "packed", "shipped", "delivered", "cancelled"];
+  // Accept both webhook-set values (paid) and admin UI values (pending, processing, etc.)
+  const allowed = ["pending", "processing", "shipped", "completed", "cancelled", "paid", "packed", "delivered"];
 
   if (!status || !allowed.includes(status)) {
     res.status(400).json({ error: `status must be one of: ${allowed.join(", ")}` });
@@ -110,7 +132,9 @@ adminOrdersRouter.patch("/admin/orders/:id", async (req, res): Promise<void> => 
       res.status(404).json({ error: "Order not found" });
       return;
     }
-    res.json(result.rows[0]);
+    // Return minimal shape for status-update response
+    const r = result.rows[0];
+    res.json({ id: r.id, status: r.status, updatedAt: r.updated_at });
   } catch (err) {
     console.error("PATCH /api/admin/orders/:id error:", err);
     res.status(500).json({ error: "Failed to update order status" });
@@ -125,10 +149,12 @@ adminOrdersRouter.get("/orders/confirmation/:sessionId", async (req, res): Promi
       `SELECT o.*,
               COALESCE(json_agg(
                 json_build_object(
-                  'product_name', oi.product_name, 'product_image', oi.product_image,
-                  'price', oi.price, 'quantity', oi.quantity
+                  'productName',  oi.product_name,
+                  'productImage', oi.product_image,
+                  'unitPriceCents', ROUND(oi.price * 100)::INTEGER,
+                  'quantity',     oi.quantity
                 ) ORDER BY oi.id
-              ) FILTER (WHERE oi.id IS NOT NULL), '[]') AS items
+              ) FILTER (WHERE oi.id IS NOT NULL), '[]'::json) AS items
        FROM orders o
        LEFT JOIN order_items oi ON oi.order_id = o.id
        WHERE o.stripe_session_id = $1
@@ -139,7 +165,7 @@ adminOrdersRouter.get("/orders/confirmation/:sessionId", async (req, res): Promi
       res.status(404).json({ error: "Order not found" });
       return;
     }
-    res.json(result.rows[0]);
+    res.json(normalizeOrder(result.rows[0]));
   } catch (err) {
     console.error("GET /api/orders/confirmation/:sessionId error:", err);
     res.status(500).json({ error: "Failed to fetch order confirmation" });

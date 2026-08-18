@@ -1,0 +1,28 @@
+kind = "web"
+previewPath = "/"
+title = "Jersey Quik Fix"
+description = "Jersey Quik Fix repair shop website — device repair booking, shop, and community."
+version = "1.0.0"
+id = "artifacts/gamevault"
+router = "path"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 26244
+
+[services.development]
+run = "pnpm --filter @workspace/gamevault run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/gamevault", "run", "build" ]
+serve = "static"
+publicDir = "jersey-quik-fix/artifacts/gamevault/dist/public"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "26244"
+BASE_PATH = "/"

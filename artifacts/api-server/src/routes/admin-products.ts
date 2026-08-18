@@ -1,6 +1,9 @@
 /**
  * admin-products.ts — Admin product CRUD routes
  * All routes require Bearer admin token via requireAdminAuth middleware.
+ *
+ * Price contract: all price values returned from this API are in CENTS (integer).
+ * The DB stores prices as NUMERIC dollars; we multiply ×100 on read, ÷100 on write.
  */
 import { Router } from "express";
 import { pool } from "@workspace/db";
@@ -9,6 +12,35 @@ import { requireAdminAuth } from "../middleware/adminAuth";
 
 const adminProductsRouter = Router();
 adminProductsRouter.use(requireAdminAuth);
+
+/** Convert a Postgres row to the shape the admin UI expects (camelCase, cents). */
+function normalizeProduct(r: any) {
+  return {
+    id:            r.id,
+    sku:           r.sku,
+    name:          r.name,
+    category:      r.category,
+    subcategory:   r.subcategory ?? null,
+    description:   r.description ?? "",
+    price:         Math.round(Number(r.price) * 100), // cents
+    oldPrice:      r.old_price != null ? Math.round(Number(r.old_price) * 100) : null,
+    priceNote:     r.price_note ?? null,
+    condition:     r.condition,
+    configuration: r.configuration ?? {},
+    stock:         Number(r.stock ?? 0),
+    images:        r.images ?? [],
+    badge:         r.badge ?? null,
+    rating:        Number(r.rating ?? 0),
+    active:        r.active,
+    featured:      r.featured,
+    verified:      r.verified,
+    verificationNote: r.verification_note ?? null,
+    createdAt:     r.created_at,
+    updatedAt:     r.updated_at,
+    inventoryQuantity: r.inventory_quantity != null ? Number(r.inventory_quantity) : undefined,
+    reserved:      r.reserved != null ? Number(r.reserved) : undefined,
+  };
+}
 
 // ── GET /api/admin/products ─────────────────────────────────────────────────
 adminProductsRouter.get("/admin/products", async (req, res): Promise<void> => {
@@ -66,7 +98,13 @@ adminProductsRouter.get("/admin/products", async (req, res): Promise<void> => {
       [...params, limitNum, offset]
     );
 
-    res.json({ products: dataRes.rows, total, page: pageNum, totalPages: Math.ceil(total / limitNum), limit: limitNum });
+    res.json({
+      products: dataRes.rows.map(normalizeProduct),
+      total,
+      page: pageNum,
+      totalPages: Math.ceil(total / limitNum),
+      limit: limitNum,
+    });
   } catch (err) {
     console.error("GET /api/admin/products error:", err);
     res.status(500).json({ error: "Failed to fetch products" });
@@ -83,9 +121,13 @@ adminProductsRouter.post("/admin/products", async (req, res): Promise<void> => {
   } = req.body as Record<string, any>;
 
   if (!name || !category || price == null || !sku) {
-    res.status(400).json({ error: "name, category, price, and sku are required" });
+    res.status(400).json({ error: "name, category, price (in cents), and sku are required" });
     return;
   }
+
+  // Price from UI is in cents; convert to dollars for DB storage
+  const priceDollars    = Number(price) / 100;
+  const oldPriceDollars = oldPrice != null ? Number(oldPrice) / 100 : null;
 
   const id = randomUUID();
   try {
@@ -95,7 +137,7 @@ adminProductsRouter.post("/admin/products", async (req, res): Promise<void> => {
           condition, configuration, stock, sku, images, badge, rating, active, featured,
           verified, verification_note)
        VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19)`,
-      [id, name, category, subcategory ?? null, description, price, oldPrice ?? null,
+      [id, name, category, subcategory ?? null, description, priceDollars, oldPriceDollars,
        priceNote ?? null, condition, configuration ? JSON.stringify(configuration) : null,
        stock, sku, images, badge ?? null, rating, active, featured, verified,
        verificationNote ?? null]
@@ -109,7 +151,7 @@ adminProductsRouter.post("/admin/products", async (req, res): Promise<void> => {
     );
 
     const product = await pool.query("SELECT * FROM products WHERE id = $1", [id]);
-    res.status(201).json(product.rows[0]);
+    res.status(201).json(normalizeProduct(product.rows[0]));
   } catch (err: any) {
     if (err.constraint === "products_sku_key") {
       res.status(409).json({ error: "SKU already exists" });
@@ -123,7 +165,15 @@ adminProductsRouter.post("/admin/products", async (req, res): Promise<void> => {
 // ── PATCH /api/admin/products/:id ──────────────────────────────────────────
 adminProductsRouter.patch("/admin/products/:id", async (req, res): Promise<void> => {
   const { id } = req.params;
-  const fields = req.body as Record<string, any>;
+  const fields = { ...(req.body as Record<string, any>) };
+
+  // Price from admin UI is in cents; convert to dollars before writing to DB
+  if ("price" in fields && fields.price != null) {
+    fields.price = Number(fields.price) / 100;
+  }
+  if ("oldPrice" in fields && fields.oldPrice != null) {
+    fields.oldPrice = Number(fields.oldPrice) / 100;
+  }
 
   const columnMap: Record<string, string> = {
     name: "name", category: "category", subcategory: "subcategory",
@@ -176,7 +226,7 @@ adminProductsRouter.patch("/admin/products/:id", async (req, res): Promise<void>
       );
     }
 
-    res.json(result.rows[0]);
+    res.json(normalizeProduct(result.rows[0]));
   } catch (err: any) {
     if (err.constraint === "products_sku_key") {
       res.status(409).json({ error: "SKU already exists" });
@@ -235,12 +285,25 @@ adminProductsRouter.post("/admin/products/bulk", async (req, res): Promise<void>
 adminProductsRouter.get("/admin/inventory", async (_req, res): Promise<void> => {
   try {
     const result = await pool.query(
-      `SELECT i.*, p.name, p.category, p.sku, p.active
+      `SELECT i.product_id, p.name, p.category, p.sku, p.active,
+              i.quantity, i.reserved, i.threshold
        FROM inventory i
        JOIN products p ON p.id = i.product_id
        ORDER BY p.category, p.name`
     );
-    res.json(result.rows);
+    res.json({
+      inventory: result.rows.map(r => ({
+        productId:   r.product_id,
+        productName: r.name,
+        category:    r.category,
+        sku:         r.sku,
+        active:      r.active,
+        quantity:    Number(r.quantity),
+        reserved:    Number(r.reserved ?? 0),
+        threshold:   Number(r.threshold ?? 2),
+        available:   Math.max(0, Number(r.quantity) - Number(r.reserved ?? 0)),
+      })),
+    });
   } catch (err) {
     console.error("GET /api/admin/inventory error:", err);
     res.status(500).json({ error: "Failed to fetch inventory" });
@@ -267,7 +330,7 @@ adminProductsRouter.patch("/admin/inventory/:productId", async (req, res): Promi
       `UPDATE inventory SET ${setClauses.join(", ")} WHERE product_id = $${idx}`,
       params
     );
-    // Sync product stock
+    // Sync product stock column
     if (quantity != null) {
       await pool.query(
         `UPDATE products SET stock = $1, updated_at = NOW() WHERE id = $2`,

@@ -24,6 +24,29 @@ type RepairTicket = {
   status: string; createdAt: string;
 };
 
+type AdminProduct = {
+  id: string; name: string; category: string; subcategory: string | null;
+  price: number; images: string[]; active: boolean; verified: boolean;
+  configuration: Record<string, unknown>;
+};
+
+type AdminInventoryItem = {
+  productId: string; productName: string; category: string;
+  quantity: number; reserved: number; available: number;
+};
+
+type AdminOrderItem = {
+  id: string; productId: string; productName: string;
+  quantity: number; unitPriceCents: number;
+  storage: string | null; color: string | null; condition: string | null;
+};
+
+type AdminOrder = {
+  id: string; stripeSessionId: string | null; customerEmail: string | null;
+  customerName: string | null; totalCents: number; status: string;
+  createdAt: string; items: AdminOrderItem[];
+};
+
 // Field helper component
 function ImageField({ label, value, onChange }: { label: string; value: string; onChange: (v: string) => void }) {
   return (
@@ -56,6 +79,14 @@ export default function AdminPage() {
   const [adminToken, setAdminToken] = useState<string | null>(null);
   const [toastMsg, setToastMsg] = useState<string | null>(null);
 
+  // Products / Inventory / Orders state
+  const [adminProducts, setAdminProducts] = useState<AdminProduct[]>([]);
+  const [adminInventory, setAdminInventory] = useState<AdminInventoryItem[]>([]);
+  const [adminOrders, setAdminOrders] = useState<AdminOrder[]>([]);
+  const [productsSearch, setProductsSearch] = useState('');
+  const [editingProduct, setEditingProduct] = useState<AdminProduct | null>(null);
+  const [invEdits, setInvEdits] = useState<Record<string, number>>({});
+
   // Restore session from sessionStorage on mount
   useEffect(() => {
     const token = sessionStorage.getItem(SESSION_KEY);
@@ -74,6 +105,14 @@ export default function AdminPage() {
   useEffect(() => {
     if (adminToken) { loadRepairs(); loadEmails(); }
   }, [adminToken]);
+
+  // Load panel-specific data on panel switch
+  useEffect(() => {
+    if (!adminToken) return;
+    if (activePanel === 'Products') loadAdminProducts();
+    if (activePanel === 'Inventory') loadAdminInventory();
+    if (activePanel === 'Orders') loadAdminOrders();
+  }, [activePanel, adminToken]);
 
   useEffect(() => {
     if (toastMsg) {
@@ -105,6 +144,81 @@ export default function AdminPage() {
       .then(r => r.ok ? r.json() : [])
       .then(data => setEmails(Array.isArray(data) ? data : []))
       .catch(() => setEmails([]));
+  };
+
+  const loadAdminProducts = () => {
+    const token = sessionStorage.getItem(SESSION_KEY);
+    if (!token) return;
+    fetch(`${API_BASE}/admin/products?limit=200`, { headers: { Authorization: `Bearer ${token}` } })
+      .then(r => r.ok ? r.json() : { products: [] })
+      .then(data => setAdminProducts(Array.isArray(data.products) ? data.products : []))
+      .catch(() => setAdminProducts([]));
+  };
+
+  const loadAdminInventory = () => {
+    const token = sessionStorage.getItem(SESSION_KEY);
+    if (!token) return;
+    fetch(`${API_BASE}/admin/inventory?limit=200`, { headers: { Authorization: `Bearer ${token}` } })
+      .then(r => r.ok ? r.json() : { inventory: [] })
+      .then(data => setAdminInventory(Array.isArray(data.inventory) ? data.inventory : []))
+      .catch(() => setAdminInventory([]));
+  };
+
+  const loadAdminOrders = () => {
+    const token = sessionStorage.getItem(SESSION_KEY);
+    if (!token) return;
+    fetch(`${API_BASE}/admin/orders?limit=100`, { headers: { Authorization: `Bearer ${token}` } })
+      .then(r => r.ok ? r.json() : { orders: [] })
+      .then(data => setAdminOrders(Array.isArray(data.orders) ? data.orders : []))
+      .catch(() => setAdminOrders([]));
+  };
+
+  const saveProductEdit = async (p: AdminProduct) => {
+    const token = sessionStorage.getItem(SESSION_KEY);
+    if (!token) return;
+    const res = await fetch(`${API_BASE}/admin/products/${p.id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+      body: JSON.stringify({ name: p.name, price: p.price, images: p.images, active: p.active }),
+    });
+    if (res.ok) { setEditingProduct(null); loadAdminProducts(); showToast('Product saved.'); }
+    else showToast('Save failed.');
+  };
+
+  const toggleProductActive = async (p: AdminProduct) => {
+    const token = sessionStorage.getItem(SESSION_KEY);
+    if (!token) return;
+    const res = await fetch(`${API_BASE}/admin/products/${p.id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+      body: JSON.stringify({ active: !p.active }),
+    });
+    if (res.ok) { loadAdminProducts(); showToast(p.active ? 'Hidden.' : 'Published.'); }
+    else showToast('Failed.');
+  };
+
+  const saveInventoryQty = async (productId: string, qty: number) => {
+    const token = sessionStorage.getItem(SESSION_KEY);
+    if (!token) return;
+    const res = await fetch(`${API_BASE}/admin/inventory/${productId}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+      body: JSON.stringify({ quantity: qty }),
+    });
+    if (res.ok) { loadAdminInventory(); showToast('Stock updated.'); setInvEdits(prev => { const n = {...prev}; delete n[productId]; return n; }); }
+    else showToast('Failed.');
+  };
+
+  const updateOrderStatus = async (orderId: string, status: string) => {
+    const token = sessionStorage.getItem(SESSION_KEY);
+    if (!token) return;
+    const res = await fetch(`${API_BASE}/admin/orders/${orderId}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+      body: JSON.stringify({ status }),
+    });
+    if (res.ok) { loadAdminOrders(); showToast('Order updated.'); }
+    else showToast('Failed.');
   };
 
   const handleLogin = async (e: React.FormEvent) => {
@@ -234,6 +348,7 @@ export default function AdminPage() {
     { name: 'Dashboard', icon: <LayoutDashboard size={18} /> },
     { name: 'Repair Page', icon: <Wrench size={18} /> },
     { name: 'Shop Page', icon: <ShoppingBag size={18} /> },
+    { name: 'Products', icon: <Package size={18} /> },
     { name: 'Community', icon: <Users size={18} /> },
     { name: 'Repair Tickets', icon: <ClipboardList size={18} /> },
     { name: 'Inventory', icon: <Package size={18} /> },
@@ -726,6 +841,102 @@ export default function AdminPage() {
                   </div>
                 )}
 
+                {/* Products Panel */}
+                {activePanel === 'Products' && (
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between mb-4 flex-wrap gap-3">
+                      <h3 className={sectionHeadCls}>Product Catalog ({adminProducts.length})</h3>
+                      <div className="flex gap-2">
+                        <input
+                          value={productsSearch}
+                          onChange={e => setProductsSearch(e.target.value)}
+                          placeholder="Search products…"
+                          className="bg-background border border-border rounded-xl px-4 py-2 text-sm outline-none focus:border-primary w-52 font-medium"
+                        />
+                        <button onClick={() => { loadAdminProducts(); showToast('Refreshed.'); }} className="flex items-center gap-2 px-4 py-2 bg-card border border-border text-foreground rounded-xl font-bold text-xs uppercase hover:bg-card/80 transition-colors">
+                          <RefreshCcw size={14} /> Refresh
+                        </button>
+                      </div>
+                    </div>
+
+                    {editingProduct && (
+                      <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+                        <div className="bg-card border border-border rounded-3xl p-6 w-full max-w-lg shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto">
+                          <div className="flex items-center justify-between">
+                            <h4 className="font-black text-base">Edit Product</h4>
+                            <button onClick={() => setEditingProduct(null)} className="text-muted-foreground hover:text-foreground"><X size={20} /></button>
+                          </div>
+                          <div>
+                            <label className={labelCls}>Name</label>
+                            <input value={editingProduct.name} onChange={e => setEditingProduct(p => p ? {...p, name: e.target.value} : p)} className={inputCls} />
+                          </div>
+                          <div>
+                            <label className={labelCls}>Base Price ($)</label>
+                            <input type="number" step="0.01" value={(editingProduct.price / 100).toFixed(2)}
+                              onChange={e => setEditingProduct(p => p ? {...p, price: Math.round(parseFloat(e.target.value) * 100)} : p)} className={inputCls} />
+                          </div>
+                          <div>
+                            <label className={labelCls}>Primary Image URL</label>
+                            <input value={editingProduct.images[0] ?? ''} onChange={e => setEditingProduct(p => p ? {...p, images: [e.target.value, ...p.images.slice(1)]} : p)} className={inputCls} placeholder="https://..." />
+                            {editingProduct.images[0] && <img src={editingProduct.images[0]} alt="" className="mt-2 h-28 w-full object-cover rounded-xl border border-border" onError={e => (e.currentTarget.style.display='none')} />}
+                          </div>
+                          <div className="flex items-center gap-3">
+                            <label className={labelCls + ' mb-0'}>Visible to customers</label>
+                            <button onClick={() => setEditingProduct(p => p ? {...p, active: !p.active} : p)}
+                              className={`w-12 h-6 rounded-full transition-colors ${editingProduct.active ? 'bg-primary' : 'bg-muted'} relative`}>
+                              <span className={`absolute top-0.5 w-5 h-5 rounded-full bg-white shadow transition-all ${editingProduct.active ? 'left-6' : 'left-0.5'}`} />
+                            </button>
+                          </div>
+                          <div className="flex gap-3 pt-2">
+                            <button onClick={() => saveProductEdit(editingProduct)} className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-primary text-primary-foreground rounded-xl font-black text-sm uppercase hover:bg-primary/90 transition-colors">
+                              <Save size={16} /> Save Changes
+                            </button>
+                            <button onClick={() => setEditingProduct(null)} className="px-4 py-2.5 bg-card border border-border rounded-xl font-black text-sm uppercase hover:bg-card/80">
+                              Cancel
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {adminProducts.length === 0 ? (
+                      <div className="bg-card border border-dashed border-border rounded-3xl p-16 text-center">
+                        <Package size={40} className="mx-auto text-muted-foreground/30 mb-4" />
+                        <p className="text-muted-foreground font-medium">No products yet.</p>
+                        <p className="text-xs text-muted-foreground/60 mt-1">Products are seeded on API server startup.</p>
+                      </div>
+                    ) : (
+                      <div className="space-y-2">
+                        {adminProducts
+                          .filter(p => !productsSearch || p.name.toLowerCase().includes(productsSearch.toLowerCase()) || p.category.toLowerCase().includes(productsSearch.toLowerCase()))
+                          .map(p => (
+                            <div key={p.id} className={`bg-card border rounded-2xl px-4 py-3 flex items-center gap-4 ${!p.active ? 'opacity-50 border-border' : 'border-border'}`}>
+                              {p.images[0] ? (
+                                <img src={p.images[0]} alt={p.name} className="w-12 h-12 object-cover rounded-xl flex-shrink-0 border border-border" onError={e => (e.currentTarget.style.display='none')} />
+                              ) : (
+                                <div className="w-12 h-12 rounded-xl bg-muted flex-shrink-0 flex items-center justify-center"><ImageIcon size={16} className="text-muted-foreground" /></div>
+                              )}
+                              <div className="flex-1 min-w-0">
+                                <div className="font-black text-sm truncate">{p.name}</div>
+                                <div className="text-xs text-muted-foreground font-medium uppercase tracking-wider mt-0.5">{p.category}{p.subcategory ? ` · ${p.subcategory}` : ''}</div>
+                              </div>
+                              <div className="text-sm font-black text-primary flex-shrink-0">${(p.price / 100).toFixed(0)}</div>
+                              <div className={`text-xs font-bold px-2 py-1 rounded-lg flex-shrink-0 ${p.active ? 'bg-primary/10 text-primary' : 'bg-muted text-muted-foreground'}`}>
+                                {p.active ? 'Live' : 'Hidden'}
+                              </div>
+                              <div className="flex gap-2 flex-shrink-0">
+                                <button onClick={() => setEditingProduct(p)} className="p-2 hover:bg-muted rounded-lg transition-colors"><Edit2 size={14} /></button>
+                                <button onClick={() => toggleProductActive(p)} className="p-2 hover:bg-muted rounded-lg transition-colors text-muted-foreground" title={p.active ? 'Hide' : 'Publish'}>
+                                  {p.active ? <X size={14} /> : <Check size={14} />}
+                                </button>
+                              </div>
+                            </div>
+                          ))}
+                      </div>
+                    )}
+                  </div>
+                )}
+
                 {/* Repair Tickets Panel */}
                 {activePanel === 'Repair Tickets' && (
                   <div className="space-y-4">
@@ -798,41 +1009,112 @@ export default function AdminPage() {
                 {/* Inventory Panel */}
                 {activePanel === 'Inventory' && (
                   <div className="space-y-4">
-                    <h3 className={sectionHeadCls}>Inventory</h3>
-                    {draft.inventory.map(inv => (
-                      <div key={inv.id} className={cardCls + ` flex gap-4 ${inv.quantity <= inv.threshold ? 'border-l-4 border-l-primary' : ''}`}>
-                        <div className="flex-1 grid md:grid-cols-5 gap-2">
-                          <input value={inv.item} onChange={e => updateArrayItem('inventory', inv.id, 'item', e.target.value)} className={inputCls} placeholder="Item Name" />
-                          <input type="number" value={inv.quantity} onChange={e => updateArrayItem('inventory', inv.id, 'quantity', Number(e.target.value))} className={inputCls} placeholder="Qty" />
-                          <input type="number" value={inv.reserved} onChange={e => updateArrayItem('inventory', inv.id, 'reserved', Number(e.target.value))} className={inputCls} placeholder="Reserved" />
-                          <input type="number" value={inv.threshold} onChange={e => updateArrayItem('inventory', inv.id, 'threshold', Number(e.target.value))} className={inputCls} placeholder="Threshold" />
-                          <input value={inv.reason} onChange={e => updateArrayItem('inventory', inv.id, 'reason', e.target.value)} className={inputCls} placeholder="Reason" />
-                        </div>
-                        <button onClick={() => deleteArrayItem('inventory', inv.id)} className={deleteBtnCls}><Trash2 size={16} /></button>
+                    <div className="flex items-center justify-between mb-4">
+                      <h3 className={sectionHeadCls}>Stock Levels ({adminInventory.length} products)</h3>
+                      <button onClick={() => { loadAdminInventory(); showToast('Refreshed.'); }} className="flex items-center gap-2 px-4 py-2 bg-card border border-border text-foreground rounded-xl font-bold text-xs uppercase hover:bg-card/80 transition-colors">
+                        <RefreshCcw size={14} /> Refresh
+                      </button>
+                    </div>
+                    {adminInventory.length === 0 ? (
+                      <div className="bg-card border border-dashed border-border rounded-3xl p-16 text-center">
+                        <Package size={40} className="mx-auto text-muted-foreground/30 mb-4" />
+                        <p className="text-muted-foreground font-medium">No inventory records yet.</p>
                       </div>
-                    ))}
-                    <button onClick={() => setDraft(d => ({...d, inventory: [...d.inventory, { id: crypto.randomUUID(), item: '', quantity: 0, reserved: 0, threshold: 5, reason: 'Manual add' }]}))} className={addBtnCls}><Plus size={14} /> Add Item</button>
+                    ) : (
+                      <div className="space-y-2">
+                        {adminInventory.map(inv => {
+                          const editing = invEdits[inv.productId] ?? inv.quantity;
+                          const dirty = invEdits[inv.productId] !== undefined;
+                          return (
+                            <div key={inv.productId} className={`bg-card border rounded-2xl px-4 py-3 flex items-center gap-4 ${inv.available <= 0 ? 'border-l-4 border-l-destructive' : 'border-border'}`}>
+                              <div className="flex-1 min-w-0">
+                                <div className="font-black text-sm truncate">{inv.productName}</div>
+                                <div className="text-xs text-muted-foreground font-medium uppercase tracking-wider mt-0.5">{inv.category}</div>
+                              </div>
+                              <div className="flex items-center gap-2 flex-shrink-0">
+                                <span className="text-xs font-bold text-muted-foreground">Qty:</span>
+                                <input
+                                  type="number" min={0}
+                                  value={editing}
+                                  onChange={e => setInvEdits(prev => ({...prev, [inv.productId]: Number(e.target.value)}))}
+                                  className="w-20 bg-background border border-border rounded-xl px-3 py-1.5 text-sm font-black text-center outline-none focus:border-primary"
+                                />
+                                {inv.reserved > 0 && <span className="text-xs text-muted-foreground">{inv.reserved} reserved</span>}
+                                {dirty && (
+                                  <button onClick={() => saveInventoryQty(inv.productId, editing)} className="px-3 py-1.5 bg-primary text-primary-foreground text-xs font-black rounded-lg hover:bg-primary/90 transition-colors">
+                                    Save
+                                  </button>
+                                )}
+                              </div>
+                              <div className={`text-xs font-bold px-2 py-1 rounded-lg flex-shrink-0 ${inv.available > 0 ? 'bg-primary/10 text-primary' : 'bg-destructive/10 text-destructive'}`}>
+                                {inv.available > 0 ? `${inv.available} avail` : 'Out'}
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
                   </div>
                 )}
 
                 {/* Orders Panel */}
                 {activePanel === 'Orders' && (
                   <div className="space-y-4">
-                    <h3 className={sectionHeadCls}>Orders</h3>
-                    {draft.orders.map(ord => (
-                      <div key={ord.id} className={cardCls + " flex gap-4"}>
-                        <div className="flex-1 grid md:grid-cols-4 gap-2">
-                          <input value={ord.order} onChange={e => updateArrayItem('orders', ord.id, 'order', e.target.value)} className={inputCls} placeholder="Order #" />
-                          <input value={ord.customer} onChange={e => updateArrayItem('orders', ord.id, 'customer', e.target.value)} className={inputCls} placeholder="Customer" />
-                          <input value={ord.total} onChange={e => updateArrayItem('orders', ord.id, 'total', e.target.value)} className={inputCls} placeholder="Total" />
-                          <select value={ord.status} onChange={e => updateArrayItem('orders', ord.id, 'status', e.target.value)} className={inputCls}>
-                            <option>Pending</option><option>Processing</option><option>Shipped</option><option>Completed</option><option>Cancelled</option>
-                          </select>
-                        </div>
-                        <button onClick={() => deleteArrayItem('orders', ord.id)} className={deleteBtnCls}><Trash2 size={16} /></button>
+                    <div className="flex items-center justify-between mb-4">
+                      <h3 className={sectionHeadCls}>Orders ({adminOrders.length})</h3>
+                      <button onClick={() => { loadAdminOrders(); showToast('Refreshed.'); }} className="flex items-center gap-2 px-4 py-2 bg-card border border-border text-foreground rounded-xl font-bold text-xs uppercase hover:bg-card/80 transition-colors">
+                        <RefreshCcw size={14} /> Refresh
+                      </button>
+                    </div>
+                    {adminOrders.length === 0 ? (
+                      <div className="bg-card border border-dashed border-border rounded-3xl p-16 text-center">
+                        <Receipt size={40} className="mx-auto text-muted-foreground/30 mb-4" />
+                        <p className="text-muted-foreground font-medium">No orders yet.</p>
+                        <p className="text-xs text-muted-foreground/60 mt-1">Orders placed through the Stripe checkout will appear here.</p>
                       </div>
-                    ))}
-                    <button onClick={() => setDraft(d => ({...d, orders: [...d.orders, { id: crypto.randomUUID(), order: 'ORD-'+Math.floor(Math.random()*99999), customer: '', total: '0', status: 'Pending' }]}))} className={addBtnCls}><Plus size={14} /> Add Order</button>
+                    ) : (
+                      <div className="space-y-3">
+                        {[...adminOrders].reverse().map(ord => (
+                          <div key={ord.id} className="bg-card border border-border rounded-2xl p-5">
+                            <div className="flex items-start gap-4 flex-wrap">
+                              <div className="flex-1 min-w-0">
+                                <div className="font-black text-sm">{ord.customerName ?? ord.customerEmail ?? 'Guest'}</div>
+                                {ord.customerEmail && <div className="text-xs text-muted-foreground mt-0.5">{ord.customerEmail}</div>}
+                                <div className="text-xs text-muted-foreground mt-1">
+                                  {new Date(ord.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit' })}
+                                </div>
+                              </div>
+                              <div className="text-lg font-black text-primary">${(ord.totalCents / 100).toFixed(2)}</div>
+                              <select
+                                value={ord.status}
+                                onChange={e => updateOrderStatus(ord.id, e.target.value)}
+                                className="bg-background border border-border rounded-xl px-3 py-1.5 text-sm font-bold outline-none focus:border-primary"
+                              >
+                                <option>pending</option>
+                                <option>processing</option>
+                                <option>shipped</option>
+                                <option>completed</option>
+                                <option>cancelled</option>
+                              </select>
+                            </div>
+                            {ord.items && ord.items.length > 0 && (
+                              <div className="mt-3 pt-3 border-t border-border space-y-1">
+                                {ord.items.map(item => (
+                                  <div key={item.id} className="flex items-center gap-3 text-xs">
+                                    <span className="flex-1 font-medium text-foreground truncate">{item.productName}</span>
+                                    {item.storage && <span className="text-muted-foreground">{item.storage}</span>}
+                                    {item.color && <span className="text-muted-foreground">{item.color}</span>}
+                                    {item.condition && <span className="text-muted-foreground">{item.condition}</span>}
+                                    <span className="text-muted-foreground">×{item.quantity}</span>
+                                    <span className="font-black text-primary">${(item.unitPriceCents / 100).toFixed(2)}</span>
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    )}
                   </div>
                 )}
 

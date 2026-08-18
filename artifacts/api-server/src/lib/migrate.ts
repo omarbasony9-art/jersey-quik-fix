@@ -65,14 +65,22 @@ export async function runAppMigrations(): Promise<void> {
       CREATE TABLE IF NOT EXISTS order_items (
         id            SERIAL PRIMARY KEY,
         order_id      TEXT NOT NULL,
-        product_id    TEXT NOT NULL,
+        product_id    TEXT,
         product_name  TEXT NOT NULL,
         product_image TEXT,
         price         NUMERIC(10,2) NOT NULL,
         quantity      INTEGER NOT NULL DEFAULT 1,
+        storage       TEXT,
+        color         TEXT,
+        condition     TEXT,
         created_at    TIMESTAMPTZ NOT NULL DEFAULT NOW()
       )
     `);
+
+    // Idempotent column additions for existing order_items tables
+    await client.query(`ALTER TABLE order_items ADD COLUMN IF NOT EXISTS storage TEXT`);
+    await client.query(`ALTER TABLE order_items ADD COLUMN IF NOT EXISTS color TEXT`);
+    await client.query(`ALTER TABLE order_items ADD COLUMN IF NOT EXISTS condition TEXT`);
 
     // Indexes for common query patterns
     await client.query(`CREATE INDEX IF NOT EXISTS idx_products_category ON products(category)`);

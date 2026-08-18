@@ -2,6 +2,9 @@ import { runMigrations } from "stripe-replit-sync";
 import { getStripeSync } from "./stripeClient";
 import app from "./app";
 import { logger } from "./lib/logger";
+import { runAppMigrations } from "./lib/migrate";
+import { migrateExistingProducts } from "./lib/migrateExistingProducts";
+import { seedCatalog } from "./lib/seed";
 
 async function initStripe() {
   const databaseUrl = process.env.DATABASE_URL;
@@ -34,6 +37,29 @@ if (!rawPort) throw new Error("PORT environment variable is required but was not
 
 const port = Number(rawPort);
 if (Number.isNaN(port) || port <= 0) throw new Error(`Invalid PORT value: "${rawPort}"`);
+
+// Run app DB migrations first
+try {
+  logger.info("Running app migrations...");
+  await runAppMigrations();
+  logger.info("App migrations complete");
+} catch (err) {
+  logger.error({ err }, "App migrations failed — continuing anyway");
+}
+
+// Migrate legacy JSONB products to products table
+try {
+  await migrateExistingProducts();
+} catch (err) {
+  logger.error({ err }, "Legacy product migration failed — continuing");
+}
+
+// Seed the full catalog
+try {
+  await seedCatalog();
+} catch (err) {
+  logger.error({ err }, "Catalog seed failed — continuing");
+}
 
 await initStripe();
 
