@@ -88,6 +88,17 @@ export default function AdminPage() {
   const [editingProduct, setEditingProduct] = useState<AdminProduct | null>(null);
   const [invEdits, setInvEdits] = useState<Record<string, number>>({});
 
+  type NewProductDraft = {
+    name: string; sku: string; category: string; subcategory: string;
+    price: string; stock: string; active: boolean; imageUrl: string;
+  };
+  const BLANK_PRODUCT: NewProductDraft = {
+    name: '', sku: '', category: 'iPhone', subcategory: '', price: '', stock: '1', active: true, imageUrl: '',
+  };
+  const [addingProduct, setAddingProduct] = useState<NewProductDraft | null>(null);
+  const [addError, setAddError] = useState<string | null>(null);
+  const [addSaving, setAddSaving] = useState(false);
+
   // Restore session from sessionStorage on mount
   useEffect(() => {
     const token = sessionStorage.getItem(SESSION_KEY);
@@ -184,6 +195,43 @@ export default function AdminPage() {
     });
     if (res.ok) { setEditingProduct(null); loadAdminProducts(); showToast('Product saved.'); }
     else showToast('Save failed.');
+  };
+
+  const createProduct = async (draft: NonNullable<typeof addingProduct>) => {
+    const token = sessionStorage.getItem(SESSION_KEY);
+    if (!token) return;
+    setAddError(null);
+    setAddSaving(true);
+    const priceCents = Math.round(parseFloat(draft.price) * 100);
+    if (!draft.name.trim()) { setAddError('Name is required.'); setAddSaving(false); return; }
+    if (!draft.sku.trim()) { setAddError('SKU is required.'); setAddSaving(false); return; }
+    if (!draft.category.trim()) { setAddError('Category is required.'); setAddSaving(false); return; }
+    if (isNaN(priceCents) || priceCents < 0) { setAddError('Enter a valid price.'); setAddSaving(false); return; }
+    try {
+      const res = await fetch(`${API_BASE}/admin/products`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({
+          name: draft.name.trim(),
+          sku: draft.sku.trim().toUpperCase(),
+          category: draft.category.trim(),
+          subcategory: draft.subcategory.trim() || null,
+          price: priceCents,
+          stock: parseInt(draft.stock) || 1,
+          active: draft.active,
+          images: draft.imageUrl ? [draft.imageUrl] : [],
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) { setAddError(data.error ?? 'Failed to create product.'); setAddSaving(false); return; }
+      setAddingProduct(null);
+      loadAdminProducts();
+      showToast('Product created.');
+    } catch {
+      setAddError('Network error — please try again.');
+    } finally {
+      setAddSaving(false);
+    }
   };
 
   const toggleProductActive = async (p: AdminProduct) => {
@@ -857,8 +905,120 @@ export default function AdminPage() {
                         <button onClick={() => { loadAdminProducts(); showToast('Refreshed.'); }} className="flex items-center gap-2 px-4 py-2 bg-card border border-border text-foreground rounded-xl font-bold text-xs uppercase hover:bg-card/80 transition-colors">
                           <RefreshCcw size={14} /> Refresh
                         </button>
+                        <button onClick={() => { setAddingProduct(BLANK_PRODUCT); setAddError(null); }} className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-xl font-bold text-xs uppercase hover:bg-primary/90 transition-colors">
+                          <Plus size={14} /> Add Product
+                        </button>
                       </div>
                     </div>
+
+                    {/* Add Product Modal */}
+                    {addingProduct && (
+                      <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+                        <div className="bg-card border border-border rounded-3xl p-6 w-full max-w-lg shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto">
+                          <div className="flex items-center justify-between">
+                            <h4 className="font-black text-base">Add Product</h4>
+                            <button onClick={() => setAddingProduct(null)} className="text-muted-foreground hover:text-foreground"><X size={20} /></button>
+                          </div>
+
+                          <div className="grid grid-cols-2 gap-3">
+                            <div className="col-span-2">
+                              <label className={labelCls}>Product Name</label>
+                              <input
+                                value={addingProduct.name}
+                                onChange={e => setAddingProduct(p => p ? {...p, name: e.target.value} : p)}
+                                placeholder="e.g. iPhone 15 Pro 256GB"
+                                className={inputCls}
+                              />
+                            </div>
+                            <div>
+                              <label className={labelCls}>SKU</label>
+                              <input
+                                value={addingProduct.sku}
+                                onChange={e => setAddingProduct(p => p ? {...p, sku: e.target.value} : p)}
+                                placeholder="e.g. IP15P-256"
+                                className={inputCls}
+                              />
+                            </div>
+                            <div>
+                              <label className={labelCls}>Base Price ($)</label>
+                              <input
+                                type="number" step="0.01" min="0"
+                                value={addingProduct.price}
+                                onChange={e => setAddingProduct(p => p ? {...p, price: e.target.value} : p)}
+                                placeholder="0.00"
+                                className={inputCls}
+                              />
+                            </div>
+                            <div>
+                              <label className={labelCls}>Category</label>
+                              <select
+                                value={addingProduct.category}
+                                onChange={e => setAddingProduct(p => p ? {...p, category: e.target.value} : p)}
+                                className={inputCls}
+                              >
+                                {['iPhone','MacBook','iPad','Apple','Accessories','Audio','Cables','Cases','Chargers','Controllers','Nintendo','PlayStation','Xbox','Arcade Machines','Tablets','Video Games','Sega / Retro','Protection','Other'].map(c => (
+                                  <option key={c} value={c}>{c}</option>
+                                ))}
+                              </select>
+                            </div>
+                            <div>
+                              <label className={labelCls}>Subcategory <span className="text-muted-foreground/50 normal-case font-medium">(optional)</span></label>
+                              <input
+                                value={addingProduct.subcategory}
+                                onChange={e => setAddingProduct(p => p ? {...p, subcategory: e.target.value} : p)}
+                                placeholder="e.g. Apple Watch"
+                                className={inputCls}
+                              />
+                            </div>
+                            <div>
+                              <label className={labelCls}>Starting Stock</label>
+                              <input
+                                type="number" min="0" step="1"
+                                value={addingProduct.stock}
+                                onChange={e => setAddingProduct(p => p ? {...p, stock: e.target.value} : p)}
+                                className={inputCls}
+                              />
+                            </div>
+                            <div className="flex items-center gap-3 pt-5">
+                              <label className={labelCls + ' mb-0'}>Visible to customers</label>
+                              <button
+                                type="button"
+                                onClick={() => setAddingProduct(p => p ? {...p, active: !p.active} : p)}
+                                className={`w-12 h-6 rounded-full transition-colors ${addingProduct.active ? 'bg-primary' : 'bg-muted'} relative flex-shrink-0`}
+                              >
+                                <span className={`absolute top-0.5 w-5 h-5 rounded-full bg-white shadow transition-all ${addingProduct.active ? 'left-6' : 'left-0.5'}`} />
+                              </button>
+                            </div>
+                          </div>
+
+                          <ImageManagerField
+                            label="Product Image"
+                            value={addingProduct.imageUrl}
+                            onChange={url => setAddingProduct(p => p ? {...p, imageUrl: url} : p)}
+                            adminToken={adminToken ?? ''}
+                            apiBase={API_BASE}
+                          />
+
+                          {addError && (
+                            <p className="text-xs font-bold text-red-500 bg-red-500/10 rounded-xl px-4 py-2">{addError}</p>
+                          )}
+
+                          <div className="flex gap-3 pt-2">
+                            <button
+                              onClick={() => createProduct(addingProduct)}
+                              disabled={addSaving}
+                              className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-primary text-primary-foreground rounded-xl font-black text-sm uppercase hover:bg-primary/90 transition-colors disabled:opacity-50"
+                            >
+                              {addSaving ? <RefreshCcw size={16} className="animate-spin" /> : <Plus size={16} />}
+                              {addSaving ? 'Creating…' : 'Create Product'}
+                            </button>
+                            <button onClick={() => setAddingProduct(null)} className="px-4 py-2.5 bg-card border border-border rounded-xl font-black text-sm uppercase hover:bg-card/80">
+                              Cancel
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    )}
 
                     {editingProduct && (
                       <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
