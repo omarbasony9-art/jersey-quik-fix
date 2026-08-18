@@ -114,7 +114,7 @@ export default function ImageManagerField({
   // Keep URL tab in sync with external value
   useEffect(() => { setUrlInput(value); }, [value]);
 
-  // ── Core processing pipeline ─────────────────────────────────────────────────
+  // ── Core pipeline: process file → show preview → auto-upload immediately ──────
   const processAndSetFile = useCallback(async (file: File) => {
     const typeOk = VALID_TYPES.has(file.type) || isHEIC(file);
     if (!typeOk) {
@@ -130,9 +130,10 @@ export default function ImageManagerField({
     setUploadError(null);
     setUploadSuccess(false);
 
+    let f: File;
     try {
       // 1. Convert HEIC → JPEG
-      let f: File = isHEIC(file) ? await convertHEIC(file) : file;
+      f = isHEIC(file) ? await convertHEIC(file) : file;
 
       // 2. Resize to max 2048px + fix EXIF orientation + compress
       f = await imageCompression(f, {
@@ -141,11 +142,10 @@ export default function ImageManagerField({
         useWebWorker: true,
         fileType: 'image/jpeg',
         initialQuality: 0.88,
-        // exifOrientation: -1 auto-reads EXIF and rotates the canvas accordingly
-        exifOrientation: -1 as any,
+        exifOrientation: -1 as any, // auto-rotate from EXIF
       });
 
-      // 3. Create object URL for preview
+      // 3. Show preview immediately while upload runs
       if (previewUrlRef.current) URL.revokeObjectURL(previewUrlRef.current);
       const previewUrl = URL.createObjectURL(f);
       previewUrlRef.current = previewUrl;
@@ -153,10 +153,61 @@ export default function ImageManagerField({
       setPendingPreview(previewUrl);
     } catch (err: any) {
       setUploadError(`Processing failed: ${err?.message ?? 'Unknown error'}`);
-    } finally {
       setProcessing(false);
+      return;
     }
-  }, []);
+
+    setProcessing(false);
+
+    // 4. Auto-upload — no manual button click required
+    setUploading(true);
+    setUploadProgress(10);
+
+    clearInterval(progressTimer.current);
+    progressTimer.current = setInterval(() => {
+      setUploadProgress(p => (p < 85 ? p + 10 : p));
+    }, 250);
+
+    try {
+      const base64 = await fileToBase64(f);
+      setUploadProgress(88);
+
+      const res = await fetch(`${apiBase}/admin/product-images/upload`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${adminToken}`,
+        },
+        body: JSON.stringify({ filename: f.name, mimeType: f.type, data: base64 }),
+      });
+      const data = await res.json();
+      clearInterval(progressTimer.current);
+
+      if (!res.ok) throw new Error(data.error ?? 'Upload failed.');
+
+      setUploadProgress(100);
+      setUploadSuccess(true);
+      onChange(data.url);
+
+      // Clear pending state after brief success flash
+      setTimeout(() => {
+        if (previewUrlRef.current) {
+          URL.revokeObjectURL(previewUrlRef.current);
+          previewUrlRef.current = null;
+        }
+        setPendingFile(null);
+        setPendingPreview(null);
+        setUploading(false);
+        setUploadProgress(0);
+        setUploadSuccess(false);
+      }, 1200);
+    } catch (err: any) {
+      clearInterval(progressTimer.current);
+      setUploadError(err.message ?? 'Upload failed — please try again.');
+      setUploading(false);
+      setUploadProgress(0);
+    }
+  }, [apiBase, adminToken, onChange]);
 
   // ── Document-level paste listener (Cmd+V / Ctrl+V) ──────────────────────────
   useEffect(() => {
@@ -196,63 +247,6 @@ export default function ImageManagerField({
       setUploadError('No image in clipboard. Copy an image first, or use Cmd+V / Ctrl+V.');
     } catch {
       setUploadError('Could not read clipboard — use Cmd+V / Ctrl+V directly instead.');
-    }
-  };
-
-  // ── Upload ──────────────────────────────────────────────────────────────────
-  const handleUpload = async () => {
-    if (!pendingFile || uploading) return;
-    setUploading(true);
-    setUploadProgress(10);
-    setUploadError(null);
-
-    clearInterval(progressTimer.current);
-    progressTimer.current = setInterval(() => {
-      setUploadProgress(p => (p < 85 ? p + 10 : p));
-    }, 250);
-
-    try {
-      const base64 = await fileToBase64(pendingFile);
-      setUploadProgress(88);
-
-      const res = await fetch(`${apiBase}/admin/product-images/upload`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${adminToken}`,
-        },
-        body: JSON.stringify({
-          filename: pendingFile.name,
-          mimeType: pendingFile.type,
-          data: base64,
-        }),
-      });
-      const data = await res.json();
-      clearInterval(progressTimer.current);
-
-      if (!res.ok) throw new Error(data.error ?? 'Upload failed.');
-
-      setUploadProgress(100);
-      setUploadSuccess(true);
-      onChange(data.url);
-
-      // Clear pending state after brief success display
-      setTimeout(() => {
-        if (previewUrlRef.current) {
-          URL.revokeObjectURL(previewUrlRef.current);
-          previewUrlRef.current = null;
-        }
-        setPendingFile(null);
-        setPendingPreview(null);
-        setUploading(false);
-        setUploadProgress(0);
-        setUploadSuccess(false);
-      }, 1200);
-    } catch (err: any) {
-      clearInterval(progressTimer.current);
-      setUploadError(err.message ?? 'Upload failed — please try again.');
-      setUploading(false);
-      setUploadProgress(0);
     }
   };
 
@@ -431,41 +425,32 @@ export default function ImageManagerField({
                   <span className="flex-shrink-0 ml-2">{formatBytes(pendingFile.size)}</span>
                 </div>
 
-                {/* Progress bar */}
-                {(uploading || uploadSuccess) && (
-                  <div className="space-y-1">
-                    <div className="w-full bg-muted rounded-full h-1.5 overflow-hidden">
-                      <div
-                        className={`h-full rounded-full transition-all duration-300 ${uploadSuccess ? 'bg-green-500' : 'bg-primary'}`}
-                        style={{ width: `${uploadProgress}%` }}
-                      />
-                    </div>
-                    <p className="text-xs text-center font-bold text-muted-foreground">
-                      {uploadSuccess
-                        ? <span className="text-green-500 flex items-center justify-center gap-1"><Check size={12} /> Uploaded!</span>
-                        : `Uploading… ${uploadProgress}%`}
-                    </p>
+                {/* Auto-upload progress */}
+                <div className="space-y-1">
+                  <div className="w-full bg-muted rounded-full h-1.5 overflow-hidden">
+                    <div
+                      className={`h-full rounded-full transition-all duration-300 ${uploadSuccess ? 'bg-green-500' : 'bg-primary'}`}
+                      style={{ width: uploading || uploadSuccess ? `${uploadProgress}%` : '0%' }}
+                    />
                   </div>
-                )}
+                  <p className="text-xs text-center font-bold text-muted-foreground">
+                    {uploadSuccess
+                      ? <span className="text-green-500 flex items-center justify-center gap-1"><Check size={12} /> Saved!</span>
+                      : uploading
+                        ? `Uploading… ${uploadProgress}%`
+                        : <span className="text-muted-foreground/50">Processing…</span>}
+                  </p>
+                </div>
 
-                {/* Action buttons */}
-                {!uploading && !uploadSuccess && (
-                  <div className="flex gap-2">
-                    <button
-                      type="button"
-                      onClick={handleUpload}
-                      className="flex-1 py-2 bg-primary text-primary-foreground rounded-xl text-xs font-black uppercase tracking-wider hover:bg-primary/90 transition-colors flex items-center justify-center gap-1.5"
-                    >
-                      <Upload size={13} /> Upload Image
-                    </button>
-                    <button
-                      type="button"
-                      onClick={cancelPending}
-                      className="px-4 py-2 bg-muted text-muted-foreground rounded-xl text-xs font-black uppercase hover:bg-muted/80 transition-colors"
-                    >
-                      Cancel
-                    </button>
-                  </div>
+                {/* Cancel during upload (allows retrying if upload fails) */}
+                {uploading && !uploadSuccess && (
+                  <button
+                    type="button"
+                    onClick={cancelPending}
+                    className="w-full py-1.5 bg-muted text-muted-foreground rounded-xl text-xs font-bold uppercase hover:bg-muted/80 transition-colors"
+                  >
+                    Cancel Upload
+                  </button>
                 )}
               </div>
             </div>
