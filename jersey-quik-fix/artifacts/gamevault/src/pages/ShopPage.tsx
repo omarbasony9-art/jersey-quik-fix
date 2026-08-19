@@ -55,18 +55,42 @@ export default function ShopPage() {
   // ── Fetch all 165 products from the normalized API ──────────────────────
   const [products, setProducts] = useState<Product[]>([]);
   const [productsLoading, setProductsLoading] = useState(true);
+  const [productsError, setProductsError] = useState<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
     setProductsLoading(true);
-    fetch(`${API_BASE}/products?limit=200`)
-      .then(r => r.ok ? r.json() : Promise.reject(new Error(`HTTP ${r.status}`)))
-      .then(data => {
-        if (cancelled) return;
-        if (!data?.products) { setProductsLoading(false); return; }
-        const prods: Product[] = (data.products as any[])
-          .filter(p => p.active)
-          .map(p => ({
+    setProductsError(null);
+
+    const loadProducts = async () => {
+      try {
+        const res = await fetch(`${API_BASE}/products?limit=200`);
+        const responseText = await res.text();
+
+        if (!res.ok) {
+          throw new Error(`Product catalog request failed (HTTP ${res.status}).`);
+        }
+
+        let data: unknown;
+        try {
+          data = JSON.parse(responseText);
+        } catch {
+          throw new Error("Product catalog returned a non-JSON response.");
+        }
+
+        // Support both API contracts used by the storefront: a bare array or
+        // the standard { products: [...] } envelope. Any other shape is a
+        // visible catalog error, never an empty result set.
+        const rawProducts = Array.isArray(data)
+          ? data
+          : (data as { products?: unknown })?.products;
+        if (!Array.isArray(rawProducts)) {
+          throw new Error("Product catalog response did not contain a products array.");
+        }
+
+        const prods: Product[] = rawProducts
+          .filter((p: any) => p.active)
+          .map((p: any) => ({
             id: String(p.id),
             name: p.name,
             category: p.category || '',
@@ -85,10 +109,19 @@ export default function ShopPage() {
             condition: p.condition ?? undefined,
             tags: undefined,
           }));
+
+        if (cancelled) return;
         setProducts(prods);
-        setProductsLoading(false);
-      })
-      .catch(() => setProductsLoading(false));
+      } catch (error) {
+        console.error("Failed to load product catalog:", error);
+        if (cancelled) return;
+        setProductsError(error instanceof Error ? error.message : "Product catalog could not be loaded.");
+      } finally {
+        if (!cancelled) setProductsLoading(false);
+      }
+    };
+
+    void loadProducts();
     return () => { cancelled = true; };
   }, []);
   const [, navigate] = useLocation();
@@ -871,7 +904,7 @@ export default function ShopPage() {
             </div>
 
             <div className="text-muted-foreground font-bold">
-              {filteredProducts.length} items found
+              {productsError ? 'Catalog unavailable' : `${filteredProducts.length} items found`}
             </div>
           </div>
 
@@ -946,7 +979,14 @@ export default function ShopPage() {
                 <p className="text-sm font-bold uppercase tracking-wider">Loading products…</p>
               </div>
             )}
-            {!productsLoading && filteredProducts.length === 0 && (
+            {!productsLoading && productsError && (
+              <div className="col-span-full py-20 text-center text-muted-foreground flex flex-col items-center justify-center bg-card rounded-2xl border border-dashed border-border">
+                <Search size={48} className="mb-4 text-destructive opacity-60" />
+                <h3 className="text-2xl font-black uppercase mb-2">Products unavailable</h3>
+                <p>{productsError}</p>
+              </div>
+            )}
+            {!productsLoading && !productsError && filteredProducts.length === 0 && (
               <div className="col-span-full py-20 text-center text-muted-foreground flex flex-col items-center justify-center bg-card rounded-2xl border border-dashed border-border">
                 <Search size={48} className="mb-4 opacity-20" />
                 <h3 className="text-2xl font-black uppercase mb-2">No products found</h3>

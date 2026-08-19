@@ -12,6 +12,13 @@ Without it, Cloudflare's SPA mode intercepts every GET /api/* request and return
 
 **How to apply:** Always include this in `wrangler.toml` `[assets]` section for any SPA + API Worker combo.
 
+**Use Wrangler 4.123.0 or newer for Worker-first asset routing.**
+Wrangler 3.x silently omitted the `run_worker_first` option from deployed Worker metadata, leaving `raw_run_worker_first: false` even when the TOML contained the setting. Use the API-only form `run_worker_first = ["/api/*"]` to keep storefront paths asset-first.
+
+**Why:** A Worker with static SPA assets can return `200 text/html` for API URLs when old Wrangler deploys it, making a JSON client appear to have an empty catalog.
+
+**How to apply:** Before relying on this routing configuration, verify the deployed version metadata reports `raw_run_worker_first: ["/api/*"]`, then curl `/api/products?limit=200` and confirm `application/json`.
+
 ## D1 Seed Files
 
 **Large seed SQL fails with `SQLITE_TOOBIG`** when applied via `wrangler d1 migrations apply`.
