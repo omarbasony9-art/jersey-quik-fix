@@ -19,12 +19,12 @@ Wrangler 3.x silently omitted the `run_worker_first` option from deployed Worker
 
 **How to apply:** Before relying on this routing configuration, verify the deployed version metadata reports `raw_run_worker_first: ["/api/*"]`, then curl `/api/products?limit=200` and confirm `application/json`.
 
-**Preserve Dashboard-managed Worker bindings during Wrangler deployments.**
-Set `keep_vars = true` when the source configuration intentionally omits existing Dashboard-managed variables or secrets. After any deployment, inspect the active version's binding names and confirm every secret required by the Worker is still present.
+**Preserve Dashboard-managed ordinary Worker variables during Wrangler deployments.**
+Set `keep_vars = true` when the source configuration intentionally omits existing Dashboard-managed non-secret variables. Do not rely on it to protect secret bindings.
 
-**Why:** A deployment with no `keep_vars` can create an active version containing only bindings declared in `wrangler.toml`; dashboard-managed `secret_text` bindings are then absent even though the passwords and database data were never changed.
+**Why:** `keep_vars` preserves ordinary Dashboard variables, while Worker secrets must be declared and staged explicitly. A version can otherwise go live without a required `secret_text` binding even though the underlying password and database data were never changed.
 
-**How to apply:** For this Worker, verify `ADMIN_PASSWORD`, `SESSION_SECRET`, and other required secrets with `wrangler secret list` and `wrangler versions view <active-version> --json` before treating an authentication failure as a bad user password.
+**How to apply:** Declare the required secret names in `[secrets]`, stage them with `wrangler versions upload --secrets-file`, and verify `ADMIN_PASSWORD`, `SESSION_SECRET`, and other required `secret_text` bindings with `wrangler versions view <version> --json` before moving production traffic.
 
 ## D1 Seed Files
 
