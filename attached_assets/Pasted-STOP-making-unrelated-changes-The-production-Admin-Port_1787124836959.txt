@@ -1,0 +1,38 @@
+STOP making unrelated changes.
+
+The production Admin Portal is now rejecting the previously working admin password after the recent Cloudflare/Wrangler deployment.
+
+DO NOT reset, delete, recreate, migrate, reseed, or modify any D1 database data.
+
+The Shop database was just verified working with 164 total products / 161 active products, so do not assume the database is gone.
+
+Diagnose the ADMIN AUTHENTICATION only.
+
+Check:
+
+Find the exact production API endpoint used when the Admin Portal password is submitted.
+Find the exact environment variable/secret names used by that endpoint for authentication.
+Report the variable NAMES only — never print secret/password values.
+Verify whether each required admin-auth variable exists in the deployed Cloudflare Worker environment.
+Check whether the recent Wrangler 4 deployment removed or failed to preserve a Dashboard environment variable such as ADMIN_PASSWORD, ADMIN_SECRET, SESSION_SECRET, or whatever names the code actually uses.
+Check the production request to the admin-login API and report its HTTP status and safe error response.
+Verify the DB binding is still pointing to jersey-quik-fix-d1.
+If admin login uses D1, perform READ-ONLY checks to verify the relevant admin/config record exists. Do not write anything.
+Inspect the recent wrangler.toml changes and determine whether [vars] configuration replaced Dashboard variables.
+Check whether keep_vars behavior contributed to this deployment issue.
+
+If the password is currently stored as a normal environment variable, do not hard-code it into source code or commit it to GitHub. Sensitive credentials should be stored as a Cloudflare secret.
+
+Do not change my existing admin password yet.
+
+First report:
+
+exact root cause
+admin endpoint being called
+HTTP status
+names of missing/mismatched bindings or environment variables
+whether D1 is healthy
+whether any database records are actually missing
+what specific fix you recommend
+
+Do not deploy the fix until you have identified the cause.
