@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
-  Search, ShoppingCart, User, MapPin, ChevronRight, 
+  Search, ShoppingCart, User, MapPin, ChevronLeft, ChevronRight,
   Star, Menu, X, Gamepad2, RefreshCcw, BadgeDollarSign,
   Plus, Minus, Trash2, Check, Copy, Printer, Tag
 } from 'lucide-react';
@@ -15,6 +15,7 @@ const API_BASE = import.meta.env.VITE_API_BASE_URL || '/api';
 // Fixed shop category tabs — "Accessories" is a catchall for anything not in NAMED_CATEGORIES
 const NAMED_CATEGORIES = ['Phones', 'Computers', 'Gaming', 'Apple'];
 const SHOP_TABS = ['All', 'Phones', 'Computers', 'Gaming', 'Apple', 'Accessories'];
+const PRODUCTS_PER_PAGE = 24;
 
 // Apple logo SVG (Material Design, Apache-licensed shape)
 const AppleSVG = () => (
@@ -129,6 +130,7 @@ export default function ShopPage() {
 
   const [query, setQuery] = useState('');
   const [activeCategory, setActiveCategory] = useState('All');
+  const [currentPage, setCurrentPage] = useState(1);
   const [cart, setCart] = useState<CartItem[]>([]);
   const [menuOpen, setMenuOpen] = useState(false);
   const [cartOpen, setCartOpen] = useState(false);
@@ -239,6 +241,20 @@ export default function ShopPage() {
       return catMatch && searchMatch;
     });
   }, [query, activeCategory, products]);
+
+  const totalPages = Math.max(1, Math.ceil(filteredProducts.length / PRODUCTS_PER_PAGE));
+  const visibleProducts = useMemo(() => {
+    const start = (currentPage - 1) * PRODUCTS_PER_PAGE;
+    return filteredProducts.slice(start, start + PRODUCTS_PER_PAGE);
+  }, [currentPage, filteredProducts]);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [activeCategory, query]);
+
+  useEffect(() => {
+    if (currentPage > totalPages) setCurrentPage(totalPages);
+  }, [currentPage, totalPages]);
 
   // Cart operations
   const addToCart = (product: typeof products[0]) => {
@@ -564,7 +580,10 @@ export default function ShopPage() {
               type="text" 
               placeholder="Search products, accessories, cables..." 
               value={query}
-              onChange={(e) => setQuery(e.target.value)}
+              onChange={(e) => {
+                setQuery(e.target.value);
+                setCurrentPage(1);
+              }}
               className="w-full bg-card border-2 border-transparent focus:border-primary text-foreground rounded-full py-3 px-5 pl-12 outline-none transition-all placeholder:text-muted-foreground font-medium"
             />
             <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground" size={20} />
@@ -726,7 +745,10 @@ export default function ShopPage() {
               type="text" 
               placeholder="Search products, brands, models..." 
               value={query}
-              onChange={(e) => setQuery(e.target.value)}
+              onChange={(e) => {
+                setQuery(e.target.value);
+                setCurrentPage(1);
+              }}
               className="w-full bg-card border-2 border-transparent focus:border-primary text-foreground rounded-full py-2 px-4 pl-10 outline-none placeholder:text-muted-foreground font-medium text-sm"
             />
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" size={18} />
@@ -743,6 +765,7 @@ export default function ShopPage() {
                 key={cat} 
                 onClick={() => {
                   setActiveCategory(cat);
+                  setCurrentPage(1);
                   document.getElementById('products')?.scrollIntoView({ behavior: 'smooth' });
                 }}
                 className={`flex items-center gap-1.5 transition-colors uppercase ${activeCategory === cat ? 'text-primary' : 'text-muted-foreground hover:text-primary'}`}
@@ -780,7 +803,12 @@ export default function ShopPage() {
               {SHOP_TABS.map(cat => (
                 <button 
                   key={cat} 
-                  onClick={() => { setActiveCategory(cat); setMenuOpen(false); document.getElementById('products')?.scrollIntoView({ behavior: 'smooth' }); }}
+                  onClick={() => {
+                    setActiveCategory(cat);
+                    setCurrentPage(1);
+                    setMenuOpen(false);
+                    document.getElementById('products')?.scrollIntoView({ behavior: 'smooth' });
+                  }}
                   className={`text-left flex items-center gap-3 ${activeCategory === cat ? 'text-primary' : 'text-foreground'}`}
                 >
                   {cat === 'Apple' && <span className="scale-[2]"><AppleSVG /></span>}
@@ -887,7 +915,10 @@ export default function ShopPage() {
                 {SHOP_TABS.map(cat => (
                   <button
                     key={cat}
-                    onClick={() => setActiveCategory(cat)}
+                    onClick={() => {
+                      setActiveCategory(cat);
+                      setCurrentPage(1);
+                    }}
                     className={`flex items-center gap-1.5 px-4 py-2 rounded-full font-bold text-sm transition-all ${
                       activeCategory === cat 
                         ? 'bg-primary text-primary-foreground shadow-[0_0_15px_rgba(245,158,11,0.5)]' 
@@ -910,7 +941,7 @@ export default function ShopPage() {
 
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-8">
             <AnimatePresence>
-              {filteredProducts.map((product) => (
+              {visibleProducts.map((product) => (
                 <motion.div
                   layout
                   initial={{ opacity: 0, scale: 0.9 }}
@@ -994,7 +1025,11 @@ export default function ShopPage() {
                   <div className="space-y-2">
                     <p>No results for <strong className="text-foreground">"{query}"</strong> in {activeCategory === 'All' ? 'any category' : activeCategory}.</p>
                     <p className="text-sm">Try a different spelling, brand name, or model number.</p>
-                    <button onClick={() => { setQuery(''); setActiveCategory('All'); }} className="mt-4 px-4 py-2 rounded-full border border-border text-sm font-bold hover:border-primary transition-colors">
+                    <button onClick={() => {
+                      setQuery('');
+                      setActiveCategory('All');
+                      setCurrentPage(1);
+                    }} className="mt-4 px-4 py-2 rounded-full border border-border text-sm font-bold hover:border-primary transition-colors">
                       Clear filters
                     </button>
                   </div>
@@ -1004,6 +1039,59 @@ export default function ShopPage() {
               </div>
             )}
           </div>
+
+          {!productsLoading && !productsError && filteredProducts.length > PRODUCTS_PER_PAGE && (
+            <nav className="mt-10 flex flex-col items-center gap-4" aria-label="Shop product pages">
+              <p className="text-sm font-bold text-muted-foreground">
+                Page {currentPage} of {totalPages}
+              </p>
+              <div className="flex items-center justify-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setCurrentPage(page => Math.max(1, page - 1))}
+                  disabled={currentPage === 1}
+                  className="flex items-center gap-1 rounded-full border border-border px-4 py-2 text-sm font-bold transition-colors hover:border-primary hover:text-primary disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:border-border disabled:hover:text-foreground"
+                  aria-label="Previous product page"
+                >
+                  <ChevronLeft size={16} />
+                  Previous
+                </button>
+
+                <div className="flex items-center gap-1" role="list" aria-label="Product page numbers">
+                  {Array.from({ length: totalPages }, (_, index) => {
+                    const page = index + 1;
+                    return (
+                      <button
+                        key={page}
+                        type="button"
+                        onClick={() => setCurrentPage(page)}
+                        className={`h-9 min-w-9 rounded-full px-2 text-sm font-black transition-colors ${
+                          currentPage === page
+                            ? 'bg-primary text-primary-foreground'
+                            : 'border border-border text-foreground hover:border-primary hover:text-primary'
+                        }`}
+                        aria-label={`Go to product page ${page}`}
+                        aria-current={currentPage === page ? 'page' : undefined}
+                      >
+                        {page}
+                      </button>
+                    );
+                  })}
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => setCurrentPage(page => Math.min(totalPages, page + 1))}
+                  disabled={currentPage === totalPages}
+                  className="flex items-center gap-1 rounded-full border border-border px-4 py-2 text-sm font-bold transition-colors hover:border-primary hover:text-primary disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:border-border disabled:hover:text-foreground"
+                  aria-label="Next product page"
+                >
+                  Next
+                  <ChevronRight size={16} />
+                </button>
+              </div>
+            </nav>
+          )}
         </section>
 
         {/* Promo Grid */}
