@@ -57,6 +57,15 @@ Set `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID` env vars — wrangler pic
 
 After deploying with `run_worker_first`, old GET /api/* responses may remain cached at the edge (`cf-cache-status: HIT`). Headers are `max-age=0, must-revalidate` so they clear quickly. Use `Cache-Control: no-cache` request header to bypass immediately.
 
+## Worker Configuration Ownership
+
+**Only deploy the `cf-worker` configuration to the `jersey-quik-fix` Worker.**
+The storefront artifact also has a static-only Wrangler configuration with the same Worker name; deploying it replaces the API Worker with a version that has no D1, R2, asset API-routing, or auth bindings.
+
+**Why:** The static-only version serves the SPA shell for `/api/*` before the Worker can run, making the catalog appear unavailable while product records remain healthy in D1.
+
+**How to apply:** Upload from the `cf-worker` directory, inspect the staged version for `raw_run_worker_first: ["/api/*"]` plus DB, ASSETS, PRODUCT_IMAGES, and required secret bindings, then test `/api/products?limit=200` before moving traffic.
+
 ## Data Architecture
 
 - **Production data**: D1 (1e526c4e-aa64-4efb-9e52-b8028af7fba0) in jersey-quik-fix Cloudflare account

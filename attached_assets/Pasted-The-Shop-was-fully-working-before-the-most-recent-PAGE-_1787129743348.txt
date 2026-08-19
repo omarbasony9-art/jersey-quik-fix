@@ -1,0 +1,92 @@
+The Shop was fully working before the most recent PAGE FORMATTING changes.
+
+After those formatting changes were deployed, the Shop started showing:
+
+PRODUCTS UNAVAILABLE
+Product catalog request failed (HTTP 500)
+
+Treat the most recent page-formatting changes/deployment as the suspected cause.
+
+DO NOT touch:
+
+D1
+product records
+inventory
+R2
+image uploads
+admin password
+Worker secrets
+Clerk
+Shop category optimization
+
+The production database and API were working immediately before the formatting work.
+
+First compare the last known-working commit/deployment with the formatting commit.
+
+Identify every file changed by the page-formatting work.
+
+Check whether the formatting task accidentally changed:
+
+cf-worker
+wrangler.toml
+API routes
+shared packages
+database code
+product API code
+routing
+environment/binding configuration
+build configuration
+package versions
+Worker entrypoint/imports
+
+Then test the current production endpoint:
+
+GET /api/products?limit=200
+
+Get the actual Worker error/stack trace causing the HTTP 500.
+
+Do not guess and do not deploy another broad fix.
+
+If the formatting work changed anything outside the frontend page/CSS components, revert those unrelated changes back to the last known-working version.
+
+Keep the actual visual/page formatting changes ONLY if they are safe frontend changes.
+
+If one of the formatting changes itself is causing the crash, fix only that specific line/file.
+
+Before deploying, verify the staged Worker still has:
+
+DB
+ASSETS
+product-image R2 binding
+ADMIN_PASSWORD
+SESSION_SECRET
+CLERK_SECRET_KEY
+FRONTEND_URL
+CLERK_PUBLISHABLE_KEY
+
+Also run a READ-ONLY check confirming D1 still contains:
+
+164 total products
+161 active products
+
+Then verify on the staged version:
+
+GET /api/products?limit=200
+
+must return:
+
+HTTP 200
+application/json
+161 active products
+
+Only after that passes should production traffic be moved to the version.
+
+Report to me:
+
+Every file the formatting task changed.
+Exact HTTP 500 exception.
+Exact file/line responsible.
+Which unintended changes were reverted.
+Which visual formatting changes were preserved.
+Confirmation D1 was not modified.
+Confirmation the Shop returns 161 products again.
