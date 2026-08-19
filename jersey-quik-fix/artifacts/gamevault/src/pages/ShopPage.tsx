@@ -877,18 +877,18 @@ export default function ShopPage() {
 
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-8">
             <AnimatePresence>
-              {filteredProducts.map((product, idx) => (
+              {filteredProducts.map((product) => (
                 <motion.div
                   layout
                   initial={{ opacity: 0, scale: 0.9 }}
                   animate={{ opacity: 1, scale: 1 }}
                   exit={{ opacity: 0, scale: 0.9 }}
-                  transition={{ duration: 0.2, delay: idx * 0.05 }}
+                  transition={{ duration: 0.15 }}
                   key={product.id}
                   onClick={() => openProduct(product)}
                   className="bg-card rounded-2xl overflow-hidden border border-border hover:border-primary hover:scale-[1.02] transition-all duration-300 group flex flex-col shadow-sm hover:shadow-[0_0_30px_rgba(245,158,11,0.12)] cursor-pointer"
                 >
-                  <div className="relative min-h-[220px] md:min-h-[260px] overflow-hidden bg-black/50">
+                  <div className="relative h-[220px] md:h-[260px] overflow-hidden bg-black/50">
                     {product.badge && (
                       <div className="absolute top-3 right-3 z-10 bg-primary text-primary-foreground text-xs font-black px-3 py-1.5 rounded-full uppercase tracking-wider shadow-lg">
                         {product.badge}

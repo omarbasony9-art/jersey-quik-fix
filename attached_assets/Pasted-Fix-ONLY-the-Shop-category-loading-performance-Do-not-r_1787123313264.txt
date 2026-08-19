@@ -1,0 +1,33 @@
+Fix ONLY the Shop category loading performance. Do not redesign the Shop or change products, prices, inventory, admin functionality, checkout, authentication, or unrelated features.
+
+Problem: When I click All, Phones, Computers, Gaming, Apple, or Accessories, the products take too long to appear.
+
+Make category switching essentially instant.
+
+Requirements:
+
+Fetch the complete published product list once when the Shop page initially loads.
+Store the fetched products in client-side state/cache.
+When a category button is clicked, filter the already-loaded products locally instead of making another API/database request.
+Do NOT refetch all products every time the selected category changes.
+Use useMemo or equivalent memoized filtering for the displayed products.
+Make sure changing selectedCategory does not trigger the product-fetching useEffect.
+If React Query/TanStack Query is being used, give the product query a reasonable staleTime and reuse the cached result.
+Do not clear the existing product array while changing categories.
+Category buttons must visually switch immediately when clicked.
+Remove unnecessary loading screens/spinners between category changes.
+Product images should use browser lazy loading, but do not delay the product cards themselves while waiting for images.
+Give product image containers fixed dimensions so the layout appears immediately.
+Do not sequentially request images or product information one product at a time.
+If product details/images are currently being fetched with individual requests for every product, replace that with one efficient product-list response containing everything needed for the Shop cards.
+Avoid duplicate API calls caused by React effects or category state changes.
+Preserve the current Shop design exactly.
+
+Expected behavior: The initial Shop visit may have a short loading period, but after the inventory has loaded, clicking between All, Phones, Computers, Gaming, Apple, and Accessories should display the matching products essentially instantly without another full loading delay.
+
+After fixing it, tell me:
+
+What was causing the delay.
+Which files you changed.
+Whether category clicks still make any network/API requests.
+Confirm that the Shop design and product data were not changed.
