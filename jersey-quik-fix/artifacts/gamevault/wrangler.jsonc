@@ -1,6 +1,6 @@
 {
   "$schema": "./node_modules/wrangler/config-schema.json",
-  "name": "jersey-quik-fix",
+  "name": "jersey-quik-fix-frontend-preview",
   "compatibility_date": "2026-08-13",
   "assets": {
     "directory": "./dist/public",

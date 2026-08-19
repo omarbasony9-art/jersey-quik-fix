@@ -8,7 +8,9 @@
     "build": "vite build --config vite.config.ts",
     "serve": "vite preview --config vite.config.ts --host 0.0.0.0",
     "typecheck": "tsc -p tsconfig.json --noEmit",
-    "start": "vite preview --config vite.config.ts --host 0.0.0.0"
+    "start": "vite preview --config vite.config.ts --host 0.0.0.0",
+    "check:preview-deploy": "node ../../scripts/verify-production-worker-config.mjs && pnpm run build && pnpm --filter @workspace/cf-worker exec wrangler deploy --config ../gamevault/wrangler.jsonc --dry-run",
+    "deploy:preview": "node ../../scripts/verify-production-worker-config.mjs && pnpm run build && pnpm --filter @workspace/cf-worker exec wrangler deploy --config ../gamevault/wrangler.jsonc"
   },
   "devDependencies": {
     "@hookform/resolvers": "^3.10.0",
