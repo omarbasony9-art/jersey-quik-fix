@@ -256,6 +256,10 @@ export default function ShopPage() {
     if (currentPage > totalPages) setCurrentPage(totalPages);
   }, [currentPage, totalPages]);
 
+  useEffect(() => {
+    window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+  }, [currentPage]);
+
   // Cart operations
   const addToCart = (product: typeof products[0]) => {
     setCart(prev => {
