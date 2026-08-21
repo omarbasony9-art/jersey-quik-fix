@@ -94,3 +94,12 @@ If `/api/products` returns JSON directly but the live Store reports an HTTP 500 
 - Admin edits at Replit preview URL → PostgreSQL (does NOT affect live CF site)
 - Admin edits at CF workers.dev URL → D1 (affects live CF site)
 - The two databases are separate; seed SQL was exported from PostgreSQL → applied to D1
+
+## Preserved Production Baseline
+
+**The public Shop, Admin catalog, and Stripe Checkout must stay on the same full Cloudflare Worker deployment.**
+The public Shop reads active products from the D1-backed `/api/products` route. The protected Admin catalog reads and edits the same D1 `products` records through `/api/admin/products`; inactive records remain visible to Admin but are intentionally excluded from the public catalog. Stripe Checkout also resolves products from that same D1 catalog.
+
+**Why:** Splitting these concerns across a static bundle, Render API, preview database, or static-only Worker makes the Shop appear unavailable and causes Admin edits to miss the live storefront.
+
+**How to apply:** Preserve the current storefront UI, product records, prices, inventory, images, and checkout contract. Before any production release, verify same-origin `/api` in the built bundle, product JSON from the public API, authorized Admin product access, and a non-payment Stripe Checkout Session.
