@@ -20,11 +20,11 @@ Wrangler 3.x silently omitted the `run_worker_first` option from deployed Worker
 **How to apply:** Before relying on this routing configuration, verify the deployed version metadata reports `raw_run_worker_first: ["/api/*"]`, then curl `/api/products?limit=200` and confirm `application/json`.
 
 **Preserve Dashboard-managed ordinary Worker variables during Wrangler deployments.**
-Set `keep_vars = true` when the source configuration intentionally omits existing Dashboard-managed non-secret variables. Do not rely on it to protect secret bindings.
+Set `keep_vars = true` when the source configuration intentionally omits existing Dashboard-managed non-secret variables.
 
-**Why:** `keep_vars` preserves ordinary Dashboard variables, while Worker secrets must be declared and staged explicitly. A version can otherwise go live without a required `secret_text` binding even though the underlying password and database data were never changed.
+**Why:** `keep_vars` preserves ordinary Dashboard variables. Wrangler versions uploads treat `--secrets-file` additively: omitted existing secrets are retained and are never deleted by a deployment. Version metadata can omit these retained secret bindings even though their values remain unchanged.
 
-**How to apply:** Declare the required secret names in `[secrets]`, stage them with `wrangler versions upload --secrets-file`, and verify `ADMIN_PASSWORD`, `SESSION_SECRET`, and other required `secret_text` bindings with `wrangler versions view <version> --json` before moving production traffic.
+**How to apply:** Keep required secret declarations in the canonical production config as a safety check. When a current-asset upload needs to retain existing secrets, stage without passing secret values, inspect the non-secret bindings and API routing, then remove any temporary staging configuration after deployment. Never read, print, or replace secret values unless a change is explicitly required.
 
 ## D1 Seed Files
 
@@ -72,6 +72,13 @@ If the active version has no script bindings and serves HTML at `/api/*`, traffi
 **Why:** A fresh version upload correctly requires secret values; bypassing that requirement risks replacing the API failure with missing authentication or payment bindings. Traffic restoration reuses the existing version and its already verified bindings without touching D1, R2, or secrets.
 
 **How to apply:** Inspect the target with `wrangler versions view <version-id> --json`, confirm Worker-first API routing and bindings, shift only version traffic, then verify the live API returns JSON.
+
+**A healthy API Worker can still serve a stale storefront bundle with an obsolete API base URL.**
+If `/api/products` returns JSON directly but the live Store reports an HTTP 500 from another origin, the deployed static asset bundle—not D1—is stale.
+
+**Why:** Worker code, bindings, and static assets are deployed together by version. Restoring an older API Worker may restore routing while retaining a browser bundle that still requests a retired backend.
+
+**How to apply:** Inspect the API URL embedded in the live JavaScript bundle, stage a current full Worker version with `/api` routing and the same D1/R2/assets bindings, test its version-preview URL, then promote only after verification.
 
 ## Data Architecture
 

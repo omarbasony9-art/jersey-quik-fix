@@ -1,0 +1,56 @@
+Fix the Store product catalog HTTP 500 error shown in production.
+The Store page is loading, but the product API is failing with:
+“PRODUCTS UNAVAILABLE — Product catalog request failed (HTTP 500)”
+Do not redesign the Store or change any product names, prices, categories, images, inventory, authentication, checkout, or page formatting. Only diagnose and fix the backend/API problem causing the catalog to fail.
+What I need you to do
+Find the exact frontend request used to load Store products, probably something like:
+/api/products
+/api/shop/products
+or the equivalent product catalog endpoint.
+Call that endpoint directly in the development environment and inspect the actual error/stack trace.
+Check the server/deployment logs for the HTTP 500 and identify the root cause. Do not just add a fallback message or hide the error.
+Trace the complete flow:
+Store frontend → API route → product repository/database/storage → response
+Check specifically for:
+missing environment variables or secrets
+missing database bindings
+incorrect database/table names
+database migration/schema mismatch
+failed SQL query
+malformed product data
+JSON parsing errors
+incorrect API base URL
+production vs development configuration differences
+Cloudflare D1/KV/R2 bindings if this project uses them
+CORS/routing issues
+an API route accidentally being handled by the frontend SPA
+DO NOT delete, reset, recreate, seed over, or wipe the existing product database.
+DO NOT replace my existing products with test/sample products.
+If a migration is required, make it backward-compatible and preserve every existing product.
+Add useful server-side error logging around the product endpoint so the actual database/API error appears in the logs instead of only returning HTTP 500.
+Make sure a successful catalog request returns the exact JSON structure the current Store frontend expects.
+Production is the priority
+Do not stop after getting it working inside the Replit preview.
+Compare the production deployment configuration with development and verify all required secrets, environment variables, database bindings, and storage bindings exist in production.
+If this website is deployed through Cloudflare, make sure the production Worker/API still owns the /api/* routes and that a static frontend Worker has not replaced or intercepted them.
+Test before saying it is fixed
+Verify all of these:
+Direct product API request returns HTTP 200
+Response contains the existing product catalog
+Store page displays products
+“All” works
+Phones works
+Computers works
+Gaming works
+Apple works
+Accessories works
+Search still works
+Admin Shop can still load/edit the same products
+Refreshing the production Store does not produce HTTP 500
+When finished, give me:
+1. The exact root cause
+2. The exact files changed
+3. Any environment variable/binding that was missing
+4. The HTTP status and response from the product API after the fix
+5. Confirmation that no product data was deleted or replaced
+Do not make unrelated changes.
