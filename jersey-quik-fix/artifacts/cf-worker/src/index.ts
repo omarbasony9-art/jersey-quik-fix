@@ -30,6 +30,13 @@ import { registerProductImages } from "./routes/productImages";
 
 const app = new Hono<{ Bindings: Env }>();
 
+// API responses must never be served from an earlier static SPA deployment.
+// This keeps protected/admin routes and product JSON distinct from asset caching.
+app.use("/api/*", async (c, next) => {
+  await next();
+  c.header("Cache-Control", "no-store, max-age=0");
+});
+
 // ── CORS ─────────────────────────────────────────────────────────────────────
 // Allow requests from any origin so the Render frontend can call this Worker
 // during the transition period.  Once fully on Cloudflare (same origin), CORS

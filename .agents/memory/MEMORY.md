@@ -3,3 +3,4 @@
 - [Running TS scripts via esbuild](esbuild-script-runner.md) — use esbuild CJS bundle + node to run .ts scripts; __dirname in bundle = /tmp so use process.cwd() for paths; run from api-server dir
 - [CF Worker deployment](cf-worker-deployment.md) — run_worker_first=true required; R2 needs manual dashboard enable; seed via D1 REST API in batches of 20
 - [Stripe Checkout image URLs](stripe-checkout-image-urls.md) — Stripe Checkout accepts only absolute HTTPS product images; omit relative app image paths when creating sessions
+- [API cache policy](api-cache-policy.md) — production API responses must disable storage so stale SPA HTML cannot break Shop or Admin routes
