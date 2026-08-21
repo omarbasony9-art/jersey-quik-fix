@@ -1,0 +1,124 @@
+STOP MAKING FRONTEND CHANGES.
+The production website at /shop is currently showing:
+PRODUCTS UNAVAILABLE
+Product catalog request failed (HTTP 500)
+This problem keeps returning whenever another feature is fixed. I need you to fix the underlying production architecture so fixing Stripe, Admin Shop, or another feature DOES NOT break the product catalog again.
+DO NOT:
+redesign the Shop
+change Shop components
+change product cards
+change categories
+change product images
+delete products
+reseed products
+reset the database
+change product prices
+create a separate replacement Shop
+replace the existing backend
+FIRST: FIND THE EXACT 500 ERROR
+Find the exact endpoint the Shop calls to retrieve products.
+Test that endpoint directly on PRODUCTION.
+I want the actual:
+request URL
+HTTP response
+server error
+stack trace
+database/storage error if applicable
+Do not just tell me "the request failed."
+Find the exact line causing HTTP 500.
+TRACE THIS EXACT FLOW
+jerseyquikfix.com/shop
+→ frontend product request
+→ /api/... product endpoint
+→ production Worker/server
+→ database/storage
+→ product JSON response
+Identify exactly where it fails.
+VERY IMPORTANT: CHECK PRODUCTION DEPLOYMENT
+This keeps breaking after other fixes, so inspect whether deployments are overwriting or replacing the backend.
+Check:
+production Worker/server configuration
+frontend preview Worker configuration
+Cloudflare routing
+/api/* routing
+database bindings
+R2/KV/D1 bindings if used
+production environment variables
+secrets
+Wrangler configuration
+build/deploy scripts
+Make sure a frontend/static deployment CANNOT replace the Worker/server responsible for the production API.
+/api/* must always reach the real backend.
+A frontend SPA fallback must NEVER intercept /api/*.
+CHECK THE PRODUCT DATABASE/STORAGE
+Do not recreate anything.
+Find where the existing products currently live.
+Verify:
+Product storage still exists.
+Product records still exist.
+Production has access to that storage.
+The required binding/environment variable exists.
+The product query succeeds.
+The API serializes the results correctly.
+If there is a schema mismatch, fix it without deleting data.
+CHECK DEVELOPMENT VS PRODUCTION
+If products work inside Replit but fail on jerseyquikfix.com, compare the environments.
+Make a table containing:
+Setting | Development | Production | Required
+Check every binding and environment variable used by the product API.
+DO NOT show secret values. Only show whether they exist.
+PROTECT THE PRODUCT API FROM FUTURE DEPLOYMENTS
+This is extremely important.
+Add safeguards so future changes to Stripe, Admin Shop, frontend pages, or other features cannot accidentally destroy the product API deployment.
+Review all deployment scripts and configuration files.
+There must be one clear production backend configuration.
+Frontend preview deployments must have a different deployment name/configuration and must never overwrite production.
+Add a pre-deployment check that fails the deployment if:
+the wrong Worker name is being deployed
+required database/storage bindings are missing
+/api/* routing is missing
+production secrets/bindings are missing
+frontend config is being used for the backend deployment
+ADD A HEALTH CHECK
+Add a safe endpoint such as:
+/api/health
+It should verify that the application is running and that required product storage is accessible.
+Do not expose secrets.
+Example response:
+{ "ok": true, "products": true, "storage": true }
+TEST BEFORE TOUCHING ANY OTHER FEATURE
+I want these tests performed against PRODUCTION:
+Open /api/health → HTTP 200
+Open the product catalog API → HTTP 200
+Confirm existing products are returned
+Open /shop
+Confirm products display
+Refresh /shop
+Confirm products still display
+Test Phones
+Test Computers
+Test Gaming
+Test Apple
+Test Accessories
+Test search
+Test Admin Shop
+THEN redeploy or restart production once more and repeat the tests.
+This is important because the catalog keeps disappearing after deployments.
+DO NOT TOUCH STRIPE YET
+Get the product catalog stable first.
+Do not continue working on Stripe checkout until /shop reliably loads products in production.
+WHEN FINISHED GIVE ME THIS REPORT
+Exact root cause of HTTP 500:
+Exact product API endpoint:
+Exact failing file/function:
+Database/storage being used:
+Missing production binding/env variable, if any:
+Files changed:
+Deployment/config files changed:
+Production product API status: HTTP ___
+Number of existing products returned: ___
+Production /shop test: PASS/FAIL
+Second deployment test: PASS/FAIL
+Confirmation no products were deleted/reset/reseeded: YES/NO
+Explanation of what now prevents future frontend/Stripe changes from breaking the product API:
+Do not tell me it is fixed until you have tested the LIVE jerseyquikfix.com website.
