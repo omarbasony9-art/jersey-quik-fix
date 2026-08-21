@@ -66,6 +66,13 @@ The storefront artifact also has a static-only Wrangler configuration with the s
 
 **How to apply:** Upload from the `cf-worker` directory, inspect the staged version for `raw_run_worker_first: ["/api/*"]` plus DB, ASSETS, PRODUCT_IMAGES, and required secret bindings, then test `/api/products?limit=200` before moving traffic.
 
+**Recover static-only production versions by restoring a verified Worker version, not by re-uploading without secrets.**
+If the active version has no script bindings and serves HTML at `/api/*`, traffic can be safely returned to an earlier verified version with `wrangler versions deploy <version-id>@100`.
+
+**Why:** A fresh version upload correctly requires secret values; bypassing that requirement risks replacing the API failure with missing authentication or payment bindings. Traffic restoration reuses the existing version and its already verified bindings without touching D1, R2, or secrets.
+
+**How to apply:** Inspect the target with `wrangler versions view <version-id> --json`, confirm Worker-first API routing and bindings, shift only version traffic, then verify the live API returns JSON.
+
 ## Data Architecture
 
 - **Production data**: D1 (1e526c4e-aa64-4efb-9e52-b8028af7fba0) in jersey-quik-fix Cloudflare account
