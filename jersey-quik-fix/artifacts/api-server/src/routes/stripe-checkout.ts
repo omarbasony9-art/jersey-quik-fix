@@ -1,16 +1,23 @@
 import { Router } from "express";
 import { getUncachableStripeClient } from "../stripeClient";
-import { db, membershipCodesTable } from "@workspace/db";
+import { db, membershipCodesTable, pool } from "@workspace/db";
 import { eq } from "drizzle-orm";
 
 const stripeCheckoutRouter = Router();
 
 interface CartItem {
+  productId: string;
   name: string;
-  price: number; // in dollars
   quantity: number;
   image?: string;
   category?: string;
+}
+
+interface CatalogProduct {
+  id: string;
+  name: string;
+  price: number | string;
+  category: string | null;
 }
 
 // POST /api/stripe/checkout — create a Stripe Checkout Session from cart items
@@ -32,7 +39,7 @@ stripeCheckoutRouter.post("/stripe/checkout", async (req, res): Promise<void> =>
 
   const baseUrl =
     process.env.FRONTEND_URL ||
-    "https://jersey-quik-fix-2.onrender.com";
+    `${req.protocol}://${req.get("host")}`;
 
   const toStripeImageUrl = (image?: string): string | undefined => {
     if (!image) return undefined;
@@ -77,19 +84,51 @@ stripeCheckoutRouter.post("/stripe/checkout", async (req, res): Promise<void> =>
   }
 
   try {
+    const catalogItems = await Promise.all(
+      items.map(async (item) => {
+        if (
+          typeof item.productId !== "string" ||
+          !item.productId ||
+          !Number.isInteger(item.quantity) ||
+          item.quantity < 1 ||
+          item.quantity > 100
+        ) {
+          throw new Error("Invalid cart item");
+        }
+
+        const result = await pool.query<CatalogProduct>(
+          `SELECT id, name, price, category
+           FROM products
+           WHERE id = $1 AND active = TRUE
+           LIMIT 1`,
+          [item.productId],
+        );
+        const product = result.rows[0];
+        const price = Number(product?.price);
+
+        if (!product || !Number.isFinite(price) || price < 0) {
+          throw new Error(`Catalog product unavailable: ${item.productId}`);
+        }
+
+        return {
+          name: product.name,
+          category: product.category ?? undefined,
+          quantity: item.quantity,
+          image: toStripeImageUrl(item.image),
+          unitAmount: Math.round(price * 100),
+        };
+      }),
+    );
+
     const stripe = await getUncachableStripeClient();
 
-    // Apply discount to each item if promo code is valid
-    const lineItems = items.map((item) => {
-      const originalCents = Math.round(item.price * 100);
-      const imageUrl = toStripeImageUrl(item.image);
-
+    const lineItems = catalogItems.map((item) => {
       const discountedCents =
         discountPercent > 0
           ? Math.round(
-              originalCents * (1 - discountPercent / 100),
+              item.unitAmount * (1 - discountPercent / 100),
             )
-          : originalCents;
+          : item.unitAmount;
 
       return {
         price_data: {
@@ -103,8 +142,8 @@ stripeCheckoutRouter.post("/stripe/checkout", async (req, res): Promise<void> =>
             ...(item.category
               ? { description: item.category }
               : {}),
-            ...(imageUrl
-              ? { images: [imageUrl] }
+            ...(item.image
+              ? { images: [item.image] }
               : {}),
           },
         },
@@ -146,10 +185,10 @@ stripeCheckoutRouter.post("/stripe/checkout", async (req, res): Promise<void> =>
       discountApplied: discountPercent,
     });
   } catch (err: any) {
-    console.error(
-      "Stripe checkout error:",
-      err?.message || err,
-    );
+    console.error("POST /api/stripe/checkout failed", {
+      message: err instanceof Error ? err.message : "Unknown error",
+      itemCount: items.length,
+    });
 
     res.status(500).json({
       error: "Failed to create checkout session",

@@ -3,21 +3,36 @@ import type { Env } from "../types";
 import Stripe from "stripe";
 
 interface CartItem {
+  productId: string;
   name: string;
-  price: number; // dollars
   quantity: number;
   image?: string;
   category?: string;
 }
 
+interface CatalogProduct {
+  id: string;
+  name: string;
+  price: number;
+  category: string | null;
+}
+
 export function registerStripe(app: Hono<{ Bindings: Env }>) {
   // POST /api/stripe/checkout — create Checkout Session from cart items
   app.post("/api/stripe/checkout", async (c) => {
-    const { items, customerEmail, promoCode } = await c.req.json<{
+    let body: {
       items: CartItem[];
       customerEmail?: string;
       promoCode?: string;
-    }>();
+    };
+
+    try {
+      body = await c.req.json();
+    } catch {
+      return c.json({ error: "Invalid checkout request" }, 400);
+    }
+
+    const { items, customerEmail, promoCode } = body;
 
     if (!Array.isArray(items) || items.length === 0) {
       return c.json({ error: "Cart is empty" }, 400);
@@ -48,15 +63,60 @@ export function registerStripe(app: Hono<{ Bindings: Env }>) {
       }
     }
 
+    const toStripeImageUrl = (image?: string): string | undefined => {
+      if (!image) return undefined;
+      try {
+        const url = new URL(image);
+        return url.protocol === "https:" ? url.toString() : undefined;
+      } catch {
+        return undefined;
+      }
+    };
+
     try {
+      const catalogItems = await Promise.all(
+        items.map(async (item) => {
+          if (
+            typeof item.productId !== "string" ||
+            !item.productId ||
+            !Number.isInteger(item.quantity) ||
+            item.quantity < 1 ||
+            item.quantity > 100
+          ) {
+            throw new Error("Invalid cart item");
+          }
+
+          const product = await c.env.DB.prepare(
+            `SELECT id, name, price, category
+             FROM products
+             WHERE id = ? AND active = 1
+             LIMIT 1`,
+          )
+            .bind(item.productId)
+            .first<CatalogProduct>();
+          const price = Number(product?.price);
+
+          if (!product || !Number.isFinite(price) || price < 0) {
+            throw new Error(`Catalog product unavailable: ${item.productId}`);
+          }
+
+          return {
+            name: product.name,
+            category: product.category ?? undefined,
+            quantity: item.quantity,
+            image: toStripeImageUrl(item.image),
+            unitAmount: Math.round(price * 100),
+          };
+        }),
+      );
+
       const stripe = new Stripe(c.env.STRIPE_SECRET_KEY);
 
-      const lineItems = items.map((item) => {
-        const originalCents = Math.round(item.price * 100);
+      const lineItems = catalogItems.map((item) => {
         const discountedCents =
           discountPercent > 0
-            ? Math.round(originalCents * (1 - discountPercent / 100))
-            : originalCents;
+            ? Math.round(item.unitAmount * (1 - discountPercent / 100))
+            : item.unitAmount;
         return {
           price_data: {
             currency: "usd",
@@ -93,10 +153,10 @@ export function registerStripe(app: Hono<{ Bindings: Env }>) {
 
       return c.json({ url: session.url, hasMembership, discountApplied: discountPercent });
     } catch (err: unknown) {
-      console.error(
-        "Stripe checkout error:",
-        err instanceof Error ? err.message : err,
-      );
+      console.error("POST /api/stripe/checkout failed", {
+        message: err instanceof Error ? err.message : "Unknown error",
+        itemCount: items.length,
+      });
       return c.json({ error: "Failed to create checkout session" }, 500);
     }
   });

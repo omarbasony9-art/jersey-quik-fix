@@ -1,0 +1,328 @@
+Fix the Stripe checkout on the Jersey Quik Fix website.
+
+CURRENT PROBLEM:
+
+When a customer adds an item to the cart and clicks:
+
+**“Checkout with Stripe”**
+
+the website displays:
+
+**“Failed to create checkout session”**
+
+and the customer is not redirected to Stripe Checkout.
+
+DO NOT redesign the website.
+
+DO NOT change:
+
+* Store layout
+* Cart design
+* Product names
+* Product prices
+* Product images
+* Categories
+* Inventory
+* Search
+* Login/signup
+* Admin Shop
+* Existing products
+* Existing styling
+
+ONLY diagnose and fix the Stripe checkout flow.
+
+## 1. TRACE THE ENTIRE CHECKOUT FLOW
+
+Find the exact frontend function triggered by the **Checkout with Stripe** button.
+
+Trace:
+
+Cart
+→ Checkout button
+→ checkout API request
+→ server checkout endpoint
+→ Stripe SDK
+→ Stripe Checkout Session
+→ returned checkout URL
+→ browser redirect
+
+Do not guess at the problem.
+
+Actually execute the checkout request and inspect the server logs/error response.
+
+## 2. FIND THE CHECKOUT API
+
+Locate the endpoint responsible for creating the Stripe Checkout Session.
+
+It may be something similar to:
+
+`/api/checkout`
+
+`/api/create-checkout-session`
+
+`/api/stripe/checkout`
+
+or another existing endpoint.
+
+Do not create a duplicate endpoint if one already exists.
+
+Test the current endpoint directly.
+
+## 3. LOG THE REAL STRIPE ERROR
+
+The frontend currently only shows:
+
+`Failed to create checkout session`
+
+That is not enough information for debugging.
+
+Add secure SERVER-SIDE logging around Stripe session creation so the actual Stripe error appears in Replit/server logs.
+
+For example, identify whether it is:
+
+* Missing Stripe secret key
+* Invalid Stripe API key
+* Wrong environment variable name
+* Missing production secret
+* Invalid line item
+* Invalid amount
+* Invalid currency
+* Invalid Stripe Price ID
+* Product not found
+* Invalid success URL
+* Invalid cancel URL
+* Bad request body
+* JSON parsing problem
+* Server route failure
+* Production environment mismatch
+* Cloudflare Worker environment issue
+* API route interception
+* Stripe SDK initialization failure
+
+Do NOT expose `STRIPE_SECRET_KEY` or any Stripe secret to the browser or console.
+
+## 4. VERIFY STRIPE ENVIRONMENT VARIABLES
+
+Check which environment variable the code actually expects.
+
+Examples:
+
+`STRIPE_SECRET_KEY`
+
+`STRIPE_PUBLISHABLE_KEY`
+
+Make sure the server-side secret being referenced by the code actually exists.
+
+If Replit development and production/deployment environments have separate secrets, verify BOTH.
+
+If a secret is missing, tell me the exact variable NAME that needs to be added.
+
+NEVER print or expose its value.
+
+## 5. SERVER-SIDE STRIPE ONLY
+
+Stripe Checkout Session creation must happen server-side.
+
+The browser must NEVER receive:
+
+`STRIPE_SECRET_KEY`
+
+Only a publishable key may be exposed to the frontend if required.
+
+## 6. VERIFY CART DATA
+
+The cart currently contains a product such as:
+
+**Apple 20W USB-C Power Adapter**
+Price: **$18**
+Quantity: **1**
+
+Make sure the frontend sends the correct cart information to the checkout API.
+
+Then make sure the server validates the product against the existing product catalog/database.
+
+DO NOT trust a price supplied directly by the browser.
+
+The server should determine the authoritative product price from the database/catalog before creating the Stripe Checkout Session.
+
+This prevents customers from modifying prices in browser requests.
+
+## 7. VERIFY STRIPE AMOUNTS
+
+Stripe expects amounts in the smallest currency unit.
+
+For example:
+
+`$18.00 = 1800`
+
+Make sure prices are converted correctly and are integers.
+
+Do not accidentally send:
+
+`18`
+
+when Stripe expects:
+
+`1800`.
+
+Make sure rounding is handled safely for all product prices.
+
+## 8. CREATE THE STRIPE CHECKOUT SESSION CORRECTLY
+
+Use the existing Stripe integration where possible.
+
+The Checkout Session should have valid:
+
+* `mode`
+* `line_items`
+* product name
+* amount
+* currency
+* quantity
+* success URL
+* cancel URL
+
+For a normal store purchase use the appropriate payment mode, normally:
+
+`mode: "payment"`
+
+Do not create subscriptions unless this store already intentionally uses subscriptions.
+
+## 9. SUCCESS AND CANCEL URLS
+
+Make the URLs work correctly in:
+
+* Replit development
+* Replit preview
+* Production domain
+
+Do not hardcode a localhost URL for production.
+
+Use the application's configured public/base URL or safely derive the correct origin.
+
+The success page should load after successful payment.
+
+The cancel URL should return the customer to the store/cart without breaking their cart.
+
+## 10. REDIRECT CORRECTLY
+
+After Stripe returns a Checkout Session, make sure the frontend actually redirects the customer to the Stripe-hosted Checkout URL.
+
+If the API returns:
+
+`session.url`
+
+use it correctly.
+
+Do not leave the customer on the website after a successful session creation.
+
+## 11. IMPROVE ERROR HANDLING
+
+If checkout fails:
+
+* Keep the cart intact.
+* Re-enable the checkout button.
+* Prevent duplicate clicks while a request is pending.
+* Show a useful customer-safe error.
+* Log the detailed technical error server-side.
+
+Do not expose Stripe secrets, raw stack traces, database credentials, or sensitive server information to customers.
+
+## 12. CHECK PRODUCTION
+
+This must work on the LIVE website, not just inside Replit preview.
+
+Compare:
+
+**Development**
+vs
+**Production**
+
+Check:
+
+* Stripe secrets
+* Environment variables
+* API routing
+* Server deployment
+* Domain configuration
+* Cloudflare configuration if applicable
+
+If Cloudflare is involved, verify `/api/*` requests are reaching the real backend and are not being intercepted by the frontend SPA/static Worker.
+
+## 13. DO NOT MODIFY PRODUCT DATA
+
+Do NOT:
+
+* delete products
+* reset the database
+* reseed products
+* replace products
+* change prices
+* change inventory
+* create test products in production
+
+Use the existing catalog.
+
+## 14. TEST THE COMPLETE FLOW
+
+Before saying this is fixed, actually test:
+
+1. Open Store
+2. Add an existing product to cart
+3. Open cart
+4. Click Checkout with Stripe
+5. Checkout API returns HTTP 200
+6. Stripe Checkout Session is successfully created
+7. Browser redirects to Stripe's hosted checkout page
+8. Correct product appears
+9. Correct product price appears
+10. Correct quantity appears
+11. Cancel returns to the website
+12. Cart still works
+13. No checkout errors appear in server logs
+
+Also test a cart containing multiple products and quantities greater than 1.
+
+## 15. IMPORTANT
+
+Do not merely remove the:
+
+`Failed to create checkout session`
+
+message.
+
+Do not fake a successful response.
+
+Do not bypass Stripe.
+
+Do not disable checkout validation.
+
+Fix the underlying Stripe/API failure.
+
+## WHEN FINISHED, REPORT THIS EXACTLY
+
+**Root cause:**
+Tell me exactly what was causing Stripe Checkout Session creation to fail.
+
+**Files changed:**
+List every file modified.
+
+**Stripe/API endpoint:**
+Tell me the endpoint being used.
+
+**Environment variables:**
+Tell me which variable names are required and whether each is detected. Do not show secret values.
+
+**API test:**
+Show the HTTP status returned after the fix.
+
+**Stripe test:**
+Confirm a real Stripe Checkout Session was created successfully.
+
+**Production test:**
+Confirm the live website redirects to Stripe Checkout.
+
+**Product data:**
+Confirm no existing products, prices, inventory, or images were deleted or changed.
+
+Do not make unrelated changes.

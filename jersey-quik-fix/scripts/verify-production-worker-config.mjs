@@ -45,7 +45,12 @@ requireMatch(
 );
 requireMatch("required secrets declaration", /^\[secrets\]\s*$/m);
 
-for (const secretName of ["ADMIN_PASSWORD", "SESSION_SECRET", "CLERK_SECRET_KEY"]) {
+for (const secretName of [
+  "ADMIN_PASSWORD",
+  "SESSION_SECRET",
+  "CLERK_SECRET_KEY",
+  "STRIPE_SECRET_KEY",
+]) {
   requireMatch(
     `${secretName} required secret declaration`,
     new RegExp(`"${secretName}"`),

@@ -10,6 +10,7 @@ required = [
   "ADMIN_PASSWORD",
   "SESSION_SECRET",
   "CLERK_SECRET_KEY",
+  "STRIPE_SECRET_KEY",
 ]
 
 # ── Static Frontend Assets ──────────────────────────────────────────────────

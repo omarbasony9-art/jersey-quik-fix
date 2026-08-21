@@ -358,8 +358,8 @@ export default function ShopPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           items: cart.map(item => ({
+            productId: item.id,
             name: item.name,
-            price: item.price,
             quantity: item.quantity,
             image: item.image || undefined,
             category: item.category || undefined,

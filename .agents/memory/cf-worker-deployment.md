@@ -26,6 +26,13 @@ Set `keep_vars = true` when the source configuration intentionally omits existin
 
 **How to apply:** Keep required secret declarations in the canonical production config as a safety check. When a current-asset upload needs to retain existing secrets, stage without passing secret values, inspect the non-secret bindings and API routing, then remove any temporary staging configuration after deployment. Never read, print, or replace secret values unless a change is explicitly required.
 
+**Replit secret presence does not automatically bind a Cloudflare Worker secret.**
+An Express preview can create a Stripe Checkout Session with Replit’s `STRIPE_SECRET_KEY` while the Cloudflare Worker still returns a generic checkout 500 because it lacks its own `secret_text` binding.
+
+**Why:** The preview server and deployed Worker have separate runtime environments. A Cloudflare Worker must receive the secret during its version upload and include it in its verified bindings.
+
+**How to apply:** Declare the required secret in the canonical Worker configuration, securely include it in the versions upload without printing it, inspect the staged version for the `secret_text` binding, then create a non-payment Checkout Session through the version-preview URL before moving production traffic.
+
 ## D1 Seed Files
 
 **Large seed SQL fails with `SQLITE_TOOBIG`** when applied via `wrangler d1 migrations apply`.
