@@ -65,7 +65,8 @@ export default function ShopPage() {
 
     const loadProducts = async () => {
       try {
-        const res = await fetch(`${API_BASE}/products?limit=200`);
+        const catalogUrl = `${API_BASE}/products?limit=200&request=${Date.now()}`;
+        const res = await fetch(catalogUrl, { cache: 'no-store' });
         const responseText = await res.text();
 
         if (!res.ok) {

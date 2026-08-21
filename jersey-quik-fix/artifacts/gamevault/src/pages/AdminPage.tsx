@@ -506,7 +506,9 @@ export default function AdminPage() {
     setNormProdsLoading(true);
     try {
       const token = sessionStorage.getItem(SESSION_KEY);
-      const res = await fetch(`${API_BASE}/admin/products?limit=200`, {
+      const catalogUrl = `${API_BASE}/admin/products?limit=200&request=${Date.now()}`;
+      const res = await fetch(catalogUrl, {
+        cache: 'no-store',
         headers: { Authorization: `Bearer ${token}` },
       });
       if (res.ok) {
