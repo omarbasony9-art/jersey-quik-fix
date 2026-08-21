@@ -34,6 +34,17 @@ stripeCheckoutRouter.post("/stripe/checkout", async (req, res): Promise<void> =>
     process.env.FRONTEND_URL ||
     "https://jersey-quik-fix-2.onrender.com";
 
+  const toStripeImageUrl = (image?: string): string | undefined => {
+    if (!image) return undefined;
+
+    try {
+      const url = new URL(image);
+      return url.protocol === "https:" ? url.toString() : undefined;
+    } catch {
+      return undefined;
+    }
+  };
+
   // Check if this cart includes a JQF+ membership
   const hasMembership = items.some(
     (i) =>
@@ -71,6 +82,7 @@ stripeCheckoutRouter.post("/stripe/checkout", async (req, res): Promise<void> =>
     // Apply discount to each item if promo code is valid
     const lineItems = items.map((item) => {
       const originalCents = Math.round(item.price * 100);
+      const imageUrl = toStripeImageUrl(item.image);
 
       const discountedCents =
         discountPercent > 0
@@ -91,8 +103,8 @@ stripeCheckoutRouter.post("/stripe/checkout", async (req, res): Promise<void> =>
             ...(item.category
               ? { description: item.category }
               : {}),
-            ...(item.image
-              ? { images: [item.image] }
+            ...(imageUrl
+              ? { images: [imageUrl] }
               : {}),
           },
         },
