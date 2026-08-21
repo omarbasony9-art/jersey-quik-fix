@@ -459,7 +459,9 @@ export default function AdminPage() {
   const loadRepairs = () => {
     const token = sessionStorage.getItem(SESSION_KEY);
     if (!token) return;
-    fetch(`${API_BASE}/repairs`, {
+    const repairsUrl = `${API_BASE}/repairs?request=${Date.now()}`;
+    fetch(repairsUrl, {
+      cache: 'no-store',
       headers: { 'Authorization': `Bearer ${token}` },
     })
       .then(r => r.ok ? r.json() : [])
