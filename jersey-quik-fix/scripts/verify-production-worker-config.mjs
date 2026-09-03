@@ -40,8 +40,8 @@ requireMatch(
   /^\[\[r2_buckets\]\][\s\S]*?^binding\s*=\s*"PRODUCT_IMAGES"\s*$/m,
 );
 requireMatch(
-  "/api/* Worker-first routing",
-  /^run_worker_first\s*=\s*\[\s*"\/api\/\*"\s*\]\s*$/m,
+  "all-request Worker-first routing",
+  /^run_worker_first\s*=\s*true\s*$/m,
 );
 requireMatch("required secrets declaration", /^\[secrets\]\s*$/m);
 
