@@ -421,52 +421,31 @@ export default function ShopPage() {
     if (!membershipModal) return;
     const w = window.open('', '_blank');
     if (!w) return;
-    w.document.title = 'JQF+ Member Card';
-    const style = w.document.createElement('style');
-    style.textContent = `
-      body { margin: 0; background: #000; display: flex; align-items: center; justify-content: center; min-height: 100vh; font-family: Arial, sans-serif; }
-      .card { width: 3.5in; height: 2in; background: linear-gradient(135deg, #0a1628 0%, #0d1f3e 50%, #000 100%); border-radius: 12px; padding: 24px; box-sizing: border-box; color: white; display: flex; flex-direction: column; justify-content: space-between; border: 1px solid rgba(255,255,255,0.2); }
-      .top, .bottom { display: flex; justify-content: space-between; align-items: center; }
-      .logo { font-size: 20px; font-style: italic; font-weight: 900; } .logo b { color: #007BFF; }
-      .badge, .bottom, .code-label { font-size: 8px; letter-spacing: 2px; opacity: 0.6; text-transform: uppercase; }
-      .code-area { text-align: center; } .code-label { margin-bottom: 6px; }
-      .code { font-size: 28px; font-weight: 900; letter-spacing: 6px; font-family: monospace; }
-      @media print { body { background: white; } }
-    `;
-    w.document.head.appendChild(style);
-    const card = w.document.createElement('div');
-    card.className = 'card';
-    const top = w.document.createElement('div');
-    top.className = 'top';
-    const logo = w.document.createElement('div');
-    logo.className = 'logo';
-    logo.append('JQF');
-    const plus = w.document.createElement('b');
-    plus.textContent = '+';
-    logo.appendChild(plus);
-    const badge = w.document.createElement('div');
-    badge.className = 'badge';
-    badge.textContent = 'Member Card';
-    top.append(logo, badge);
-    const codeArea = w.document.createElement('div');
-    codeArea.className = 'code-area';
-    const codeLabel = w.document.createElement('div');
-    codeLabel.className = 'code-label';
-    codeLabel.textContent = 'Your Discount Code';
-    const code = w.document.createElement('div');
-    code.className = 'code';
-    code.textContent = membershipModal.code;
-    codeArea.append(codeLabel, code);
-    const bottom = w.document.createElement('div');
-    bottom.className = 'bottom';
-    const discount = w.document.createElement('span');
-    discount.textContent = '10% Off All Purchases';
-    const validity = w.document.createElement('span');
-    validity.textContent = 'Valid · Unlimited Uses';
-    bottom.append(discount, validity);
-    card.append(top, codeArea, bottom);
-    w.document.body.replaceChildren(card);
-    w.setTimeout(() => w.print(), 100);
+    w.document.write(`
+      <!DOCTYPE html><html><head><title>JQF+ Member Card</title>
+      <style>
+        body { margin: 0; background: #000; display: flex; align-items: center; justify-content: center; min-height: 100vh; font-family: 'Arial Black', Arial, sans-serif; }
+        .card { width: 3.5in; height: 2in; background: linear-gradient(135deg, #0a1628 0%, #0d1f3e 50%, #000 100%); border-radius: 12px; padding: 24px; box-sizing: border-box; color: white; display: flex; flex-direction: column; justify-content: space-between; border: 1px solid rgba(255,255,255,0.2); position: relative; overflow: hidden; }
+        .glow { position: absolute; top: -20px; right: -20px; width: 80px; height: 80px; background: rgba(0,120,255,0.3); border-radius: 50%; filter: blur(20px); }
+        .top { display: flex; justify-content: space-between; align-items: center; }
+        .logo { font-size: 20px; font-style: italic; font-weight: 900; letter-spacing: -1px; }
+        .logo span { color: #007BFF; }
+        .badge { font-size: 9px; letter-spacing: 3px; opacity: 0.5; text-transform: uppercase; }
+        .code-area { text-align: center; }
+        .code-label { font-size: 8px; letter-spacing: 3px; opacity: 0.5; text-transform: uppercase; margin-bottom: 6px; }
+        .code { font-size: 28px; font-weight: 900; letter-spacing: 6px; font-family: 'Courier New', monospace; }
+        .bottom { display: flex; justify-content: space-between; font-size: 8px; letter-spacing: 2px; opacity: 0.5; text-transform: uppercase; }
+        @media print { body { background: white; } }
+      </style></head><body>
+      <div class="card">
+        <div class="glow"></div>
+        <div class="top"><div class="logo">JQF<span>+</span></div><div class="badge">Member Card</div></div>
+        <div class="code-area"><div class="code-label">Your Discount Code</div><div class="code">${membershipModal.code}</div></div>
+        <div class="bottom"><span>10% Off All Purchases</span><span>Valid · Unlimited Uses</span></div>
+      </div>
+      <script>window.onload=()=>{window.print();}<\/script></body></html>
+    `);
+    w.document.close();
   };
 
   return (

@@ -34,6 +34,7 @@ export function registerProductImages(app: Hono<{ Bindings: Env }>) {
         const headers = new Headers();
         headers.set("Content-Type", contentType);
         headers.set("Cache-Control", "public, max-age=31536000, immutable");
+        headers.set("Access-Control-Allow-Origin", "*");
         return new Response(object.body, { headers });
       }
 
@@ -58,6 +59,7 @@ export function registerProductImages(app: Hono<{ Bindings: Env }>) {
       if (assetRes.ok && !assetCt.startsWith("text/html")) {
         const respHeaders = new Headers(assetRes.headers);
         respHeaders.set("Cache-Control", "public, max-age=31536000, immutable");
+        respHeaders.set("Access-Control-Allow-Origin", "*");
         return new Response(assetRes.body, {
           status: assetRes.status,
           headers: respHeaders,

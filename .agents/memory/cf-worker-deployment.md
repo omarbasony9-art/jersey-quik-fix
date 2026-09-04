@@ -13,18 +13,18 @@ Without it, Cloudflare's SPA mode intercepts every GET /api/* request and return
 **How to apply:** Always include this in `wrangler.toml` `[assets]` section for any SPA + API Worker combo.
 
 **Use Wrangler 4.123.0 or newer for Worker-first asset routing.**
-Wrangler 3.x silently omitted the `run_worker_first` option from deployed Worker metadata, leaving `raw_run_worker_first: false` even when the TOML contained the setting. Route every request through the Worker so API routing, canonical redirects, security headers, and explicit 404s cannot be bypassed.
+Wrangler 3.x silently omitted the `run_worker_first` option from deployed Worker metadata, leaving `raw_run_worker_first: false` even when the TOML contained the setting. Use the API-only form `run_worker_first = ["/api/*"]` to keep storefront paths asset-first.
 
 **Why:** A Worker with static SPA assets can return `200 text/html` for API URLs when old Wrangler deploys it, making a JSON client appear to have an empty catalog.
 
-**How to apply:** A release is not safe until both its staged preview and public endpoints prove that API requests reach the Worker and return healthy catalog JSON.
+**How to apply:** Before relying on this routing configuration, verify the deployed version metadata reports `raw_run_worker_first: ["/api/*"]`, then curl `/api/products?limit=200` and confirm `application/json`.
 
 **Preserve Dashboard-managed ordinary Worker variables during Wrangler deployments.**
 Set `keep_vars = true` when the source configuration intentionally omits existing Dashboard-managed non-secret variables.
 
 **Why:** `keep_vars` preserves ordinary Dashboard variables. Wrangler versions uploads treat `--secrets-file` additively: omitted existing secrets are retained and are never deleted by a deployment. Version metadata can omit these retained secret bindings even though their values remain unchanged.
 
-**How to apply:** Required deployment secrets must be passed only through transient, permission-restricted tooling and must never be printed, persisted, or committed.
+**How to apply:** Keep required secret declarations in the canonical production config as a safety check. When a current-asset upload needs to retain existing secrets, stage without passing secret values, inspect the non-secret bindings and API routing, then remove any temporary staging configuration after deployment. Never read, print, or replace secret values unless a change is explicitly required.
 
 **Replit secret presence does not automatically bind a Cloudflare Worker secret.**
 An Express preview can create a Stripe Checkout Session with Replit’s `STRIPE_SECRET_KEY` while the Cloudflare Worker still returns a generic checkout 500 because it lacks its own `secret_text` binding.
@@ -71,7 +71,7 @@ The storefront artifact also has a static-only Wrangler configuration with the s
 
 **Why:** The static-only version serves the SPA shell for `/api/*` before the Worker can run, making the catalog appear unavailable while product records remain healthy in D1.
 
-**How to apply:** Keep preview and production identities distinct, and permit traffic movement only after the staged full Worker proves its bindings and catalog readiness.
+**How to apply:** Upload from the `cf-worker` directory, inspect the staged version for `raw_run_worker_first: ["/api/*"]` plus DB, ASSETS, PRODUCT_IMAGES, and required secret bindings, then test `/api/products?limit=200` before moving traffic.
 
 **Recover static-only production versions by restoring a verified Worker version, not by re-uploading without secrets.**
 If the active version has no script bindings and serves HTML at `/api/*`, traffic can be safely returned to an earlier verified version with `wrangler versions deploy <version-id>@100`.

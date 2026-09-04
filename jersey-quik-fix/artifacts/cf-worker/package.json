@@ -8,7 +8,6 @@
     "verify:production-config": "node ../../scripts/verify-production-worker-config.mjs",
     "build": "pnpm run verify:production-config && wrangler deploy --dry-run --config wrangler.toml --outdir dist",
     "stage": "pnpm run verify:production-config && wrangler versions upload --config wrangler.toml --keep-vars",
-    "validate:production": "node ../../scripts/validate-production-catalog.mjs https://jerseyquikfix.com https://jersey-quik-fix.jersey-quik-fix.workers.dev",
     "migrations:local": "wrangler d1 migrations apply jersey-quik-fix-d1 --local",
     "migrations:remote": "wrangler d1 migrations apply jersey-quik-fix-d1 --remote"
   },

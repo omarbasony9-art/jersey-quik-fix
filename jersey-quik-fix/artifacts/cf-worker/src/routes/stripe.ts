@@ -17,8 +17,6 @@ interface CatalogProduct {
   category: string | null;
 }
 
-const CANONICAL_ORIGIN = "https://jerseyquikfix.com";
-
 export function registerStripe(app: Hono<{ Bindings: Env }>) {
   // POST /api/stripe/checkout — create Checkout Session from cart items
   app.post("/api/stripe/checkout", async (c) => {
@@ -40,22 +38,8 @@ export function registerStripe(app: Hono<{ Bindings: Env }>) {
       return c.json({ error: "Cart is empty" }, 400);
     }
 
-    let baseUrl = CANONICAL_ORIGIN;
-    try {
-      const configured = new URL(c.env.FRONTEND_URL ?? CANONICAL_ORIGIN);
-      if (configured.protocol === "https:" && configured.hostname === "jerseyquikfix.com") {
-        baseUrl = configured.origin;
-      }
-    } catch {
-      // Keep the fixed canonical production origin.
-    }
-
-    if (
-      customerEmail &&
-      (customerEmail.length > 254 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(customerEmail))
-    ) {
-      return c.json({ error: "Invalid email address" }, 400);
-    }
+    const baseUrl =
+      c.env.FRONTEND_URL ?? "https://jersey-quik-fix.workers.dev";
 
     const hasMembership = items.some(
       (i) =>
@@ -82,12 +66,8 @@ export function registerStripe(app: Hono<{ Bindings: Env }>) {
     const toStripeImageUrl = (image?: string): string | undefined => {
       if (!image) return undefined;
       try {
-        const url = new URL(image, baseUrl);
-        return url.protocol === "https:" &&
-          url.hostname === "jerseyquikfix.com" &&
-          url.pathname.startsWith("/api/product-images/")
-          ? url.toString()
-          : undefined;
+        const url = new URL(image);
+        return url.protocol === "https:" ? url.toString() : undefined;
       } catch {
         return undefined;
       }
