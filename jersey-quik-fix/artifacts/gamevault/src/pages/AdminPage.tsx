@@ -40,10 +40,10 @@ type MembershipCode = {
 type NormProduct = {
   id: string; sku: string; name: string; category: string; subcategory: string | null;
   description: string | null; price: number; oldPrice?: number; priceNote?: string | null;
-  condition: string | null; configuration: string | null; stock: string | null;
+  condition: string | null; configuration: string | null; stock: number | null;
   images: string[]; badge: string | null; rating: number | null; active: boolean;
   featured: boolean; verified: boolean; verificationNote?: string | null;
-  inventoryQuantity: number | null; reserved: number | null;
+  reserved: number | null;
   createdAt?: string; updatedAt?: string;
 };
 
@@ -518,7 +518,10 @@ export default function AdminPage() {
         setNormProds((data.products ?? []).map((p: any) => ({
           ...p,
           price: Number(p.price) / 100,
-          oldPrice: p.oldPrice ? Number(p.oldPrice) / 100 : undefined,
+          oldPrice: p.old_price != null ? Number(p.old_price) / 100 : undefined,
+          priceNote: p.price_note ?? null,
+          verificationNote: p.verification_note ?? null,
+          stock: p.stock != null ? Number(p.stock) : 0,
           rating: p.rating != null ? Number(p.rating) : null,
           images: p.images ?? [],
         })));
@@ -542,10 +545,9 @@ export default function AdminPage() {
         condition: p.condition || null, active: p.active, featured: p.featured,
         badge: p.badge || null, rating: p.rating,
         price: Math.round(p.price * 100),
-        oldPrice: p.oldPrice ? Math.round(p.oldPrice * 100) : null,
+        old_price: p.oldPrice != null ? Math.round(p.oldPrice * 100) : null,
         images: p.images ?? [],
-        stock: p.stock || null,
-        inventoryQuantity: p.inventoryQuantity ?? null,
+        stock: p.stock ?? null,
       };
       const res = await fetch(`${API_BASE}/admin/products/${p.id}`, {
         method: 'PATCH',
@@ -1351,7 +1353,7 @@ export default function AdminPage() {
                                             {['','New','Like New','Excellent','Good','Fair','Refurbished'].map(c => <option key={c} value={c}>{c || 'Not specified'}</option>)}
                                           </select></div>
                                         <div><label className={labelCls}>Qty in Stock</label>
-                                          <input type="number" min="0" value={p.inventoryQuantity ?? 0} onChange={e => updateNormProd(p.id, 'inventoryQuantity', Number(e.target.value))} className={inputCls} /></div>
+                                          <input type="number" min="0" value={p.stock ?? 0} onChange={e => updateNormProd(p.id, 'stock', Number(e.target.value))} className={inputCls} /></div>
                                       </div>
                                       {/* Row 4: Prices + Badge + Rating */}
                                       <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
