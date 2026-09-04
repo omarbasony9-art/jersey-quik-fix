@@ -2,6 +2,9 @@ export interface Env {
   DB: D1Database;
   ASSETS: Fetcher;
   PRODUCT_IMAGES?: R2Bucket; // optional — requires R2 to be enabled in Cloudflare dashboard
+  ADMIN_LOGIN_RATE_LIMITER: RateLimit;
+  REPAIR_LOOKUP_RATE_LIMITER: RateLimit;
+  PUBLIC_FORM_RATE_LIMITER: RateLimit;
 
   // Secrets (set via `wrangler secret put`)
   SESSION_SECRET: string;

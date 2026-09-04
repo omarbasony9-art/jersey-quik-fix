@@ -39,6 +39,16 @@ requireMatch(
   "PRODUCT_IMAGES R2 binding",
   /^\[\[r2_buckets\]\][\s\S]*?^binding\s*=\s*"PRODUCT_IMAGES"\s*$/m,
 );
+for (const binding of [
+  "ADMIN_LOGIN_RATE_LIMITER",
+  "REPAIR_LOOKUP_RATE_LIMITER",
+  "PUBLIC_FORM_RATE_LIMITER",
+]) {
+  requireMatch(
+    `${binding} rate-limit binding`,
+    new RegExp(`^name\\s*=\\s*"${binding}"\\s*$`, "m"),
+  );
+}
 requireMatch(
   "all-request Worker-first routing",
   /^run_worker_first\s*=\s*true\s*$/m,

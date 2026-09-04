@@ -4,3 +4,5 @@
 - [CF Worker deployment](cf-worker-deployment.md) — run_worker_first=true required; R2 needs manual dashboard enable; seed via D1 REST API in batches of 20
 - [Stripe Checkout image URLs](stripe-checkout-image-urls.md) — Stripe Checkout accepts only absolute HTTPS product images; omit relative app image paths when creating sessions
 - [API cache policy](api-cache-policy.md) — production API responses must disable storage so stale SPA HTML cannot break Shop or Admin routes
+- [Worker asset fallback order](worker-asset-fallback-order.md) — fetch exact bundled assets before rejecting missing executable-looking paths; otherwise real JS/CSS is blocked
+- [Distributed Worker rate limits](distributed-worker-rate-limits.md) — isolate memory and native bindings are not deterministic enough alone; use hashed D1 counters for enforcement

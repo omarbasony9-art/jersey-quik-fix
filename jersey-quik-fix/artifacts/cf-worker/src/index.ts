@@ -60,13 +60,16 @@ app.use("*", async (c, next) => {
       "base-uri 'self'",
       "object-src 'none'",
       "frame-ancestors 'none'",
-      "script-src 'self' 'unsafe-inline' https://*.clerk.accounts.dev",
+      "script-src 'self' https://*.clerk.accounts.dev",
+      "script-src-attr 'none'",
       "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
       "font-src 'self' https://fonts.gstatic.com",
-      "img-src 'self' data: blob: https://images.unsplash.com",
+      "img-src 'self' data: blob: https://images.unsplash.com https://img.clerk.com",
       "connect-src 'self' https://*.clerk.accounts.dev",
       "frame-src 'self' https://*.clerk.accounts.dev https://checkout.stripe.com",
       "form-action 'self' https://checkout.stripe.com",
+      "manifest-src 'self'",
+      "worker-src 'self' blob:",
       "upgrade-insecure-requests",
     ].join("; "),
   );
@@ -115,6 +118,26 @@ const RESERVED_MISSING_PATHS = new Set([
   "/manifest.webmanifest",
   "/sitemap.xml",
 ]);
+const SPA_ROUTES = new Set([
+  "/",
+  "/shop",
+  "/community",
+  "/repair-status",
+  "/sign-in",
+  "/sign-up",
+  "/admin",
+]);
+const BLOCKED_PATH_SEGMENTS = new Set([
+  "debug",
+  "preview",
+  "__debug__",
+  "__preview__",
+  "phpmyadmin",
+  "wp-admin",
+  "wp-login.php",
+]);
+const BLOCKED_EXTENSIONS =
+  /\.(?:map|js|mjs|cjs|ts|tsx|jsx|php|phtml|phar|exe|dll|sh|bash|bat|cmd|ps1|py|rb|pl|cgi|env|ini|log|sql|bak|old|orig|zip|tar|gz|7z)$/i;
 
 // ── SPA / Static asset fallback ───────────────────────────────────────────────
 // For any request that isn't an /api/* route, try to serve a static asset.
@@ -122,13 +145,22 @@ const RESERVED_MISSING_PATHS = new Set([
 // React SPA router handles it client-side.
 app.get("*", async (c) => {
   const path = new URL(c.req.url).pathname;
-  if (RESERVED_MISSING_PATHS.has(path)) {
+  const normalizedPath = path.length > 1 ? path.replace(/\/+$/, "") : path;
+  const segments = normalizedPath.toLowerCase().split("/").filter(Boolean);
+  if (
+    RESERVED_MISSING_PATHS.has(normalizedPath) ||
+    segments.some((segment) => segment.startsWith(".") || BLOCKED_PATH_SEGMENTS.has(segment))
+  ) {
     return c.text("Not found", 404);
   }
 
   // Try to serve the exact asset first
   const assetRes = await c.env.ASSETS.fetch(c.req.raw);
   if (assetRes.status !== 404) return assetRes;
+
+  if (BLOCKED_EXTENSIONS.test(normalizedPath) || !SPA_ROUTES.has(normalizedPath)) {
+    return c.text("Not found", 404);
+  }
 
   // Fall back to index.html for SPA routing
   const indexUrl = new URL("/index.html", c.req.url);

@@ -19,7 +19,7 @@ required = [
 # The SPA fallback means any path not matching a real file serves index.html.
 [assets]
 directory = "../gamevault/dist/public"
-not_found_handling = "single-page-application"
+not_found_handling = "none"
 # Required to expose c.env.ASSETS inside the Worker (for SPA fallback routing)
 binding = "ASSETS"
 # Every request must pass through the Worker so canonical redirects, security
@@ -40,6 +40,31 @@ database_id = "1e526c4e-aa64-4efb-9e52-b8028af7fba0"
 [[r2_buckets]]
 binding = "PRODUCT_IMAGES"
 bucket_name = "jqf-product-images"
+
+# ── Cloudflare-native abuse protection ──────────────────────────────────────
+[[ratelimits]]
+name = "ADMIN_LOGIN_RATE_LIMITER"
+namespace_id = "847291001"
+
+  [ratelimits.simple]
+  limit = 10
+  period = 60
+
+[[ratelimits]]
+name = "REPAIR_LOOKUP_RATE_LIMITER"
+namespace_id = "847291002"
+
+  [ratelimits.simple]
+  limit = 30
+  period = 60
+
+[[ratelimits]]
+name = "PUBLIC_FORM_RATE_LIMITER"
+namespace_id = "847291003"
+
+  [ratelimits.simple]
+  limit = 10
+  period = 60
 
 # ── Migrations directory ─────────────────────────────────────────────────────
 
