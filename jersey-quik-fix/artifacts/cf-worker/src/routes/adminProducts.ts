@@ -15,7 +15,6 @@
 import type { Hono } from "hono";
 import type { Env } from "../types";
 import { verifyAdminToken } from "../lib/adminToken";
-import { areAllowedProductImageUrls } from "../lib/productImageUrl";
 
 interface ProductRow {
   id: string;
@@ -121,9 +120,6 @@ export function registerAdminProducts(app: Hono<{ Bindings: Env }>) {
       if (!body.name || !body.sku || body.price == null) {
         return c.json({ error: "name, sku, and price are required" }, 400);
       }
-      if (body.images !== undefined && !areAllowedProductImageUrls(body.images)) {
-        return c.json({ error: "Product images must use approved HTTPS hosts or the Jersey Quik Fix image route" }, 400);
-      }
 
       const id = crypto.randomUUID();
       const now = new Date().toISOString();
@@ -204,9 +200,6 @@ export function registerAdminProducts(app: Hono<{ Bindings: Env }>) {
       ).bind(id).first<ProductRow>();
 
       if (!existing) return c.json({ error: "Product not found" }, 404);
-      if (body.images !== undefined && !areAllowedProductImageUrls(body.images)) {
-        return c.json({ error: "Product images must use approved HTTPS hosts or the Jersey Quik Fix image route" }, 400);
-      }
 
       const name        = body.name        ?? existing.name;
       const sku         = body.sku         ?? existing.sku;

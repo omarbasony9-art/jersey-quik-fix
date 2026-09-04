@@ -1,68 +1,17 @@
 import type { Hono } from "hono";
 import type { Env } from "../types";
 import { requireAdmin } from "../middleware/adminAuth";
-import {
-  boundedString,
-  consumeCloudflareRateLimit,
-  consumePersistentRateLimit,
-  readJsonBody,
-  RequestBodyError,
-} from "../lib/requestSecurity";
 
 const EMAIL_RE = /^\S+@\S+\.\S+$/;
 
 export function registerTradeInquiries(app: Hono<{ Bindings: Env }>) {
   // POST /api/trade-inquiries — public
   app.post("/api/trade-inquiries", async (c) => {
-    const limit = await consumeCloudflareRateLimit(
-      c,
-      "trade-submit",
-      c.env.PUBLIC_FORM_RATE_LIMITER,
-      60,
-    );
-    if (!limit.allowed) {
-      c.header("Retry-After", String(limit.retryAfterSeconds));
-      return c.json({ error: "Too many trade-in requests. Please try again later." }, 429);
-    }
-    const persistentLimit = await consumePersistentRateLimit(
-      c,
-      c.env.DB,
-      "trade-submit",
-      10,
-      60 * 1000,
-    );
-    if (!persistentLimit.allowed) {
-      c.header("Retry-After", String(persistentLimit.retryAfterSeconds));
-      return c.json({ error: "Too many trade-in requests. Please try again later." }, 429);
-    }
+    const { name, email, phone, deviceType, deviceDescription, condition, notes } =
+      await c.req.json<Record<string, string>>();
 
-    let body: Record<string, unknown>;
-    try {
-      body = await readJsonBody<Record<string, unknown>>(c, 16 * 1024);
-    } catch (error) {
-      if (error instanceof RequestBodyError) {
-        return c.json({ error: error.message }, error.status);
-      }
-      throw error;
-    }
-
-    let name: string;
-    let email: string;
-    let phone: string;
-    let deviceType: string;
-    let deviceDescription: string;
-    let condition: string;
-    let notes: string;
-    try {
-      name = boundedString(body.name, "name", 120, true);
-      email = boundedString(body.email, "email", 254, true).toLowerCase();
-      phone = boundedString(body.phone, "phone", 40, true);
-      deviceType = boundedString(body.deviceType, "deviceType", 80, true);
-      deviceDescription = boundedString(body.deviceDescription, "deviceDescription", 2000, true);
-      condition = boundedString(body.condition, "condition", 80, true);
-      notes = boundedString(body.notes, "notes", 2000);
-    } catch (error) {
-      return c.json({ error: error instanceof Error ? error.message : "Invalid request" }, 400);
+    if (!name || !email || !phone || !deviceType || !deviceDescription || !condition) {
+      return c.json({ error: "All required fields must be provided." }, 400);
     }
     if (!EMAIL_RE.test(email)) {
       return c.json({ error: "Invalid email address." }, 400);
@@ -76,13 +25,13 @@ export function registerTradeInquiries(app: Hono<{ Bindings: Env }>) {
        RETURNING *`,
     )
       .bind(
-        name,
-        email,
-        phone,
+        name.trim(),
+        email.trim().toLowerCase(),
+        phone.trim(),
         deviceType,
-        deviceDescription,
+        deviceDescription.trim(),
         condition,
-        notes || null,
+        notes?.trim() ?? null,
         "New",
         now,
       )
