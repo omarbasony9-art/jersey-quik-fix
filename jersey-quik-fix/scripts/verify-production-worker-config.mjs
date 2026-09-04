@@ -1,4 +1,4 @@
-import { readFileSync } from "node:fs";
+import { readFileSync, readdirSync, statSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -6,6 +6,8 @@ const scriptDirectory = dirname(fileURLToPath(import.meta.url));
 const repositoryRoot = join(scriptDirectory, "..");
 const workerConfigPath = join(repositoryRoot, "artifacts", "cf-worker", "wrangler.toml");
 const frontendConfigPath = join(repositoryRoot, "artifacts", "gamevault", "wrangler.jsonc");
+const frontendEnvPath = join(repositoryRoot, "artifacts", "gamevault", ".env.production");
+const frontendSourceDirectory = join(repositoryRoot, "artifacts", "gamevault", "src");
 const productionWorkerName = "jersey-quik-fix";
 const frontendPreviewWorkerName = "jersey-quik-fix-frontend-preview";
 
@@ -70,6 +72,33 @@ if (frontendConfig?.name !== frontendPreviewWorkerName) {
 
 if (frontendConfig?.name === productionWorkerName) {
   failures.push("separate frontend preview Worker identity");
+}
+
+const productionEnv = activeLines(readFileSync(frontendEnvPath, "utf8"));
+if (!/^VITE_API_BASE_URL\s*=\s*\/api\s*$/m.test(productionEnv)) {
+  failures.push("same-origin production API base (/api)");
+}
+
+const legacyApiPattern = /https?:\/\/[^\s"'`]*(?:render\.com|onrender\.com)/i;
+if (legacyApiPattern.test(productionEnv)) {
+  failures.push("production environment without a legacy external API base");
+}
+
+const sourceFiles = [];
+const walk = (directory) => {
+  for (const name of readdirSync(directory)) {
+    const path = join(directory, name);
+    if (statSync(path).isDirectory()) walk(path);
+    else if (/\.(?:ts|tsx|js|jsx)$/.test(name)) sourceFiles.push(path);
+  }
+};
+walk(frontendSourceDirectory);
+
+for (const sourceFile of sourceFiles) {
+  if (legacyApiPattern.test(readFileSync(sourceFile, "utf8"))) {
+    failures.push("storefront source without a legacy Render API URL");
+    break;
+  }
 }
 
 if (failures.length > 0) {

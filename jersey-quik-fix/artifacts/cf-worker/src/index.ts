@@ -38,7 +38,13 @@ const ALLOWED_ORIGINS = new Set([
 
 app.use("*", async (c, next) => {
   const url = new URL(c.req.url);
-  if (url.protocol !== "https:" || url.hostname === "www.jerseyquikfix.com") {
+  const isCanonicalHost = url.hostname === "jerseyquikfix.com";
+  const isWorkerHost =
+    url.hostname === "jersey-quik-fix.jersey-quik-fix.workers.dev" ||
+    /^[a-f0-9]{8}-jersey-quik-fix\.jersey-quik-fix\.workers\.dev$/.test(
+      url.hostname,
+    );
+  if (url.protocol !== "https:" || (!isCanonicalHost && !isWorkerHost)) {
     url.protocol = "https:";
     url.host = "jerseyquikfix.com";
     return c.redirect(url.toString(), 308);
